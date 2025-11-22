@@ -1,0 +1,988 @@
+
+import React, { createContext, useState, useEffect, useContext, useMemo, useCallback, useRef } from 'react';
+import { User, Role, Product, Region, Driver, Shipment, ProductPrice, Notification, NotificationCategory, ShipmentProduct, ShipmentStatus } from '../types';
+import { supabase } from '../utils/supabaseClient';
+import type { Session } from '@supabase/supabase-js';
+import { Database } from '../supabase/database.types';
+import * as IndexedDB from '../utils/indexedDB';
+import { clearOfflineSession, getOfflineSession } from '../utils/offlineAuth';
+
+// Type alias for Supabase row types
+type UserRow = Database['public']['Tables']['users']['Row'];
+type ProductRow = Database['public']['Tables']['products']['Row'];
+type DriverRow = Database['public']['Tables']['drivers']['Row'];
+type RegionRow = Database['public']['Tables']['regions']['Row'];
+type ShipmentRow = Database['public']['Tables']['shipments']['Row'];
+type ShipmentProductRow = Database['public']['Tables']['shipment_products']['Row'];
+type ProductPriceRow = Database['public']['Tables']['product_prices']['Row'];
+type NotificationRow = Database['public']['Tables']['notifications']['Row'];
+
+
+// --- Data Mapping Functions ---
+const userFromRow = (row: UserRow): User => ({
+    id: row.id,
+    username: row.username,
+    role: row.role as Role,
+    isActive: row.is_active ?? true,
+    createdAt: row.created_at ?? undefined,
+});
+
+const productFromRow = (row: ProductRow): Product => ({
+    id: row.id,
+    name: row.name,
+    isActive: row.is_active ?? true,
+});
+
+const driverFromRow = (row: DriverRow): Driver => ({
+    id: row.id,
+    name: row.name,
+    plateNumber: row.plate_number,
+    isActive: row.is_active ?? true,
+});
+
+const regionFromRow = (row: RegionRow): Region => ({
+    id: row.id,
+    name: row.name,
+    dieselLiterPrice: row.diesel_liter_price,
+    dieselLiters: row.diesel_liters,
+    zaitriFee: row.zaitri_fee,
+});
+
+const shipmentFromRow = (row: ShipmentRow, products: ShipmentProduct[]): Shipment => ({
+    id: row.id,
+    salesOrder: row.sales_order,
+    orderDate: row.order_date,
+    entryTimestamp: row.entry_timestamp,
+    regionId: row.region_id,
+    driverId: row.driver_id,
+    status: row.status as ShipmentStatus,
+    products,
+    totalDiesel: row.total_diesel ?? undefined,
+    totalWage: row.total_wage ?? undefined,
+    zaitriFee: row.zaitri_fee ?? undefined,
+    adminExpenses: row.admin_expenses ?? undefined,
+    dueAmount: row.due_amount ?? undefined,
+    damagedValue: row.damaged_value ?? undefined,
+    shortageValue: row.shortage_value ?? undefined,
+    roadExpenses: row.road_expenses ?? undefined,
+    dueAmountAfterDiscount: row.due_amount_after_discount ?? undefined,
+    otherAmounts: row.other_amounts ?? undefined,
+    improvementBonds: row.improvement_bonds ?? undefined,
+    eveningAllowance: row.evening_allowance ?? undefined,
+    totalDueAmount: row.total_due_amount ?? undefined,
+    taxRate: row.tax_rate ?? undefined,
+    totalTax: row.total_tax ?? undefined,
+    transferNumber: row.transfer_number ?? undefined,
+    transferDate: row.transfer_date ?? undefined,
+    modifiedBy: row.modified_by ?? undefined,
+    modifiedAt: row.modified_at ?? undefined,
+    deductionsEditedBy: row.deductions_edited_by ?? undefined,
+    deductionsEditedAt: row.deductions_edited_at ?? undefined,
+    hasMissingPrices: row.has_missing_prices,
+    createdBy: row.created_by ?? undefined,
+    createdAt: row.created_at ?? undefined,
+});
+
+const shipmentProductFromRow = (row: ShipmentProductRow): ShipmentProduct => ({
+    productId: row.product_id,
+    productName: row.product_name,
+    cartonCount: row.carton_count,
+    productWagePrice: row.product_wage_price ?? undefined,
+});
+
+const priceFromRow = (row: ProductPriceRow): ProductPrice => ({
+    id: row.id,
+    regionId: row.region_id,
+    productId: row.product_id,
+    price: row.price,
+});
+
+const notificationFromRow = (row: NotificationRow): Notification => ({
+    id: row.id,
+    message: row.message,
+    timestamp: row.timestamp,
+    read: row.read ?? false,
+    category: row.category as NotificationCategory,
+    targetRoles: (row.target_roles as Role[]) ?? undefined,
+    targetUserIds: row.target_user_ids ?? undefined,
+});
+
+const shipmentToRow = (shipment: Partial<Shipment>): Partial<Database['public']['Tables']['shipments']['Update']> => {
+    const keyMap: { [K in keyof Shipment]?: keyof Database['public']['Tables']['shipments']['Update'] } = {
+        salesOrder: 'sales_order',
+        orderDate: 'order_date',
+        entryTimestamp: 'entry_timestamp',
+        regionId: 'region_id',
+        driverId: 'driver_id',
+        status: 'status',
+        totalDiesel: 'total_diesel',
+        totalWage: 'total_wage',
+        zaitriFee: 'zaitri_fee',
+        adminExpenses: 'admin_expenses',
+        dueAmount: 'due_amount',
+        damagedValue: 'damaged_value',
+        shortageValue: 'shortage_value',
+        roadExpenses: 'road_expenses',
+        dueAmountAfterDiscount: 'due_amount_after_discount',
+        otherAmounts: 'other_amounts',
+        improvementBonds: 'improvement_bonds',
+        eveningAllowance: 'evening_allowance',
+        totalDueAmount: 'total_due_amount',
+        taxRate: 'tax_rate',
+        totalTax: 'total_tax',
+        transferNumber: 'transfer_number',
+        transferDate: 'transfer_date',
+        modifiedBy: 'modified_by',
+        modifiedAt: 'modified_at',
+        deductionsEditedBy: 'deductions_edited_by',
+        deductionsEditedAt: 'deductions_edited_at',
+        hasMissingPrices: 'has_missing_prices',
+    };
+
+    const rowData: Partial<Database['public']['Tables']['shipments']['Update']> = {};
+    for (const key in shipment) {
+        if (Object.prototype.hasOwnProperty.call(shipment, key) && keyMap[key as keyof Shipment]) {
+            const dbKey = keyMap[key as keyof Shipment]!;
+            const value = shipment[key as keyof Shipment];
+            if (value !== undefined) {
+                (rowData as any)[dbKey] = value;
+            }
+        }
+    }
+    return rowData;
+};
+
+
+interface AppContextType {
+    currentUser: User | null;
+    handleLogout: () => Promise<void>;
+    users: User[];
+    addUser: (userData: Omit<User, 'id'>, password: string) => Promise<User | null>;
+    updateUser: (userId: string, updates: Partial<User>) => Promise<void>;
+    products: Product[];
+    addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
+    updateProduct: (productId: string, updates: Partial<Product>) => Promise<void>;
+    drivers: Driver[];
+    addDriver: (driver: Omit<Driver, 'id'>) => Promise<void>;
+    updateDriver: (driverId: number, updates: Partial<Driver>) => Promise<void>;
+    deleteDriver: (driverId: number) => Promise<void>;
+    regions: Region[];
+    addRegion: (region: Omit<Region, 'id'>) => Promise<void>;
+    updateRegion: (regionId: string, updates: Partial<Region>) => Promise<void>;
+    deleteRegion: (regionId: string) => Promise<void>;
+    shipments: Shipment[];
+    addShipment: (shipment: Omit<Shipment, 'id'>) => Promise<void>;
+    updateShipment: (shipmentId: string, updates: Partial<Shipment>) => Promise<void>;
+    productPrices: ProductPrice[];
+    addProductPrice: (price: Omit<ProductPrice, 'id'>) => Promise<void>;
+    updateProductPrice: (priceId: string, updates: Partial<ProductPrice>) => Promise<void>;
+    deleteProductPrice: (priceId: string) => Promise<void>;
+    notifications: Notification[];
+    addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => Promise<void>;
+    markNotificationAsRead: (notificationId: string) => Promise<void>;
+    markAllNotificationsAsRead: () => Promise<void>;
+    accountantPrintAccess: boolean;
+    setAccountantPrintAccess: React.Dispatch<React.SetStateAction<boolean>>;
+    isPrintHeaderEnabled: boolean;
+    setIsPrintHeaderEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+    appName: string;
+    setAppName: React.Dispatch<React.SetStateAction<string>>;
+    companyName: string;
+    setCompanyName: React.Dispatch<React.SetStateAction<string>>;
+    companyAddress: string;
+    setCompanyAddress: React.Dispatch<React.SetStateAction<string>>;
+    companyPhone: string;
+    setCompanyPhone: React.Dispatch<React.SetStateAction<string>>;
+    companyLogo: string;
+    setCompanyLogo: React.Dispatch<React.SetStateAction<string>>;
+    isTimeWidgetVisible: boolean;
+    setIsTimeWidgetVisible: React.Dispatch<React.SetStateAction<boolean>>;
+    loading: boolean;
+    error: string | null;
+    isOnline: boolean;
+    isSyncing: boolean;
+    refreshAllData: () => Promise<void>;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true); // Track if this is the first load
+    const isInitializing = useRef(true); // Track IndexedDB initialization
+    
+    // Data states - will be hydrated from IndexedDB after mount
+    const [users, setUsers] = useState<User[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [drivers, setDrivers] = useState<Driver[]>([]);
+    const [regions, setRegions] = useState<Region[]>([]);
+    const [shipments, setShipments] = useState<Shipment[]>([]);
+    const [productPrices, setProductPrices] = useState<ProductPrice[]>([]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+
+    // Settings states - will be hydrated from IndexedDB after mount
+    const [accountantPrintAccess, setAccountantPrintAccess] = useState<boolean>(false);
+    const [isPrintHeaderEnabled, setIsPrintHeaderEnabled] = useState<boolean>(true);
+    const [appName, setAppName] = useState<string>('تتبع الشحنات');
+    const [companyName, setCompanyName] = useState<string>('اسم الشركة');
+    const [companyAddress, setCompanyAddress] = useState<string>('عنوان الشركة');
+    const [companyPhone, setCompanyPhone] = useState<string>('رقم الهاتف');
+    const [companyLogo, setCompanyLogo] = useState<string>('');
+    const [isTimeWidgetVisible, setIsTimeWidgetVisible] = useState<boolean>(true);
+
+    // Initialize IndexedDB and load cached data on mount
+    useEffect(() => {
+        const initializeData = async () => {
+            try {
+                console.log('Initializing IndexedDB and loading cached data...');
+                
+                // Run migration from localStorage to IndexedDB
+                await IndexedDB.migrateFromLocalStorage();
+                
+                // Load all data from IndexedDB
+                const [
+                    cachedUsers,
+                    cachedProducts,
+                    cachedDrivers,
+                    cachedRegions,
+                    cachedShipments,
+                    cachedPrices,
+                    cachedNotifications,
+                    // Settings
+                    cachedAccountantPrintAccess,
+                    cachedIsPrintHeaderEnabled,
+                    cachedAppName,
+                    cachedCompanyName,
+                    cachedCompanyAddress,
+                    cachedCompanyPhone,
+                    cachedCompanyLogo,
+                    cachedIsTimeWidgetVisible
+                ] = await Promise.all([
+                    IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
+                    IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
+                    IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
+                    IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
+                    IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
+                    IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
+                    IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS),
+                    // Settings
+                    IndexedDB.getSetting('accountantPrintAccess', false),
+                    IndexedDB.getSetting('isPrintHeaderEnabled', true),
+                    IndexedDB.getSetting('appName', 'تتبع الشحنات'),
+                    IndexedDB.getSetting('companyName', 'اسم الشركة'),
+                    IndexedDB.getSetting('companyAddress', 'عنوان الشركة'),
+                    IndexedDB.getSetting('companyPhone', 'رقم الهاتف'),
+                    IndexedDB.getSetting('companyLogo', ''),
+                    IndexedDB.getSetting('isTimeWidgetVisible', true)
+                ]);
+
+                // Update state with cached data
+                if (cachedUsers.length > 0) setUsers(cachedUsers);
+                if (cachedProducts.length > 0) setProducts(cachedProducts);
+                if (cachedDrivers.length > 0) setDrivers(cachedDrivers);
+                if (cachedRegions.length > 0) setRegions(cachedRegions);
+                if (cachedShipments.length > 0) setShipments(cachedShipments);
+                if (cachedPrices.length > 0) setProductPrices(cachedPrices);
+                if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
+
+                // Update settings
+                setAccountantPrintAccess(cachedAccountantPrintAccess);
+                setIsPrintHeaderEnabled(cachedIsPrintHeaderEnabled);
+                setAppName(cachedAppName);
+                setCompanyName(cachedCompanyName);
+                setCompanyAddress(cachedCompanyAddress);
+                setCompanyPhone(cachedCompanyPhone);
+                setCompanyLogo(cachedCompanyLogo);
+                setIsTimeWidgetVisible(cachedIsTimeWidgetVisible);
+
+                console.log('IndexedDB data loaded successfully');
+                isInitializing.current = false;
+            } catch (error) {
+                console.error('Error initializing IndexedDB:', error);
+                isInitializing.current = false;
+            }
+        };
+
+        initializeData();
+    }, []);
+
+    // Persist settings to IndexedDB whenever they change
+    useEffect(() => { if (!isInitializing.current) IndexedDB.setSetting('accountantPrintAccess', accountantPrintAccess); }, [accountantPrintAccess]);
+    useEffect(() => { if (!isInitializing.current) IndexedDB.setSetting('isPrintHeaderEnabled', isPrintHeaderEnabled); }, [isPrintHeaderEnabled]);
+    useEffect(() => { if (!isInitializing.current) IndexedDB.setSetting('appName', appName); }, [appName]);
+    useEffect(() => { if (!isInitializing.current) IndexedDB.setSetting('companyName', companyName); }, [companyName]);
+    useEffect(() => { if (!isInitializing.current) IndexedDB.setSetting('companyAddress', companyAddress); }, [companyAddress]);
+    useEffect(() => { if (!isInitializing.current) IndexedDB.setSetting('companyPhone', companyPhone); }, [companyPhone]);
+    useEffect(() => { if (!isInitializing.current) IndexedDB.setSetting('companyLogo', companyLogo); }, [companyLogo]);
+    useEffect(() => { if (!isInitializing.current) IndexedDB.setSetting('isTimeWidgetVisible', isTimeWidgetVisible); }, [isTimeWidgetVisible]);
+
+
+    const fetchAllData = useCallback(async () => {
+        if (!navigator.onLine) {
+            console.log("Offline mode: Skipping fetch.");
+            return;
+        }
+        setError(null);
+        
+        // Create abort controller for timeout (reduced to 20 seconds for better UX)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+        
+        try {
+            const [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes] = await Promise.all([
+                supabase.from('users').select('*').abortSignal(controller.signal),
+                supabase.from('products').select('*').abortSignal(controller.signal),
+                supabase.from('drivers').select('*').abortSignal(controller.signal),
+                supabase.from('regions').select('*').abortSignal(controller.signal),
+                supabase.from('shipments').select('*').abortSignal(controller.signal),
+                supabase.from('shipment_products').select('*').abortSignal(controller.signal),
+                supabase.from('product_prices').select('*').abortSignal(controller.signal),
+                supabase.from('notifications').select('*').order('timestamp', { ascending: false }).abortSignal(controller.signal),
+            ]);
+
+            clearTimeout(timeoutId);
+
+            const responses = [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes];
+            for (const res of responses) { if (res.error) throw res.error; }
+
+            const newUsers = usersRes.data!.map(userFromRow);
+            const newProducts = productsRes.data!.map(productFromRow);
+            const newDrivers = driversRes.data!.map(driverFromRow);
+            const newRegions = regionsRes.data!.map(regionFromRow);
+            const newPrices = pricesRes.data!.map(priceFromRow);
+            const newNotifications = notificationsRes.data!.map(notificationFromRow);
+            const shipmentProductsByShipmentId = shipmentProductsRes.data!.reduce((acc, sp) => {
+                if (!acc[sp.shipment_id]) { acc[sp.shipment_id] = []; }
+                acc[sp.shipment_id].push(shipmentProductFromRow(sp));
+                return acc;
+            }, {} as Record<string, ShipmentProduct[]>);
+            const newShipments = shipmentsRes.data!.map(s => shipmentFromRow(s, shipmentProductsByShipmentId[s.id] || []));
+            
+            setUsers(newUsers); await IndexedDB.saveAllToStore(IndexedDB.STORES.USERS, newUsers);
+            setProducts(newProducts); await IndexedDB.saveAllToStore(IndexedDB.STORES.PRODUCTS, newProducts);
+            setDrivers(newDrivers); await IndexedDB.saveAllToStore(IndexedDB.STORES.DRIVERS, newDrivers);
+            setRegions(newRegions); await IndexedDB.saveAllToStore(IndexedDB.STORES.REGIONS, newRegions);
+            setProductPrices(newPrices); await IndexedDB.saveAllToStore(IndexedDB.STORES.PRODUCT_PRICES, newPrices);
+            setNotifications(newNotifications); await IndexedDB.saveAllToStore(IndexedDB.STORES.NOTIFICATIONS, newNotifications);
+            
+            // Retrieve true pending shipments from the mutation queue, not the general shipments cache
+            // This ensures that once a shipment is synced and removed from the queue, it's replaced by the server version.
+            const mutationQueue = await IndexedDB.getMutationQueue();
+            const pendingShipments = mutationQueue
+                .filter((m: any) => m.type === 'addShipment')
+                .map((m: any) => m.payload as Shipment);
+
+            // De-duplicate: although pending shipments have "offline-" IDs, we check just in case
+            // But mostly we just want to layer pending on top of server data.
+            const finalShipments = [...pendingShipments, ...newShipments];
+            
+            setShipments(finalShipments); 
+            await IndexedDB.saveAllToStore(IndexedDB.STORES.SHIPMENTS, finalShipments);
+
+        } catch (err: any) {
+            clearTimeout(timeoutId);
+            console.error("Error fetching data:", err);
+            
+            // Check if error is due to timeout/network issues
+            if (err.name === 'AbortError') {
+                console.warn('Data fetch timeout - will use cached data');
+                // Don't set error - the caller will handle it
+                throw new Error('TIMEOUT');
+            } else {
+                console.warn('Data fetch failed:', err.message);
+                throw err;
+            }
+        }
+    }, []);
+
+    const syncOfflineMutations = useCallback(async () => {
+        const mutationQueue = await IndexedDB.getMutationQueue();
+        if (mutationQueue.length === 0) return;
+
+        // Cross-tab synchronization: Prevent multiple tabs from syncing simultaneously
+        const lockKey = 'sync_lock';
+        const lockValue = `${Date.now()}_${Math.random()}`;
+        const existingLock = localStorage.getItem(lockKey);
+        
+        // Check if another tab is currently syncing (lock exists and is less than 30 seconds old)
+        if (existingLock) {
+            const lockTimestamp = parseInt(existingLock.split('_')[0]);
+            if (Date.now() - lockTimestamp < 30000) {
+                console.log('Another tab is syncing. Skipping this sync attempt.');
+                return;
+            }
+        }
+
+        // Acquire lock
+        localStorage.setItem(lockKey, lockValue);
+
+        // Broadcast sync start event to other tabs
+        const syncChannel = new BroadcastChannel('sync_channel');
+        syncChannel.postMessage({ type: 'sync_start', lockValue });
+
+        try {
+            setIsSyncing(true);
+            console.log(`Starting sync of ${mutationQueue.length} offline actions.`);
+
+            const offlineToRealIdMap: Record<string, string> = {};
+            const successfullySyncedIndices: number[] = [];
+
+            for (const [index, mutation] of mutationQueue.entries()) {
+                try {
+                    if (mutation.type === 'addShipment') {
+                        // Strip the offline ID and pending flag. DB will generate a new UUID.
+                        const { products, id: offlineId, isPendingSync, ...shipmentData } = mutation.payload;
+                        
+                        const shipmentRow = shipmentToRow(shipmentData);
+                        if (!shipmentRow.created_by && currentUser?.id) {
+                            shipmentRow.created_by = currentUser.id;
+                        }
+
+                        // Insert shipment and get new ID
+                        const { data: newShipmentData, error: shipmentError } = await supabase
+                            .from('shipments')
+                            .insert(shipmentRow as any)
+                            .select()
+                            .single();
+                        
+                        if (shipmentError) throw shipmentError;
+
+                        // Store mapping: offlineId -> real UUID
+                        if (offlineId && String(offlineId).startsWith('offline-')) {
+                            offlineToRealIdMap[offlineId] = newShipmentData.id;
+                        }
+
+                        // Insert products with NEW shipment ID
+                        const shipmentProductsToInsert = products.map((p: ShipmentProduct) => ({
+                             shipment_id: newShipmentData.id,
+                             product_id: p.productId, 
+                             product_name: p.productName, 
+                             carton_count: p.cartonCount, 
+                             product_wage_price: p.productWagePrice 
+                        }));
+                        
+                        const { error: productsError } = await supabase.from('shipment_products').insert(shipmentProductsToInsert);
+                        if (productsError) throw productsError;
+
+                    } else if (mutation.type === 'updateShipment') {
+                        let { shipmentId, updates } = mutation.payload;
+
+                        // If this update is for an offline shipment we just synced, map the ID
+                        if (offlineToRealIdMap[shipmentId]) {
+                            shipmentId = offlineToRealIdMap[shipmentId];
+                        }
+
+                        const { products, ...shipmentUpdates } = updates;
+                        const updateRow = shipmentToRow(shipmentUpdates);
+                        
+                        const { error } = await supabase.from('shipments').update(updateRow).eq('id', shipmentId);
+                        if (error) throw error;
+                    }
+
+                    successfullySyncedIndices.push(index);
+                } catch (err) {
+                    console.error('Failed to sync mutation:', mutation, err);
+                // Keep failed mutation in queue for retry
+            }
+        }
+        
+        // Remove successfully synced items
+        const newQueue = mutationQueue.filter((_: any, index: number) => !successfullySyncedIndices.includes(index));
+        await IndexedDB.setMutationQueue(newQueue);
+        
+        // Refresh data from server to get the new IDs and clean states
+        await fetchAllData();
+        setIsSyncing(false);
+        console.log('Sync finished.');
+
+        } finally {
+            // Release lock only if we still own it
+            const currentLock = localStorage.getItem(lockKey);
+            if (currentLock === lockValue) {
+                localStorage.removeItem(lockKey);
+            }
+            
+            // Broadcast sync completion
+            syncChannel.postMessage({ type: 'sync_end', lockValue });
+            syncChannel.close();
+        }
+    }, [currentUser, fetchAllData]);
+
+    // Online/Offline listener
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOnline(true);
+            syncOfflineMutations();
+        };
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, [syncOfflineMutations]);
+
+    // Real-time subscription for shipments data
+    useEffect(() => {
+        const shipmentsChannel = supabase
+            .channel('shipments-changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*', // Listen for all changes (INSERT, UPDATE, DELETE)
+                    schema: 'public',
+                    table: 'shipments'
+                },
+                async (payload) => {
+                    console.log('Shipments change detected:', payload);
+                    console.log('Current user role:', currentUser?.role);
+                    
+                    // When shipments data changes, refetch all data to ensure consistency
+                    if (isOnline) {
+                        await fetchAllData();
+                    }
+                }
+            )
+            .subscribe((status) => {
+                console.log('Shipments subscription status:', status);
+                console.log('Current user:', currentUser);
+                console.log('Current shipments count:', shipments.length);
+            });
+
+        // Cleanup subscription on component unmount
+        return () => {
+            console.log('Cleaning up shipments subscription');
+            shipmentsChannel.unsubscribe();
+        };
+    }, [fetchAllData, isOnline, currentUser, shipments.length]);
+
+    const clearData = useCallback(() => {
+        setUsers([]);
+        setProducts([]);
+        setDrivers([]);
+        setRegions([]);
+        setShipments([]);
+        setProductPrices([]);
+        setNotifications([]);
+    }, []);
+    
+    useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session: Session | null) => {
+            console.log('Auth state change:', event, 'Initial load:', isInitialLoad);
+            
+            if (session?.user) {
+                // Check if we have cached data
+                const hasCachedData = users.length > 0 || products.length > 0;
+                
+                // CRITICAL FIX: Only show loading screen on INITIAL load without cached data
+                // When returning to app, NEVER show loading if we have cached data
+                const shouldShowLoading = isInitialLoad && !hasCachedData;
+                
+                if (shouldShowLoading) {
+                    setLoading(true);
+                }
+                
+                try {
+                    // Try to fetch user profile with 10-second timeout
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    
+                    let userProfile = null;
+                    try {
+                        const { data, error } = await supabase
+                            .from('users')
+                            .select('*')
+                            .eq('id', session.user.id)
+                            .abortSignal(controller.signal)
+                            .single();
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (!error && data) {
+                            userProfile = userFromRow(data);
+                        }
+                    } catch (fetchErr: any) {
+                        clearTimeout(timeoutId);
+                        console.warn('Profile fetch failed, will try cached data:', fetchErr.message);
+                    }
+                    
+                    // If profile fetch failed, try to get cached user from IndexedDB
+                    if (!userProfile) {
+                        const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS);
+                        userProfile = cachedUsers.find(u => u.id === session.user.id) || null;
+                        
+                        if (userProfile) {
+                            console.log('Using cached user profile (network failed)');
+                        } else {
+                            console.error("No user profile found (server or cache)");
+                            setError("لم يتم العثور على ملف المستخدم. يرجى التحقق من الاتصال بالإنترنت.");
+                            // Don't sign out - allow offline usage with cached data
+                            setLoading(false);
+                            return;
+                        }
+                    }
+                    
+                    // Set the user (from server or cache)
+                    setCurrentUser(userProfile);
+                    
+                    // Try to refresh data from server in background (with timeout protection)
+                    // Only if online and not on initial load with cached data
+                    if (navigator.onLine && !hasCachedData) {
+                        try {
+                            // Background refresh with timeout (don't block UI)
+                            const refreshTimeout = setTimeout(() => {
+                                console.warn('Background data refresh timed out');
+                            }, 15000);
+                            
+                            await fetchAllData();
+                            clearTimeout(refreshTimeout);
+                        } catch (refreshErr) {
+                            console.warn('Background refresh failed, using cached data:', refreshErr);
+                            // Don't show error - we have cached data
+                        }
+                    } else if (hasCachedData) {
+                        // If we have cached data, silently try to refresh in background
+                        // Don't wait for it, don't show errors
+                        fetchAllData().catch(err => 
+                            console.warn('Silent background refresh failed:', err)
+                        );
+                    }
+                    
+                } catch (err: any) {
+                    console.error("Auth state change error:", err);
+                    // Don't show technical errors to user if we have cached data
+                    if (!hasCachedData) {
+                        setError(`خطأ في المصادقة. يرجى المحاولة مرة أخرى.`);
+                    }
+                } finally {
+                    // ALWAYS clear loading state
+                    setLoading(false);
+                    
+                    // Mark initial load as complete
+                    if (isInitialLoad) {
+                        setIsInitialLoad(false);
+                    }
+                }
+            } else {
+                // No Supabase session - check for offline session
+                const offlineSession = await getOfflineSession();
+                
+                if (offlineSession && offlineSession.isActive) {
+                    console.log('Found active offline session');
+                    
+                    // Restore user from IndexedDB cache
+                    try {
+                        const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS);
+                        const cachedUser = cachedUsers.find(u => u.id === offlineSession.userId);
+                        
+                        if (cachedUser) {
+                            setCurrentUser(cachedUser);
+                            console.log('User restored from offline session');
+                            
+                            // Load all cached data
+                            await fetchAllData();
+                        } else {
+                            console.warn('Offline session found but no cached user data');
+                            clearData();
+                            setCurrentUser(null);
+                        }
+                    } catch (error) {
+                        console.error('Error restoring offline session:', error);
+                        clearData();
+                        setCurrentUser(null);
+                    }
+                } else {
+                    // No session at all
+                    clearData();
+                    setCurrentUser(null);
+                }
+                
+                setLoading(false);
+                setIsInitialLoad(false);
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, [fetchAllData, clearData, isInitialLoad, users.length, products.length]);
+
+    const handleLogout = useCallback(async () => {
+        try {
+            // Clear offline session (this keeps credentials for next login)
+            await clearOfflineSession();
+            
+            // If online, also sign out from Supabase
+            if (navigator.onLine) {
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    console.error("Error signing out from Supabase:", error);
+                }
+            } else {
+                console.log("Offline logout - session cleared locally");
+            }
+            
+            // Clear app data from state (but keeps IndexedDB cache)
+            clearData();
+            setCurrentUser(null);
+        } catch (error) {
+            console.error("Error during logout:", error);
+        }
+    }, [clearData]);
+
+    const addProduct = useCallback(async (product: Omit<Product, 'id'>) => {
+        const { error } = await supabase.from('products').insert({ id: window.crypto.randomUUID(), name: product.name, is_active: product.isActive });
+        if (error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const updateProduct = useCallback(async (productId: string, updates: Partial<Product>) => {
+        const { error } = await supabase.from('products').update({ name: updates.name, is_active: updates.isActive }).eq('id', productId);
+        if (error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const addDriver = useCallback(async (driver: Omit<Driver, 'id'>) => {
+        const { error } = await supabase.from('drivers').insert({ name: driver.name, plate_number: driver.plateNumber, is_active: driver.isActive });
+        if(error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const updateDriver = useCallback(async (driverId: number, updates: Partial<Driver>) => {
+        const { error } = await supabase.from('drivers').update({ name: updates.name, plate_number: updates.plateNumber, is_active: updates.isActive }).eq('id', driverId);
+        if(error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const deleteDriver = useCallback(async (driverId: number) => {
+        const { error } = await supabase.from('drivers').delete().eq('id', driverId);
+        if(error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const addRegion = useCallback(async (region: Omit<Region, 'id'>) => {
+        const { error } = await supabase.from('regions').insert({ id: window.crypto.randomUUID(), name: region.name, diesel_liter_price: region.dieselLiterPrice, diesel_liters: region.dieselLiters, zaitri_fee: region.zaitriFee });
+        if(error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const updateRegion = useCallback(async (regionId: string, updates: Partial<Region>) => {
+        const { error } = await supabase.from('regions').update({ name: updates.name, diesel_liter_price: updates.dieselLiterPrice, diesel_liters: updates.dieselLiters, zaitri_fee: updates.zaitriFee }).eq('id', regionId);
+        if(error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const deleteRegion = useCallback(async (regionId: string) => {
+        const { error } = await supabase.from('regions').delete().eq('id', regionId);
+        if(error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const addProductPrice = useCallback(async (price: Omit<ProductPrice, 'id'>) => {
+        const { error } = await supabase.from('product_prices').insert({ id: window.crypto.randomUUID(), region_id: price.regionId, product_id: price.productId, price: price.price });
+        if(error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const updateProductPrice = useCallback(async (priceId: string, updates: Partial<ProductPrice>) => {
+        const { error } = await supabase.from('product_prices').update({ price: updates.price }).eq('id', priceId);
+        if(error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const deleteProductPrice = useCallback(async (priceId: string) => {
+        const { error } = await supabase.from('product_prices').delete().eq('id', priceId);
+        if(error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const addShipment = useCallback(async (shipment: Omit<Shipment, 'id'>) => {
+        if (!isOnline) {
+            console.log('Offline: Queuing shipment creation.');
+            // Create a temporary ID for local display
+            const offlineShipment: Shipment = { ...shipment, id: `offline-${crypto.randomUUID()}`, isPendingSync: true };
+            
+            const currentShipments = await IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS);
+            const updatedShipments = [offlineShipment, ...currentShipments]; // Add to top
+            setShipments(updatedShipments);
+            await IndexedDB.saveAllToStore(IndexedDB.STORES.SHIPMENTS, updatedShipments);
+
+            await IndexedDB.addToMutationQueue({ type: 'addShipment', payload: offlineShipment });
+            return;
+        }
+
+        const { products, ...shipmentData } = shipment;
+        // Cast to any to avoid TS error about Partial<Update> not matching Insert required fields
+        const shipmentToInsert = { ...shipmentToRow(shipmentData), id: crypto.randomUUID(), created_by: currentUser?.id } as any;
+        
+        const { data: newShipmentData, error: shipmentError } = await supabase.from('shipments').insert(shipmentToInsert).select().single();
+        if (shipmentError) throw shipmentError;
+        
+        const shipmentProductsToInsert = products.map(p => ({ 
+            shipment_id: newShipmentData.id, 
+            product_id: p.productId, 
+            product_name: p.productName, 
+            carton_count: p.cartonCount, 
+            product_wage_price: p.productWagePrice 
+        }));
+        
+        const { error: productsError } = await supabase.from('shipment_products').insert(shipmentProductsToInsert);
+        if (productsError) { 
+            console.error("Failed to insert products for shipment:", newShipmentData.id, productsError); 
+            // Ideally delete the shipment if product insertion fails to maintain integrity, but for now throwing error.
+            throw productsError; 
+        }
+        
+        await fetchAllData();
+    }, [currentUser, fetchAllData, isOnline]);
+
+    const updateShipment = useCallback(async (shipmentId: string, updates: Partial<Shipment>) => {
+        if (!isOnline) {
+            console.log('Offline: Queuing shipment update.');
+            
+            // Optimistically update local state
+            const updatedShipments = shipments.map(s => 
+                s.id === shipmentId ? { ...s, ...updates } : s
+            );
+            setShipments(updatedShipments);
+            await IndexedDB.saveAllToStore(IndexedDB.STORES.SHIPMENTS, updatedShipments);
+
+            // Queue the mutation
+            await IndexedDB.addToMutationQueue({ type: 'updateShipment', payload: { shipmentId, updates } });
+            return;
+        }
+        const { products, ...shipmentUpdates } = updates;
+        const updateRow = shipmentToRow(shipmentUpdates);
+        const { error } = await supabase.from('shipments').update(updateRow).eq('id', shipmentId);
+        if(error) throw error;
+        await fetchAllData();
+    }, [fetchAllData, isOnline, shipments]);
+    
+    const updateUser = useCallback(async (userId: string, updates: Partial<User>) => {
+        const { error } = await supabase.from('users').update({ is_active: updates.isActive }).eq('id', userId);
+        if (error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const addNotification = useCallback(async (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+         // Notifications are fire-and-forget, mostly relevant for online users.
+         // If offline, we could queue them, but for simplicity we'll skip or only try if online.
+         if (!isOnline) return; 
+        const { error } = await supabase.from('notifications').insert({ id: window.crypto.randomUUID(), timestamp: new Date().toISOString(), message: notification.message, category: notification.category, target_roles: notification.targetRoles, target_user_ids: notification.targetUserIds });
+        if (error) throw error;
+        // Don't refetch all data just for a notification sent
+    }, [isOnline]);
+
+    const markNotificationAsRead = useCallback(async (notificationId: string) => {
+        const originalNotifications = [...notifications];
+        setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
+        if (!isOnline) return; // Optimistic update offline
+        
+        const { error } = await supabase.from('notifications').update({ read: true }).eq('id', notificationId);
+        if (error) {
+            console.error("Failed to mark notification as read:", error);
+            setNotifications(originalNotifications);
+        }
+    }, [notifications, isOnline]);
+
+    const markAllNotificationsAsRead = useCallback(async () => {
+        const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+        if (unreadIds.length === 0) return;
+        const originalNotifications = [...notifications];
+        setNotifications(prev => prev.map(n => unreadIds.includes(n.id) ? { ...n, read: true } : n));
+        
+        if (!isOnline) return; // Optimistic update offline
+
+        const { error } = await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
+        if (error) {
+            console.error("Failed to mark all notifications as read:", error);
+            setNotifications(originalNotifications);
+        }
+    }, [notifications, isOnline]);
+
+    const addUser = useCallback(async (userData: Omit<User, 'id'>, password: string): Promise<User | null> => {
+        try {
+            // Create authentication account
+            const { data, error } = await supabase.auth.signUp({
+                email: `${userData.username}@temp.placeholder`, // Placeholder email format
+                password: password,
+            });
+
+            if (error) {
+                console.error('Error creating auth user:', error);
+                throw error;
+            }
+
+            if (!data.user) {
+                throw new Error('User creation failed: No user returned');
+            }
+
+            // Create user profile in users table
+            const { error: profileError } = await supabase.from('users').insert({
+                id: data.user.id,
+                username: userData.username,
+                role: userData.role,
+                is_active: userData.isActive ?? true,
+            });
+
+            if (profileError) {
+                console.error('Error creating user profile:', profileError);
+                throw profileError;
+            }
+
+            // Refresh data to include new user
+            await fetchAllData();
+
+            const newUser: User = {
+                ...userData,
+                id: data.user.id,
+            };
+
+            return newUser;
+        } catch (err) {
+            console.error('addUser failed:', err);
+            return null;
+        }
+    }, [fetchAllData]);
+    
+    const value = useMemo(() => ({
+        currentUser, handleLogout, users, addUser, updateUser,
+        products, addProduct, updateProduct,
+        drivers, addDriver, updateDriver, deleteDriver,
+        regions, addRegion, updateRegion, deleteRegion,
+        shipments, addShipment, updateShipment,
+        productPrices, addProductPrice, updateProductPrice, deleteProductPrice,
+        notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
+        accountantPrintAccess, setAccountantPrintAccess, isPrintHeaderEnabled, setIsPrintHeaderEnabled,
+        appName, setAppName, companyName, setCompanyName, companyAddress, setCompanyAddress, companyPhone, setCompanyPhone,
+        companyLogo, setCompanyLogo, isTimeWidgetVisible, setIsTimeWidgetVisible,
+        loading, error, isOnline, isSyncing,
+        refreshAllData: fetchAllData,
+    }), [
+        currentUser, handleLogout, users, addUser, updateUser,
+        products, addProduct, updateProduct,
+        drivers, addDriver, updateDriver, deleteDriver,
+        regions, addRegion, updateRegion, deleteRegion,
+        shipments, addShipment, updateShipment,
+        productPrices, addProductPrice, updateProductPrice, deleteProductPrice,
+        notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
+        accountantPrintAccess, isPrintHeaderEnabled, appName, companyName, companyAddress, companyPhone, companyLogo, isTimeWidgetVisible,
+        loading, error, isOnline, isSyncing, setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible,
+        fetchAllData
+    ]);
+
+    return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+};
+
+export const useAppContext = () => {
+    const context = useContext(AppContext);
+    if (context === undefined) {
+        throw new Error('useAppContext must be used within an AppProvider');
+    }
+    return context;
+};

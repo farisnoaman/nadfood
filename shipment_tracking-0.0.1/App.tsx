@@ -1,0 +1,165 @@
+
+import React, { useEffect, useState, useRef } from 'react';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
+import { AppProvider, useAppContext } from './context/AppContext';
+import { Role } from './types';
+import Login from './components/auth/Login';
+import SalesDashboard from './components/sales/SalesDashboard';
+import AccountantDashboard from './components/accountant/AccountantDashboard';
+import AdminDashboard from './components/admin/AdminDashboard';
+import Layout from './components/layout/Layout';
+import SyncStatusIndicator from './components/common/SyncStatusIndicator';
+import { Icons } from './components/Icons';
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[] }> = ({ children, allowedRoles }) => {
+    const { currentUser } = useAppContext();
+
+    if (!currentUser) {
+        return <Navigate to="/login" />;
+    }
+    if (!allowedRoles.includes(currentUser.role)) {
+        return <Navigate to="/login" />;
+    }
+    return <>{children}</>;
+};
+
+const AppRoutes: React.FC = () => {
+    const { currentUser, loading, error } = useAppContext();
+    const [loadingTimeout, setLoadingTimeout] = useState(false);
+    const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // CRITICAL: Add safety timeout to prevent infinite loading
+    useEffect(() => {
+        if (loading) {
+            // Set a maximum loading time of 10 seconds (reduced for better UX)
+            loadingTimeoutRef.current = setTimeout(() => {
+                console.warn('Loading timeout reached - forcing navigation to login');
+                setLoadingTimeout(true);
+                // Force reload to try to resolve loading issues
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            }, 10000);
+        } else {
+            // Clear timeout when loading completes
+            if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+                loadingTimeoutRef.current = null;
+            }
+            setLoadingTimeout(false);
+        }
+
+        return () => {
+            if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+            }
+        };
+    }, [loading]);
+
+    // If loading times out, show the login screen
+    if (loadingTimeout && loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-secondary-100 dark:bg-secondary-900">
+                <div className="flex flex-col items-center text-center p-4">
+                    <Icons.AlertTriangle className="h-16 w-16 text-amber-500" />
+                    <p className="mt-4 text-lg font-semibold text-secondary-700 dark:text-secondary-300">
+                        انتهت مهلة تحميل البيانات
+                    </p>
+                    <p className="mt-2 text-sm text-secondary-500 dark:text-secondary-400">
+                        يرجى التحقق من الاتصال بالإنترنت
+                    </p>
+                    <button 
+                        onClick={() => {
+                            // Clear browser cache and reload
+                            window.location.reload();
+                        }}
+                        className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                        إعادة المحاولة
+                    </button>
+                    <button 
+                        onClick={() => {
+                            // Clear IndexedDB and localStorage to reset the app
+                            if ('indexedDB' in window) {
+                                indexedDB.deleteDatabase('ShipmentTrackerDB');
+                            }
+                            localStorage.clear();
+                            window.location.reload();
+                        }}
+                        className="mt-2 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        إعادة تعيين التطبيق
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-secondary-100 dark:bg-secondary-900">
+                <div className="flex flex-col items-center">
+                    <Icons.Truck className="h-16 w-16 text-primary-600 animate-pulse" />
+                    <p className="mt-4 text-lg font-semibold text-secondary-700 dark:text-secondary-300">جاري تحميل البيانات...</p>
+                </div>
+            </div>
+        );
+    }
+    
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-red-50 dark:bg-red-900/50">
+                <div className="text-center p-8">
+                    <Icons.AlertTriangle className="h-12 w-12 text-red-500 mx-auto" />
+                    <h2 className="mt-4 text-xl font-bold text-red-800 dark:text-red-200">حدث خطأ في الاتصال</h2>
+                    <p className="mt-2 text-red-600 dark:text-red-300">{error}</p>
+                    <p className="mt-2 text-sm text-secondary-500">يرجى التحقق من إعدادات Supabase أو الاتصال بالدعم الفني.</p>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className={`min-h-screen bg-secondary-100 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-200 transition-colors duration-300`}>
+            <HashRouter>
+                <Routes>
+                    <Route path="/login" element={!currentUser ? <Login /> : <Navigate to="/" />} />
+                    <Route path="/*" element={
+                        <Layout>
+                            {!currentUser ? <Navigate to="/login" /> : (
+                                <>
+                                    <Routes>
+                                        <Route path="/" element={
+                                            <>
+                                                {currentUser.role === Role.SALES && <Navigate to="/sales" />}
+                                                {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
+                                                {currentUser.role === Role.ADMIN && <Navigate to="/admin" />}
+                                            </>
+                                        } />
+                                        <Route path="/sales/*" element={<ProtectedRoute allowedRoles={[Role.SALES]}><SalesDashboard /></ProtectedRoute>} />
+                                        <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
+                                        <Route path="/admin/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN]}><AdminDashboard /></ProtectedRoute>} />
+                                    </Routes>
+                                    {/* Sync Status Indicator - shown when logged in */}
+                                    <SyncStatusIndicator />
+                                </>
+                            )}
+                        </Layout>
+                    } />
+                </Routes>
+            </HashRouter>
+        </div>
+    );
+};
+
+
+const App: React.FC = () => (
+    <ThemeProvider>
+        <AppProvider>
+            <AppRoutes />
+        </AppProvider>
+    </ThemeProvider>
+);
+
+export default App;
