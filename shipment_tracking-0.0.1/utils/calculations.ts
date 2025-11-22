@@ -1,5 +1,5 @@
 
-import { Shipment, Region, ShipmentProduct, ProductPrice } from '../types';
+import { Shipment, Region, ProductPrice } from '../types';
 
 /**
  * Calculates the initial financial values for a new shipment based on sales data.

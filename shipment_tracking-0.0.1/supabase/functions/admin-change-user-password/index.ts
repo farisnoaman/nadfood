@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     );
 
     // Update the user's password
-    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
       { password: newPassword }
     );

@@ -107,75 +107,17 @@ export const getAllFromStore = async <T>(storeName: string): Promise<T[]> => {
       const store = transaction.objectStore(storeName);
       const request = store.getAll();
 
-      request.onsuccess = () => resolve(request.result as T[]);
-      request.onerror = () => {
-        console.error(`Error getting all from ${storeName}:`, request.error);
-        reject(request.error);
-      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error(`Error in getAllFromStore for ${storeName}:`, error);
-    return [];
-  }
-};
-
-/**
- * Save multiple records to a store (bulk operation)
- */
-export const saveAllToStore = async <T>(storeName: string, data: T[]): Promise<void> => {
-  try {
-    const db = await initDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-
-      // Clear existing data first
-      const clearRequest = store.clear();
-
-      clearRequest.onsuccess = () => {
-        // Add all new records
-        let completed = 0;
-        const total = data.length;
-
-        if (total === 0) {
-          resolve();
-          return;
-        }
-
-        data.forEach((item) => {
-          const addRequest = store.add(item);
-
-          addRequest.onsuccess = () => {
-            completed++;
-            if (completed === total) {
-              resolve();
-            }
-          };
-
-          addRequest.onerror = () => {
-            console.error(`Error adding item to ${storeName}:`, addRequest.error);
-            // Continue even if one item fails
-            completed++;
-            if (completed === total) {
-              resolve();
-            }
-          };
-        });
-      };
-
-      clearRequest.onerror = () => {
-        console.error(`Error clearing ${storeName}:`, clearRequest.error);
-        reject(clearRequest.error);
-      };
-    });
-  } catch (error) {
-    console.error(`Error in saveAllToStore for ${storeName}:`, error);
+    console.error(`Error getting all from ${storeName}:`, error);
     throw error;
   }
 };
 
 /**
- * Get a single record by key
+ * Get a single record from a store by key
  */
 export const getFromStore = async <T>(storeName: string, key: string | number): Promise<T | null> => {
   try {
@@ -185,22 +127,19 @@ export const getFromStore = async <T>(storeName: string, key: string | number): 
       const store = transaction.objectStore(storeName);
       const request = store.get(key);
 
-      request.onsuccess = () => resolve(request.result as T || null);
-      request.onerror = () => {
-        console.error(`Error getting from ${storeName}:`, request.error);
-        reject(request.error);
-      };
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error(`Error in getFromStore for ${storeName}:`, error);
-    return null;
+    console.error(`Error getting from ${storeName}:`, error);
+    throw error;
   }
 };
 
 /**
- * Save a single record to a store
+ * Save a record to a store
  */
-export const saveToStore = async <T>(storeName: string, data: T): Promise<void> => {
+export const saveToStore = async (storeName: string, data: any): Promise<void> => {
   try {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -209,19 +148,16 @@ export const saveToStore = async <T>(storeName: string, data: T): Promise<void> 
       const request = store.put(data);
 
       request.onsuccess = () => resolve();
-      request.onerror = () => {
-        console.error(`Error saving to ${storeName}:`, request.error);
-        reject(request.error);
-      };
+      request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error(`Error in saveToStore for ${storeName}:`, error);
+    console.error(`Error saving to ${storeName}:`, error);
     throw error;
   }
 };
 
 /**
- * Delete a single record from a store
+ * Delete a record from a store by key
  */
 export const deleteFromStore = async (storeName: string, key: string | number): Promise<void> => {
   try {
@@ -232,19 +168,16 @@ export const deleteFromStore = async (storeName: string, key: string | number): 
       const request = store.delete(key);
 
       request.onsuccess = () => resolve();
-      request.onerror = () => {
-        console.error(`Error deleting from ${storeName}:`, request.error);
-        reject(request.error);
-      };
+      request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error(`Error in deleteFromStore for ${storeName}:`, error);
+    console.error(`Error deleting from ${storeName}:`, error);
     throw error;
   }
 };
 
 /**
- * Clear all data from a store
+ * Clear all records from a store
  */
 export const clearStore = async (storeName: string): Promise<void> => {
   try {
@@ -255,35 +188,50 @@ export const clearStore = async (storeName: string): Promise<void> => {
       const request = store.clear();
 
       request.onsuccess = () => resolve();
-      request.onerror = () => {
-        console.error(`Error clearing ${storeName}:`, request.error);
-        reject(request.error);
-      };
+      request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error(`Error in clearStore for ${storeName}:`, error);
+    console.error(`Error clearing ${storeName}:`, error);
     throw error;
   }
 };
 
 /**
- * Get/Set settings (key-value pairs)
+ * Save all records to a store (replaces existing data)
  */
-export const getSetting = async <T>(key: string, defaultValue: T): Promise<T> => {
+export const saveAllToStore = async (storeName: string, data: any[]): Promise<void> => {
   try {
-    const result = await getFromStore<{ key: string; value: T }>(STORES.SETTINGS, key);
-    return result ? result.value : defaultValue;
-  } catch (error) {
-    console.error(`Error getting setting ${key}:`, error);
-    return defaultValue;
-  }
-};
+    await clearStore(storeName);
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
 
-export const setSetting = async <T>(key: string, value: T): Promise<void> => {
-  try {
-    await saveToStore(STORES.SETTINGS, { key, value });
+      let completed = 0;
+      const total = data.length;
+
+      if (total === 0) {
+        resolve();
+        return;
+      }
+
+      data.forEach((item) => {
+        const request = store.put(item);
+        request.onsuccess = () => {
+          completed++;
+          if (completed === total) {
+            resolve();
+          }
+        };
+        request.onerror = () => {
+          console.error('Error saving item to store:', request.error);
+          reject(request.error);
+        };
+      });
+    });
   } catch (error) {
-    console.error(`Error setting ${key}:`, error);
+    console.error(`Error saving all to ${storeName}:`, error);
+    throw error;
   }
 };
 
@@ -331,7 +279,7 @@ export const setMutationQueue = async (queue: any[]): Promise<void> => {
   try {
     await clearMutationQueue();
     const db = await initDB();
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const transaction = db.transaction(STORES.MUTATION_QUEUE, 'readwrite');
       const store = transaction.objectStore(STORES.MUTATION_QUEUE);
 
@@ -365,6 +313,27 @@ export const setMutationQueue = async (queue: any[]): Promise<void> => {
   } catch (error) {
     console.error('Error in setMutationQueue:', error);
     throw error;
+  }
+};
+
+/**
+ * Settings operations
+ */
+export const getSetting = async <T>(key: string, defaultValue: T): Promise<T> => {
+  try {
+    const result = await getFromStore<{ key: string; value: T }>(STORES.SETTINGS, key);
+    return result ? result.value : defaultValue;
+  } catch (error) {
+    console.error(`Error getting setting ${key}:`, error);
+    return defaultValue;
+  }
+};
+
+export const setSetting = async <T>(key: string, value: T): Promise<void> => {
+  try {
+    await saveToStore(STORES.SETTINGS, { key, value });
+  } catch (error) {
+    console.error(`Error setting setting ${key}:`, error);
   }
 };
 

@@ -20,6 +20,7 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
     products,
     regions,
     drivers,
+    productPrices,
     addNotification
   } = useAppContext();
 
@@ -133,10 +134,9 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
     try {
       // Recalculate all values based on updated data
       const calculatedValues = calculateInitialShipmentValues(
-        currentShipment.products || [],
-        products,
+        currentShipment,
         regions,
-        currentShipment.regionId
+        productPrices
       );
 
       const updatedShipment: Shipment = {

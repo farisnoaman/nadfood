@@ -152,7 +152,7 @@ const ProductInputRow: React.FC<{
             value={product.cartonCount || ''} 
             onChange={e => {
               const val = e.target.value;
-              onProductChange(index, 'cartonCount', val === '' ? '' as any : Math.max(1, Number(val)));
+              onProductChange(index, 'cartonCount', val === '' ? 0 : Math.max(1, Number(val)));
             }}
             placeholder="أدخل العدد"
           />
@@ -195,8 +195,8 @@ const NewShipmentForm: React.FC = () => {
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
   const [salesOrder, setSalesOrder] = useState('');
   const [regionId, setRegionId] = useState(regions[0]?.id || '');
-  const [driverId, setDriverId] = useState<number | ''>('');
-  const [selectedProducts, setSelectedProducts] = useState<ShipmentProduct[]>([{ productId: '', productName: '', cartonCount: '' as any }]);
+  const [driverId, setDriverId] = useState<number>(0);
+  const [selectedProducts, setSelectedProducts] = useState<ShipmentProduct[]>([{ productId: '', productName: '', cartonCount: 0 }]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -241,7 +241,7 @@ const NewShipmentForm: React.FC = () => {
     // Sanitize sales order input
     const sanitizedSalesOrder = sanitizeInput(salesOrder);
 
-    if (!orderDate || !sanitizedSalesOrder || !regionId || !driverId || selectedProducts.some(p => !p.productId || p.cartonCount <= 0)) {
+    if (!orderDate || !sanitizedSalesOrder || !regionId || driverId === 0 || selectedProducts.some(p => !p.productId || p.cartonCount <= 0)) {
         setError('يرجى ملء جميع الحقول المطلوبة والتأكد من أن عدد الكراتين أكبر من صفر.');
         setSubmitting(false);
         return;
@@ -334,7 +334,7 @@ const NewShipmentForm: React.FC = () => {
         // Reset the form
         setSalesOrder('');
         setRegionId(regions[0]?.id || '');
-        setDriverId('');
+        setDriverId(0);
         setSelectedProducts([{ productId: '', productName: '', cartonCount: 0 }]);
 
     } catch (err: any) {
@@ -375,7 +375,7 @@ const NewShipmentForm: React.FC = () => {
                   label="اسم السائق"
                   drivers={activeDrivers}
                   value={driverId}
-                  onChange={(val) => setDriverId(val)}
+                  onChange={(val) => setDriverId(Number(val))}
               />
               {driverId && (
                   <Input label="رقم اللوحة" type="text" value={getSelectedDriver()?.plateNumber || ''} readOnly disabled />

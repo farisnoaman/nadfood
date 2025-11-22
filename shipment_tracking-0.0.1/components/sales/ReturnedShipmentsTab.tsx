@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Shipment, ShipmentStatus } from '../../types';
+import React from 'react';
+import { Shipment } from '../../types';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
@@ -135,45 +135,10 @@ const ReturnedShipmentsTab: React.FC<ReturnedShipmentsTabProps> = ({
                       </p>
                     </div>
                     
-                    <div>
-                      <label className="text-xs font-medium text-secondary-500 dark:text-secondary-400">
-                        اسم المستقبل
-                      </label>
-                      <p className="text-sm text-secondary-800 dark:text-secondary-200">
-                        {shipment.receiverName || 'غير محدد'}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="text-xs font-medium text-secondary-500 dark:text-secondary-400">
-                        رقم المستقبل
-                      </label>
-                      <p className="text-sm text-secondary-800 dark:text-secondary-200">
-                        {shipment.receiverPhone || 'غير محدد'}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="text-xs font-medium text-secondary-500 dark:text-secondary-400">
-                        تاريخ الإرجاع
-                      </label>
-                      <p className="text-sm text-secondary-800 dark:text-secondary-200">
-                        {shipment.updatedAt ? new Date(shipment.updatedAt).toLocaleDateString('ar-SA') : 'غير محدد'}
-                      </p>
-                    </div>
+
                   </div>
 
-                  {/* Address */}
-                  {shipment.deliveryAddress && (
-                    <div className="mb-4">
-                      <label className="text-xs font-medium text-secondary-500 dark:text-secondary-400">
-                        عنوان التسليم
-                      </label>
-                      <p className="text-sm text-secondary-800 dark:text-secondary-200 bg-secondary-50 dark:bg-secondary-700 p-2 rounded">
-                        {shipment.deliveryAddress}
-                      </p>
-                    </div>
-                  )}
+
 
                   {/* Actions */}
                   <div className="flex justify-end border-t border-secondary-200 dark:border-secondary-700 pt-4">
@@ -211,7 +176,7 @@ const ReturnedShipmentsTab: React.FC<ReturnedShipmentsTabProps> = ({
           الحقول القابلة للتعديل
         </h4>
         <p className="text-sm text-blue-600 dark:text-blue-300">
-          يمكنك تعديل: رقم الطلب، المنطقة، السائق، اسم المستقبل، رقم المستقبل، عنوان التسليم، والمبلغ المطلوب
+          يمكنك تعديل: رقم الطلب، المنطقة، السائق، والمنتجات
         </p>
       </Card>
     </div>

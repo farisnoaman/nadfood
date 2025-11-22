@@ -53,31 +53,35 @@ const downloadCSV = (csvContent: string, filename: string): void => {
 /**
  * Export shipments to CSV
  */
-export const exportShipmentsToCSV = (shipments: Shipment[]): void => {
-  const data = shipments.map(s => ({
-    'رقم أمر المبيعات': s.salesOrder,
-    'التاريخ': formatDateForDisplay(s.orderDate),
-    'المنطقة': s.regionName,
-    'السائق': s.driverName,
-    'الحالة': s.status,
-    'إجمالي الديزل': s.totalDiesel,
-    'إجمالي الأجرة': s.totalWage,
-    'رسوم الزيتري': s.zaitriFee,
-    'مصروفات الإدارة': s.adminExpenses,
-    'المبلغ المستحق': s.dueAmount,
-    'قيمة التالف': s.damagedValue,
-    'قيمة العجز': s.shortageValue,
-    'مصروفات الطريق': s.roadExpenses,
-    'المبلغ المستحق بعد الخصم': s.dueAmountAfterDiscount,
-    'مبالغ أخرى': s.otherAmounts,
-    'سندات التحسين': s.improvementBonds,
-    'بدل مسائي': s.eveningAllowance,
-    'إجمالي المبلغ المستحق': s.totalDueAmount,
-    'نسبة الضريبة': s.taxRate,
-    'إجمالي الضريبة': s.totalTax,
-    'رقم الحوالة': s.transferNumber || '',
-    'تاريخ الحوالة': formatDateForDisplay(s.transferDate),
-  }));
+export const exportShipmentsToCSV = (shipments: Shipment[], regions: Region[], drivers: Driver[]): void => {
+  const data = shipments.map(s => {
+    const region = regions.find(r => r.id === s.regionId);
+    const driver = drivers.find(d => d.id === s.driverId);
+    return {
+      'رقم أمر المبيعات': s.salesOrder,
+      'التاريخ': formatDateForDisplay(s.orderDate),
+      'المنطقة': region?.name || 'غير معروف',
+      'السائق': driver?.name || 'غير معروف',
+      'الحالة': s.status,
+      'إجمالي الديزل': s.totalDiesel,
+      'إجمالي الأجرة': s.totalWage,
+      'رسوم الزيتري': s.zaitriFee,
+      'مصروفات الإدارة': s.adminExpenses,
+      'المبلغ المستحق': s.dueAmount,
+      'قيمة التالف': s.damagedValue,
+      'قيمة العجز': s.shortageValue,
+      'مصروفات الطريق': s.roadExpenses,
+      'المبلغ المستحق بعد الخصم': s.dueAmountAfterDiscount,
+      'مبالغ أخرى': s.otherAmounts,
+      'سندات التحسين': s.improvementBonds,
+      'بدل مسائي': s.eveningAllowance,
+      'إجمالي المبلغ المستحق': s.totalDueAmount,
+      'نسبة الضريبة': s.taxRate,
+      'إجمالي الضريبة': s.totalTax,
+      'رقم الحوالة': s.transferNumber || '',
+      'تاريخ الحوالة': formatDateForDisplay(s.transferDate),
+    };
+  });
   
   const headers = Object.keys(data[0] || {});
   const csvContent = arrayToCSV(data, headers);
@@ -171,17 +175,23 @@ export const exportProductPricesToCSV = (
  */
 export const exportFilteredShipments = (
   shipments: Shipment[],
-  filterName: string
+  filterName: string,
+  regions: Region[],
+  drivers: Driver[]
 ): void => {
-  const data = shipments.map(s => ({
-    'رقم أمر المبيعات': s.salesOrder,
-    'التاريخ': formatDateForDisplay(s.orderDate),
-    'المنطقة': s.regionName,
-    'السائق': s.driverName,
-    'الحالة': s.status,
-    'إجمالي المبلغ المستحق': s.totalDueAmount,
-    'رقم الحوالة': s.transferNumber || '',
-  }));
+  const data = shipments.map(s => {
+    const region = regions.find(r => r.id === s.regionId);
+    const driver = drivers.find(d => d.id === s.driverId);
+    return {
+      'رقم أمر المبيعات': s.salesOrder,
+      'التاريخ': formatDateForDisplay(s.orderDate),
+      'المنطقة': region?.name || 'غير معروف',
+      'السائق': driver?.name || 'غير معروف',
+      'الحالة': s.status,
+      'إجمالي المبلغ المستحق': s.totalDueAmount,
+      'رقم الحوالة': s.transferNumber || '',
+    };
+  });
   
   const headers = Object.keys(data[0] || {});
   const csvContent = arrayToCSV(data, headers);

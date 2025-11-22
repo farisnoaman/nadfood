@@ -59,8 +59,8 @@ interface AccountantShipmentModalProps {
 }
 
 const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipment, isOpen, onClose, isEditable }) => {
-  const { 
-    updateShipment, addNotification, accountantPrintAccess, drivers, regions, productPrices,
+  const {
+    updateShipment, addNotification, accountantPrintAccess, drivers, productPrices,
     isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, currentUser
   } = useAppContext();
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });

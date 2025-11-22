@@ -4,9 +4,7 @@ import { useAppContext } from '../../context/AppContext';
 import NewShipmentForm from './NewShipmentForm';
 import FleetShipmentModal from './FleetShipmentModal';
 import ReturnedShipmentsTab from './ReturnedShipmentsTab';
-import Card from '../common/Card';
-import Badge from '../common/Badge';
-import Button from '../common/Button';
+
 import { IconsWithFallback } from '../Icons';
 
 type Tab = 'create' | 'returned';

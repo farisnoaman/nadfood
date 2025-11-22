@@ -10,7 +10,7 @@
  * Log to console only in development mode
  */
 export const devLog = (...args: any[]): void => {
-  if (import.meta.env.DEV) {
+  if ((import.meta as any).env.DEV) {
     console.log(...args);
   }
 };
@@ -19,7 +19,7 @@ export const devLog = (...args: any[]): void => {
  * Log warnings only in development mode
  */
 export const devWarn = (...args: any[]): void => {
-  if (import.meta.env.DEV) {
+  if ((import.meta as any).env.DEV) {
     console.warn(...args);
   }
 };
@@ -35,7 +35,7 @@ export const devError = (...args: any[]): void => {
  * Log debug information with timestamp
  */
 export const devDebug = (context: string, ...args: any[]): void => {
-  if (import.meta.env.DEV) {
+  if ((import.meta as any).env.DEV) {
     const timestamp = new Date().toISOString();
     console.log(`[DEBUG ${timestamp}] [${context}]`, ...args);
   }
@@ -45,7 +45,7 @@ export const devDebug = (context: string, ...args: any[]): void => {
  * Log performance metrics
  */
 export const devPerf = (label: string, callback: () => void): void => {
-  if (import.meta.env.DEV) {
+  if ((import.meta as any).env.DEV) {
     console.time(label);
     callback();
     console.timeEnd(label);
@@ -70,7 +70,7 @@ export const createLogger = (moduleName: string) => {
  * Log API requests/responses in development
  */
 export const logAPICall = (method: string, endpoint: string, data?: any, response?: any): void => {
-  if (import.meta.env.DEV) {
+  if ((import.meta as any).env.DEV) {
     console.group(`🌐 API ${method} ${endpoint}`);
     if (data) console.log('Request:', data);
     if (response) console.log('Response:', response);
@@ -82,7 +82,7 @@ export const logAPICall = (method: string, endpoint: string, data?: any, respons
  * Log state changes in development
  */
 export const logStateChange = (stateName: string, oldValue: any, newValue: any): void => {
-  if (import.meta.env.DEV) {
+  if ((import.meta as any).env.DEV) {
     console.group(`📊 State Change: ${stateName}`);
     console.log('Old:', oldValue);
     console.log('New:', newValue);

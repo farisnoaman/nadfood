@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Shipment, ShipmentStatus, Driver, Region } from '../../types';
+import { Shipment, ShipmentStatus } from '../../types';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import Input from '../common/Input';

@@ -46,6 +46,7 @@ const regionFromRow = (row: RegionRow): Region => ({
     dieselLiterPrice: row.diesel_liter_price,
     dieselLiters: row.diesel_liters,
     zaitriFee: row.zaitri_fee,
+    roadExpenses: (row as any).road_expenses || 0,
 });
 
 const shipmentFromRow = (row: ShipmentRow, products: ShipmentProduct[]): Shipment => ({
