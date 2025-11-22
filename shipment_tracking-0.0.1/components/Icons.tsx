@@ -13,7 +13,8 @@ import {
 const validateIcon = (icon: any, name: string) => {
     if (!icon || typeof icon !== 'function') {
         console.warn(`Invalid icon: ${name}`, icon);
-        return null;
+        // Return a fallback div instead of null to prevent React errors
+        return ({ className }: { className?: string }) => <div className={className} title={`Icon ${name} not found`} />;
     }
     return icon;
 };

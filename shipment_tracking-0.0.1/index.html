@@ -110,26 +110,36 @@
         }, 1000);
       });
       
-      // Monitor for dynamically added elements
-      const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-          mutation.addedNodes.forEach(function(node) {
-            if (node.nodeType === 1) { // Element node
-              setArabicDateInputs();
-              
-              // Check if it's a date picker button
-              if (node.textContent && (node.textContent.includes('OK') || node.textContent.includes('Ok') || node.textContent.includes('ok'))) {
-                node.textContent = node.textContent.replace(/ok/gi, 'موافق');
-              }
-            }
-          });
-        });
-      });
-      
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
+       // Monitor for dynamically added elements
+       function setupObserver() {
+         if (!document.body) {
+           // Wait for body to be available
+           document.addEventListener('DOMContentLoaded', setupObserver);
+           return;
+         }
+
+         const observer = new MutationObserver(function(mutations) {
+           mutations.forEach(function(mutation) {
+             mutation.addedNodes.forEach(function(node) {
+               if (node.nodeType === 1) { // Element node
+                 setArabicDateInputs();
+
+                 // Check if it's a date picker button
+                 if (node.textContent && (node.textContent.includes('OK') || node.textContent.includes('Ok') || node.textContent.includes('ok'))) {
+                   node.textContent = node.textContent.replace(/ok/gi, 'موافق');
+                 }
+               }
+             });
+           });
+         });
+
+         observer.observe(document.body, {
+           childList: true,
+           subtree: true
+         });
+       }
+
+       setupObserver();
     </script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
@@ -138,18 +148,34 @@
         -webkit-tap-highlight-color: transparent;
       }
     </style>
-  <script type="importmap">
+    <!-- Clear service worker in development -->
+    <script>
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Clear any existing service workers in development
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(registration => {
+              registration.unregister();
+              console.log('Development: Unregistered service worker');
+            });
+          });
+          
+          // Clear caches
+          if ('caches' in window) {
+            caches.keys().then(cacheNames => {
+              cacheNames.forEach(cacheName => {
+                caches.delete(cacheName);
+                console.log('Development: Deleted cache:', cacheName);
+              });
+            });
+          }
+        }
+      }
+    </script>
+    
+    <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react/": "https://esm.sh/react@18.2.0/",
-    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
-    "react/jsx-dev-runtime": "https://esm.sh/react@18.2.0/jsx-dev-runtime",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/": "https://esm.sh/react-dom@18.2.0/",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?external=react",
-    "lucide-react": "https://esm.sh/lucide-react@0.378.0?external=react",
     "jspdf": "https://esm.sh/jspdf@2.5.1",
     "html2canvas": "https://esm.sh/html2canvas@1.4.1",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"

@@ -18,7 +18,17 @@ const SyncStatusIndicator: React.FC = () => {
       setSyncStatus(status);
     });
 
-    return () => unsubscribe();
+    // Listen for online/offline status changes
+    const handleOnlineStatus = (event: CustomEvent) => {
+      setSyncStatus(prev => ({ ...prev, isOnline: event.detail.online }));
+    };
+
+    window.addEventListener('app-online-status', handleOnlineStatus as EventListener);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('app-online-status', handleOnlineStatus as EventListener);
+    };
   }, []);
 
   const handleManualSync = async () => {

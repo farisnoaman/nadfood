@@ -28,6 +28,15 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const requestUrl = new URL(event.request.url);
 
+  // Skip caching for Vite development assets and HMR
+  if (requestUrl.pathname.includes('@vite') || 
+      requestUrl.pathname.includes('@react-refresh') ||
+      requestUrl.pathname.includes('hot-update') ||
+      requestUrl.search.includes('t=') && requestUrl.pathname.includes('.tsx')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   // Always go to the network for Supabase API calls to ensure freshness or fail if offline (handled by AppContext).
   // Caching API calls in SW can lead to complex stale data issues.
   if (requestUrl.origin.includes('supabase.co')) {
@@ -35,14 +44,19 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For navigation requests (e.g., loading the app), use a cache-first strategy.
-  // This ensures the SPA loads even if offline.
+  // For navigation requests (e.g., loading the app), always serve index.html for SPA routing
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match(event.request)
-        .then(response => {
-          return response || fetch(event.request).catch(() => caches.match('/index.html'));
-        })
+      fetch(event.request).catch(() => {
+        // If network fails, try to serve from cache first
+        return caches.match(event.request).then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // Fallback to cached index.html for any navigation
+          return caches.match('/index.html');
+        });
+      })
     );
     return;
   }
@@ -57,11 +71,12 @@ self.addEventListener('fetch', event => {
         // Not in cache, fetch from network
         return fetch(event.request).then(
           networkResponse => {
-            // Don't cache third-party scripts from CDNs automatically unless needed, 
-            // but generally we want to cache everything for full offline PWA.
-            // We exclude opaque responses mostly, but for ESM/Fonts we might want them.
-            // Here we just ensure it's valid.
-            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type === 'error') {
+            // Don't cache non-successful responses or development assets
+            if (!networkResponse || 
+                networkResponse.status !== 200 || 
+                networkResponse.type === 'error' ||
+                requestUrl.pathname.includes('@vite') ||
+                requestUrl.pathname.includes('@react-refresh')) {
               return networkResponse;
             }
 
@@ -70,6 +85,10 @@ self.addEventListener('fetch', event => {
             caches.open(CACHE_NAME)
               .then(cache => {
                 cache.put(event.request, responseToCache);
+              })
+              .catch(err => {
+                // Ignore cache errors for development
+                console.warn('Cache put failed:', err);
               });
             return networkResponse;
           }
@@ -77,7 +96,12 @@ self.addEventListener('fetch', event => {
       })
       .catch(() => {
         // Fallback for when both cache and network fail
-        // Can return a fallback image here if needed.
+        // For images, return a placeholder
+        if (event.request.destination === 'image') {
+          return new Response('<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#ccc"/><text x="50%" y="50%" text-anchor="middle" dy=".3em">No Image</text></svg>', {
+            headers: { 'Content-Type': 'image/svg+xml' }
+          });
+        }
       })
   );
 });

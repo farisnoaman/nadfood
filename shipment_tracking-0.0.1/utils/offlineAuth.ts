@@ -119,11 +119,13 @@ export const validateOfflineCredentials = async (
     const credentials = await getFromStore<OfflineCredentials>(AUTH_STORE, AUTH_KEYS.CREDENTIALS);
     
     if (!credentials) {
+      console.log('No offline credentials found');
       return { valid: false };
     }
     
-    // Check if email matches
+    // Check if email matches (case insensitive)
     if (credentials.email !== email.toLowerCase()) {
+      console.log('Email mismatch:', { stored: credentials.email, provided: email.toLowerCase() });
       return { valid: false };
     }
     
@@ -131,6 +133,7 @@ export const validateOfflineCredentials = async (
     const passwordHash = await hashPassword(password, email.toLowerCase());
     
     if (credentials.passwordHash !== passwordHash) {
+      console.log('Password hash mismatch');
       return { valid: false };
     }
     
@@ -140,6 +143,8 @@ export const validateOfflineCredentials = async (
     
     // Get cached user profile
     const userProfile = await getFromStore<CachedUserProfile>(AUTH_STORE, AUTH_KEYS.USER_PROFILE);
+    
+    console.log('Offline credentials validated successfully', { userId: credentials.userId });
     
     return {
       valid: true,
@@ -173,7 +178,7 @@ export const createOfflineSession = async (userId: string, email: string): Promi
     };
     
     await saveToStore(AUTH_STORE, session);
-    console.log('Offline session created');
+    console.log('Offline session created successfully', { userId, email, expiresAt: expiresAt.toISOString() });
   } catch (error) {
     console.error('Error creating offline session:', error);
     throw error;

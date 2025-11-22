@@ -323,10 +323,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
 
     const fetchAllData = useCallback(async () => {
-        if (!navigator.onLine) {
-            console.log("Offline mode: Skipping fetch.");
-            return;
+        const isOnline = navigator.onLine;
+        
+        if (!isOnline) {
+            console.log("Offline mode: Loading from cache only");
+            // Load from IndexedDB cache
+            try {
+                const [
+                    cachedUsers,
+                    cachedProducts,
+                    cachedDrivers,
+                    cachedRegions,
+                    cachedShipments,
+                    cachedPrices,
+                    cachedNotifications
+                ] = await Promise.all([
+                    IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
+                    IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
+                    IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
+                    IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
+                    IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
+                    IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
+                    IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
+                ]);
+
+                if (cachedUsers.length > 0) setUsers(cachedUsers);
+                if (cachedProducts.length > 0) setProducts(cachedProducts);
+                if (cachedDrivers.length > 0) setDrivers(cachedDrivers);
+                if (cachedRegions.length > 0) setRegions(cachedRegions);
+                if (cachedShipments.length > 0) setShipments(cachedShipments);
+                if (cachedPrices.length > 0) setProductPrices(cachedPrices);
+                if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
+                
+                console.log('Offline data loaded from cache');
+                return;
+            } catch (cacheErr) {
+                console.error('Error loading cached data:', cacheErr);
+                throw new Error('OFFLINE_CACHE_ERROR');
+            }
         }
+        
+        // ONLINE MODE: Fetch from server
         setError(null);
         
         // Create abort controller for timeout (reduced to 20 seconds for better UX)
@@ -390,11 +427,76 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             
             // Check if error is due to timeout/network issues
             if (err.name === 'AbortError') {
-                console.warn('Data fetch timeout - will use cached data');
-                // Don't set error - the caller will handle it
+                console.warn('Data fetch timeout - falling back to cache');
+                // Try to load from cache as fallback
+                try {
+                    const [
+                        cachedUsers,
+                        cachedProducts,
+                        cachedDrivers,
+                        cachedRegions,
+                        cachedShipments,
+                        cachedPrices,
+                        cachedNotifications
+                    ] = await Promise.all([
+                        IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
+                        IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
+                        IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
+                        IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
+                        IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
+                        IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
+                        IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
+                    ]);
+
+                    if (cachedUsers.length > 0) setUsers(cachedUsers);
+                    if (cachedProducts.length > 0) setProducts(cachedProducts);
+                    if (cachedDrivers.length > 0) setDrivers(cachedDrivers);
+                    if (cachedRegions.length > 0) setRegions(cachedRegions);
+                    if (cachedShipments.length > 0) setShipments(cachedShipments);
+                    if (cachedPrices.length > 0) setProductPrices(cachedPrices);
+                    if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
+                    
+                    console.log('Fallback: Loaded data from cache after timeout');
+                    return; // Don't throw error, we have fallback data
+                } catch (cacheErr) {
+                    console.error('Fallback cache also failed:', cacheErr);
+                }
                 throw new Error('TIMEOUT');
             } else {
                 console.warn('Data fetch failed:', err.message);
+                // Try cache fallback for network errors too
+                try {
+                    const [
+                        cachedUsers,
+                        cachedProducts,
+                        cachedDrivers,
+                        cachedRegions,
+                        cachedShipments,
+                        cachedPrices,
+                        cachedNotifications
+                    ] = await Promise.all([
+                        IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
+                        IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
+                        IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
+                        IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
+                        IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
+                        IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
+                        IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
+                    ]);
+
+                    if (cachedUsers.length > 0) setUsers(cachedUsers);
+                    if (cachedProducts.length > 0) setProducts(cachedProducts);
+                    if (cachedDrivers.length > 0) setDrivers(cachedDrivers);
+                    if (cachedRegions.length > 0) setRegions(cachedRegions);
+                    if (cachedShipments.length > 0) setShipments(cachedShipments);
+                    if (cachedPrices.length > 0) setProductPrices(cachedPrices);
+                    if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
+                    
+                    console.log('Fallback: Loaded data from cache after network error');
+                    return; // Don't throw error, we have fallback data
+                } catch (cacheErr) {
+                    console.error('Fallback cache also failed:', cacheErr);
+                }
                 throw err;
             }
         }
@@ -515,11 +617,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Online/Offline listener
     useEffect(() => {
-        const handleOnline = () => {
+        const handleOnline = async () => {
+            console.log('Connection restored - going online');
             setIsOnline(true);
-            syncOfflineMutations();
+            
+            // Clear any existing errors since we're back online
+            setError(null);
+            
+            // Try to sync data and mutations
+            try {
+                // First, refresh all data from server
+                await fetchAllData();
+                
+                // Then sync any pending mutations
+                await syncOfflineMutations();
+                
+                console.log('Online sync completed successfully');
+            } catch (err) {
+                console.error('Error during online sync:', err);
+                // Don't show error to user, just log it
+                // Data will sync in background eventually
+            }
         };
-        const handleOffline = () => setIsOnline(false);
+        
+        const handleOffline = () => {
+            console.log('Connection lost - going offline');
+            setIsOnline(false);
+            // Don't clear error when going offline - user should see what happened
+        };
 
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
@@ -528,7 +653,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
-    }, [syncOfflineMutations]);
+    }, [syncOfflineMutations, fetchAllData]);
 
     // Real-time subscription for shipments data
     useEffect(() => {
@@ -579,81 +704,154 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             console.log('Auth state change:', event, 'Initial load:', isInitialLoad);
             
             if (session?.user) {
-                // Check if we have cached data
-                const hasCachedData = users.length > 0 || products.length > 0;
+                const isOnline = navigator.onLine;
+                
+                // CRITICAL FIX: Check IndexedDB directly for cached data, not state variables
+                // because state might not be initialized yet when this runs
+                let hasCachedData = false;
+                try {
+                    const [cachedUsers, cachedProducts] = await Promise.all([
+                        IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
+                        IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS)
+                    ]);
+                    hasCachedData = cachedUsers.length > 0 && cachedProducts.length > 0;
+                    console.log('Cached data check:', { users: cachedUsers.length, products: cachedProducts.length, hasData: hasCachedData });
+                } catch (err) {
+                    console.warn('Error checking cached data:', err);
+                    hasCachedData = false;
+                }
                 
                 // CRITICAL FIX: Only show loading screen on INITIAL load without cached data
                 // When returning to app, NEVER show loading if we have cached data
                 const shouldShowLoading = isInitialLoad && !hasCachedData;
+                
+                console.log('Loading decision:', { isInitialLoad, hasCachedData, shouldShowLoading, isOnline });
                 
                 if (shouldShowLoading) {
                     setLoading(true);
                 }
                 
                 try {
-                    // Try to fetch user profile with 10-second timeout
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 10000);
-                    
                     let userProfile = null;
-                    try {
-                        const { data, error } = await supabase
-                            .from('users')
-                            .select('*')
-                            .eq('id', session.user.id)
-                            .abortSignal(controller.signal)
-                            .single();
-                        
-                        clearTimeout(timeoutId);
-                        
-                        if (!error && data) {
-                            userProfile = userFromRow(data);
-                        }
-                    } catch (fetchErr: any) {
-                        clearTimeout(timeoutId);
-                        console.warn('Profile fetch failed, will try cached data:', fetchErr.message);
-                    }
                     
-                    // If profile fetch failed, try to get cached user from IndexedDB
-                    if (!userProfile) {
+                    // OFFLINE MODE: Try cached data first if offline
+                    if (!isOnline) {
+                        console.log('Offline mode: Using cached user profile');
                         const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS);
                         userProfile = cachedUsers.find(u => u.id === session.user.id) || null;
                         
                         if (userProfile) {
-                            console.log('Using cached user profile (network failed)');
+                            console.log('Using cached user profile (offline mode)');
                         } else {
-                            console.error("No user profile found (server or cache)");
-                            setError("لم يتم العثور على ملف المستخدم. يرجى التحقق من الاتصال بالإنترنت.");
-                            // Don't sign out - allow offline usage with cached data
+                            console.error("No cached user profile found for offline use");
+                            setError("لا توجد بيانات محفوظة للمستخدم. يرجى الاتصال بالإنترنت.");
                             setLoading(false);
                             return;
                         }
+                    } else {
+                        // ONLINE MODE: Try server first, fallback to cache
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 10000);
+                        
+                        try {
+                            const { data, error } = await supabase
+                                .from('users')
+                                .select('*')
+                                .eq('id', session.user.id)
+                                .abortSignal(controller.signal)
+                                .single();
+                            
+                            clearTimeout(timeoutId);
+                            
+                            if (!error && data) {
+                                userProfile = userFromRow(data);
+                                console.log('Using fresh user profile from server');
+                            } else {
+                                throw new Error(error?.message || 'Profile fetch failed');
+                            }
+                        } catch (fetchErr: any) {
+                            clearTimeout(timeoutId);
+                            console.warn('Profile fetch failed, trying cached data:', fetchErr.message);
+                            
+                            // Fallback to cached data
+                            const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS);
+                            userProfile = cachedUsers.find(u => u.id === session.user.id) || null;
+                            
+                            if (userProfile) {
+                                console.log('Using cached user profile (server failed)');
+                            } else {
+                                console.error("No user profile found (server or cache)");
+                                setError("لم يتم العثور على ملف المستخدم. يرجى التحقق من الاتصال بالإنترنت.");
+                                setLoading(false);
+                                return;
+                            }
+                        }
                     }
                     
-                    // Set the user (from server or cache)
+                    // Set user (from server or cache)
                     setCurrentUser(userProfile);
                     
-                    // Try to refresh data from server in background (with timeout protection)
-                    // Only if online and not on initial load with cached data
-                    if (navigator.onLine && !hasCachedData) {
+                    // Handle data loading based on online status and cached data
+                    if (hasCachedData) {
+                        // We have cached data - load it immediately
+                        console.log('Loading cached data immediately');
                         try {
-                            // Background refresh with timeout (don't block UI)
+                            const [
+                                cachedUsers,
+                                cachedProducts,
+                                cachedDrivers,
+                                cachedRegions,
+                                cachedShipments,
+                                cachedPrices,
+                                cachedNotifications
+                            ] = await Promise.all([
+                                IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
+                                IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
+                                IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
+                                IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
+                                IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
+                                IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
+                                IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
+                            ]);
+
+                            if (cachedUsers.length > 0) setUsers(cachedUsers);
+                            if (cachedProducts.length > 0) setProducts(cachedProducts);
+                            if (cachedDrivers.length > 0) setDrivers(cachedDrivers);
+                            if (cachedRegions.length > 0) setRegions(cachedRegions);
+                            if (cachedShipments.length > 0) setShipments(cachedShipments);
+                            if (cachedPrices.length > 0) setProductPrices(cachedPrices);
+                            if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
+                            
+                            console.log('Cached data loaded successfully');
+                            
+                            // Try background refresh if online
+                            if (isOnline) {
+                                fetchAllData().catch(err => 
+                                    console.warn('Background refresh failed:', err)
+                                );
+                            }
+                        } catch (cacheErr) {
+                            console.error('Error loading cached data:', cacheErr);
+                            setError('فشل تحميل البيانات المحفوظة.');
+                        }
+                    } else if (isOnline) {
+                        // Online and no cached data - fetch from server
+                        console.log('No cached data, fetching from server');
+                        try {
                             const refreshTimeout = setTimeout(() => {
-                                console.warn('Background data refresh timed out');
+                                console.warn('Data refresh timed out');
                             }, 15000);
                             
                             await fetchAllData();
                             clearTimeout(refreshTimeout);
                         } catch (refreshErr) {
-                            console.warn('Background refresh failed, using cached data:', refreshErr);
-                            // Don't show error - we have cached data
+                            console.warn('Data refresh failed:', refreshErr);
+                            setError('فشل تحميل البيانات من الخادم. يرجى التحقق من الاتصال بالإنترنت.');
                         }
-                    } else if (hasCachedData) {
-                        // If we have cached data, silently try to refresh in background
-                        // Don't wait for it, don't show errors
-                        fetchAllData().catch(err => 
-                            console.warn('Silent background refresh failed:', err)
-                        );
+                    } else {
+                        // Offline and no cached data
+                        console.log('Offline mode with no cached data');
+                        setError('لا توجد بيانات محفوظة. يرجى الاتصال بالإنترنت لأول مرة.');
                     }
                     
                 } catch (err: any) {
@@ -680,15 +878,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     
                     // Restore user from IndexedDB cache
                     try {
-                        const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS);
+                        const [
+                            cachedUsers,
+                            cachedProducts,
+                            cachedDrivers,
+                            cachedRegions,
+                            cachedShipments,
+                            cachedPrices,
+                            cachedNotifications
+                        ] = await Promise.all([
+                            IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
+                            IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
+                            IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
+                            IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
+                            IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
+                            IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
+                            IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
+                        ]);
+                        
                         const cachedUser = cachedUsers.find(u => u.id === offlineSession.userId);
                         
                         if (cachedUser) {
                             setCurrentUser(cachedUser);
                             console.log('User restored from offline session');
                             
-                            // Load all cached data
-                            await fetchAllData();
+                            // Load all cached data immediately
+                            if (cachedProducts.length > 0) setProducts(cachedProducts);
+                            if (cachedDrivers.length > 0) setDrivers(cachedDrivers);
+                            if (cachedRegions.length > 0) setRegions(cachedRegions);
+                            if (cachedShipments.length > 0) setShipments(cachedShipments);
+                            if (cachedPrices.length > 0) setProductPrices(cachedPrices);
+                            if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
+                            
+                            console.log('Offline data loaded:', {
+                                users: cachedUsers.length,
+                                products: cachedProducts.length,
+                                drivers: cachedDrivers.length,
+                                regions: cachedRegions.length,
+                                shipments: cachedShipments.length,
+                                prices: cachedPrices.length,
+                                notifications: cachedNotifications.length
+                            });
+                        } else {
+                            console.warn('Offline session found but no cached user data');
+                            clearData();
+                            setCurrentUser(null);
+                        }
+                    } catch (error) {
+                        console.error('Error restoring offline session:', error);
+                        clearData();
+                        setCurrentUser(null);
+                    }
+                } else {
+                    // No session at all
+                    clearData();
+                    setCurrentUser(null);
+                }
+                
+                setLoading(false);
+                setIsInitialLoad(false);
+            }
                         } else {
                             console.warn('Offline session found but no cached user data');
                             clearData();
