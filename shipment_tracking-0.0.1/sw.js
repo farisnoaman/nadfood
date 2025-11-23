@@ -1,5 +1,6 @@
 
-const CACHE_NAME = 'shipment-tracker-cache-v6';
+const CACHE_NAME = 'shipment-tracker-cache-v7';
+const AUTH_CACHE_NAME = 'shipment-tracker-auth-cache-v1';
 
 // Install the service worker immediately
 self.addEventListener('install', event => {
@@ -9,7 +10,7 @@ self.addEventListener('install', event => {
 
 // Activate the service worker and clean up old caches.
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
+  const cacheWhitelist = [CACHE_NAME, AUTH_CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -37,9 +38,36 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Always go to the network for Supabase API calls to ensure freshness or fail if offline (handled by AppContext).
-  // Caching API calls in SW can lead to complex stale data issues.
+  // Handle Supabase auth API calls with offline fallback
   if (requestUrl.origin.includes('supabase.co')) {
+    // For auth endpoints, try network first, then cache for offline access
+    if (requestUrl.pathname.includes('/auth/v1/')) {
+      event.respondWith(
+        fetch(event.request).catch(() => {
+          // If network fails, try to serve from auth cache
+          return caches.match(event.request).then(cachedResponse => {
+            if (cachedResponse) {
+              console.log('Serving auth response from cache:', event.request.url);
+              return cachedResponse;
+            }
+            // If no cached response, return a mock offline response for login attempts
+            if (requestUrl.pathname.includes('/token') && event.request.method === 'POST') {
+              return new Response(JSON.stringify({
+                error: 'offline_mode',
+                message: 'Offline mode - please use cached credentials'
+              }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+              });
+            }
+            throw new Error('No cached auth data available');
+          });
+        })
+      );
+      return;
+    }
+    
+    // For other Supabase API calls, always go to network to ensure freshness
     event.respondWith(fetch(event.request));
     return;
   }
@@ -82,7 +110,13 @@ self.addEventListener('fetch', event => {
 
             // Clone the response to cache it
             const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME)
+            
+            // Cache auth responses in separate cache for offline access
+            const cacheName = requestUrl.origin.includes('supabase.co') && 
+                            requestUrl.pathname.includes('/auth/v1/') ? 
+                            AUTH_CACHE_NAME : CACHE_NAME;
+            
+            caches.open(cacheName)
               .then(cache => {
                 cache.put(event.request, responseToCache);
               })
@@ -104,4 +138,40 @@ self.addEventListener('fetch', event => {
         }
       })
   );
+});
+
+// Listen for messages from the main thread
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'CACHE_AUTH_RESOURCES') {
+    // Pre-cache auth resources for offline use
+    event.waitUntil(
+      caches.open(AUTH_CACHE_NAME).then(cache => {
+        const authUrls = [
+          '/auth/v1/user',
+          '/auth/v1/settings'
+        ].map(path => `${event.data.supabaseUrl}${path}`);
+        
+        return Promise.all(
+          authUrls.map(url => 
+            fetch(url, {
+              headers: {
+                'apikey': event.data.supabaseAnonKey,
+                'Authorization': `Bearer ${event.data.supabaseAnonKey}`
+              }
+            }).then(response => {
+              if (response.ok) {
+                return cache.put(url, response);
+              }
+            }).catch(err => {
+              console.warn('Failed to cache auth resource:', url, err);
+            })
+          )
+        );
+      })
+    );
+  }
 });

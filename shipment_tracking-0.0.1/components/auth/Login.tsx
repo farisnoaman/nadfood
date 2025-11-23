@@ -8,50 +8,36 @@ import InstallPrompt from '../common/InstallPrompt';
 import { useAppContext } from '../../context/AppContext';
 import { supabase } from '../../utils/supabaseClient';
 import {
-  validateOfflineCredentials,
-  createOfflineSession,
-  hasOfflineCredentials,
   storeOfflineCredentials,
-  shouldReauthenticateOnline,
 } from '../../utils/offlineAuth';
+import { useOfflineAuth } from '../../hooks/useOfflineAuth';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
-  const [hasStoredCredentials, setHasStoredCredentials] = useState(false);
-  const [showReauthWarning, setShowReauthWarning] = useState(false);
   const { isTimeWidgetVisible } = useAppContext();
+  
+  const {
+    isOffline,
+    hasStoredCredentials,
+    hasOfflineSession,
+    showReauthWarning,
+    validateCredentials,
+    createSession,
+  } = useOfflineAuth();
 
-  // Check online status and stored credentials
+  // Pre-cache auth resources when online
   useEffect(() => {
-    const updateOnlineStatus = () => {
-      setIsOffline(!navigator.onLine);
-    };
-
-    const checkStoredCredentials = async () => {
-      const hasCredentials = await hasOfflineCredentials();
-      setHasStoredCredentials(hasCredentials);
-      
-      if (hasCredentials) {
-        const shouldReauth = await shouldReauthenticateOnline();
-        setShowReauthWarning(shouldReauth && navigator.onLine);
-      }
-    };
-
-    updateOnlineStatus();
-    checkStoredCredentials();
-
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-
-    return () => {
-      window.removeEventListener('online', updateOnlineStatus);
-      window.removeEventListener('offline', updateOnlineStatus);
-    };
-  }, []);
+    if (!isOffline && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'CACHE_AUTH_RESOURCES',
+        supabaseUrl: import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co',
+        supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
+      });
+    }
+  }, [isOffline]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +46,7 @@ const Login: React.FC = () => {
 
     try {
       // Check if offline
-      if (!navigator.onLine) {
+      if (isOffline) {
         // Try offline login
         if (!hasStoredCredentials) {
           setError('لا يمكن تسجيل الدخول دون اتصال بالإنترنت. يرجى الاتصال بالإنترنت لأول مرة.');
@@ -68,7 +54,7 @@ const Login: React.FC = () => {
           return;
         }
 
-        const validation = await validateOfflineCredentials(email, password);
+        const validation = await validateCredentials(email, password);
         
         if (!validation.valid) {
           setError('اسم المستخدم أو كلمة المرور غير صحيحة');
@@ -77,7 +63,7 @@ const Login: React.FC = () => {
         }
 
         // Create offline session
-        await createOfflineSession(validation.userId!, email);
+        await createSession(validation.userId!, email);
         
         // User will be set by onAuthStateChange in AppContext
         console.log('Offline login successful');
@@ -163,6 +149,16 @@ const Login: React.FC = () => {
                 </div>
               )}
               
+              {/* Offline session indicator */}
+              {hasOfflineSession && !isOffline && (
+                <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-600 rounded-lg flex items-center gap-2">
+                  <Icons.CheckCircle className="h-5 w-5 text-green-700 dark:text-green-400" />
+                  <span className="text-sm text-green-800 dark:text-green-300">
+                    جلسة غير متصلة نشطة - يمكنك المتابعة بدون إنترنت
+                  </span>
+                </div>
+              )}
+              
               {/* Reauth warning */}
               {showReauthWarning && !isOffline && (
                 <div className="mb-4 p-3 bg-blue-100 dark:bg-blue-900/30 border border-blue-400 dark:border-blue-600 rounded-lg">
@@ -196,7 +192,8 @@ const Login: React.FC = () => {
                   {loading ? 'جاري الدخول...' : (
                       <>
                         <Icons.LogIn className="ml-2 h-5 w-5" />
-                        {isOffline && hasStoredCredentials ? 'دخول (غير متصل)' : 'دخول'}
+                        {isOffline && hasStoredCredentials ? 'دخول (غير متصل)' : 
+                         hasOfflineSession && !isOffline ? 'متابعة (جلسة نشطة)' : 'دخول'}
                       </>
                   )}
               </Button>

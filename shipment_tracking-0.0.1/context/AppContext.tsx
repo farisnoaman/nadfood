@@ -706,6 +706,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (session?.user) {
                 const isOnline = navigator.onLine;
                 
+                // Check for offline session first
+                const offlineSession = await getOfflineSession();
+                
                 // CRITICAL FIX: Check IndexedDB directly for cached data, not state variables
                 // because state might not be initialized yet when this runs
                 let hasCachedData = false;
@@ -723,9 +726,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 
                 // CRITICAL FIX: Only show loading screen on INITIAL load without cached data
                 // When returning to app, NEVER show loading if we have cached data
-                const shouldShowLoading = isInitialLoad && !hasCachedData;
+                const shouldShowLoading = isInitialLoad && !hasCachedData && !offlineSession;
                 
-                console.log('Loading decision:', { isInitialLoad, hasCachedData, shouldShowLoading, isOnline });
+                console.log('Loading decision:', { isInitialLoad, hasCachedData, shouldShowLoading, isOnline, hasOfflineSession: !!offlineSession });
                 
                 if (shouldShowLoading) {
                     setLoading(true);
@@ -734,8 +737,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 try {
                     let userProfile = null;
                     
-                    // OFFLINE MODE: Try cached data first if offline
-                    if (!isOnline) {
+                    // OFFLINE MODE: Try cached data first if offline or has offline session
+                    if (!isOnline || offlineSession) {
                         console.log('Offline mode: Using cached user profile');
                         const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS);
                         userProfile = cachedUsers.find(u => u.id === session.user.id) || null;
@@ -825,7 +828,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                             console.log('Cached data loaded successfully');
                             
                             // Try background refresh if online
-                            if (isOnline) {
+                            if (isOnline && !offlineSession) {
                                 fetchAllData().catch(err => 
                                     console.warn('Background refresh failed:', err)
                                 );
@@ -834,7 +837,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                             console.error('Error loading cached data:', cacheErr);
                             setError('فشل تحميل البيانات المحفوظة.');
                         }
-                    } else if (isOnline) {
+                    } else if (isOnline && !offlineSession) {
                         // Online and no cached data - fetch from server
                         console.log('No cached data, fetching from server');
                         try {
@@ -870,39 +873,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     }
                 }
             } else {
-                // No Supabase session - check for offline session
+                // Check for offline session when no Supabase session
                 const offlineSession = await getOfflineSession();
                 
-                if (offlineSession && offlineSession.isActive) {
-                    console.log('Found active offline session');
-                    
-                    // Restore user from IndexedDB cache
+                if (offlineSession) {
+                    console.log('No Supabase session but offline session exists');
+                    // Try to restore user from cached data
                     try {
-                        const [
-                            cachedUsers,
-                            cachedProducts,
-                            cachedDrivers,
-                            cachedRegions,
-                            cachedShipments,
-                            cachedPrices,
-                            cachedNotifications
-                        ] = await Promise.all([
-                            IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
-                            IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
-                            IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
-                            IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
-                            IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
-                            IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
-                            IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
-                        ]);
+                        const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS);
+                        const userProfile = cachedUsers.find(u => u.id === offlineSession.userId) || null;
                         
-                        const cachedUser = cachedUsers.find(u => u.id === offlineSession.userId);
-                        
-                        if (cachedUser) {
-                            setCurrentUser(cachedUser);
-                            console.log('User restored from offline session');
+                        if (userProfile) {
+                            console.log('Restored user from offline session');
+                            setCurrentUser(userProfile);
                             
-                            // Load all cached data immediately
+                            // Load cached data
+                            const [
+                                cachedProducts,
+                                cachedDrivers,
+                                cachedRegions,
+                                cachedShipments,
+                                cachedPrices,
+                                cachedNotifications
+                            ] = await Promise.all([
+                                IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
+                                IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
+                                IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
+                                IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
+                                IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
+                                IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
+                            ]);
+
+                            if (cachedUsers.length > 0) setUsers(cachedUsers);
                             if (cachedProducts.length > 0) setProducts(cachedProducts);
                             if (cachedDrivers.length > 0) setDrivers(cachedDrivers);
                             if (cachedRegions.length > 0) setRegions(cachedRegions);
@@ -910,46 +912,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                             if (cachedPrices.length > 0) setProductPrices(cachedPrices);
                             if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
                             
-                            console.log('Offline data loaded:', {
-                                users: cachedUsers.length,
-                                products: cachedProducts.length,
-                                drivers: cachedDrivers.length,
-                                regions: cachedRegions.length,
-                                shipments: cachedShipments.length,
-                                prices: cachedPrices.length,
-                                notifications: cachedNotifications.length
-                            });
+                            console.log('Offline session restored with cached data');
                         } else {
-                            console.warn('Offline session found but no cached user data');
-                            clearData();
-                            setCurrentUser(null);
+                            console.error('Offline session exists but no cached user profile');
+                            await clearOfflineSession();
                         }
-                    } catch (error) {
-                        console.error('Error restoring offline session:', error);
-                        clearData();
-                        setCurrentUser(null);
+                    } catch (err) {
+                        console.error('Error restoring offline session:', err);
+                        await clearOfflineSession();
                     }
                 } else {
-                    // No session at all
-                    clearData();
-                    setCurrentUser(null);
-                }
-                
-                setLoading(false);
-                setIsInitialLoad(false);
-            }
-                        } else {
-                            console.warn('Offline session found but no cached user data');
-                            clearData();
-                            setCurrentUser(null);
-                        }
-                    } catch (error) {
-                        console.error('Error restoring offline session:', error);
-                        clearData();
-                        setCurrentUser(null);
-                    }
-                } else {
-                    // No session at all
+                    // SECURITY FIX: Always require explicit login
+                    // No automatic session restoration for security
+                    console.log('No active session - user must login');
+                    
+                    // Clear all data and user state
                     clearData();
                     setCurrentUser(null);
                 }
