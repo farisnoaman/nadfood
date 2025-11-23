@@ -187,7 +187,7 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
             <div>
               <h4 className="font-bold text-yellow-800 dark:text-yellow-300">شحنة مرتجعة للتعديل</h4>
               <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-1">
-                تم إرجاع هذه الشحنة من قبل المحاسب. يرجى مراجعة البيانات وتحديثها ثم إعادة الإرسال.
+                تم إرجاع هذه الشحنة من قبل المحاسب. يمكنك الآن تعديل جميع البيانات بما في ذلك المنتجات وعدد الكراتين، ثم إعادة الإرسال.
               </p>
             </div>
           </div>
@@ -196,7 +196,7 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
         {/* Basic Information */}
         <div className="space-y-4">
           <h3 className="font-bold text-lg border-b pb-2">
-            {isReturnedShipment ? 'المعلومات القابلة للتعديل' : 'المعلومات الأساسية'}
+            المعلومات الأساسية
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -268,90 +268,63 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
           </div>
         </div>
 
-        {/* Products Section - Only for new shipments */}
-        {!isReturnedShipment && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center border-b pb-2">
-              <h3 className="font-bold text-lg">المنتجات</h3>
-              <Button size="sm" variant="secondary" onClick={handleAddProduct}>
-                <Icons.Plus className="ml-2 h-4 w-4" />
-                إضافة منتج
-              </Button>
-            </div>
-
-            {currentShipment.products && currentShipment.products.length > 0 ? (
-              <div className="space-y-3">
-                {currentShipment.products.map((product, index) => (
-                  <div key={index} className="bg-secondary-50 dark:bg-secondary-900 p-4 rounded-lg space-y-3">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium">منتج {index + 1}</span>
-                      {currentShipment.products && currentShipment.products.length > 1 && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleRemoveProduct(index)}
-                        >
-                          <Icons.Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      )}
-                    </div>
-
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                       <SearchableSelect
-                         label="المنتج *"
-                         options={productOptions}
-                         value={product.productId}
-                         onChange={(val) => handleProductChange(index, 'productId', String(val))}
-                         placeholder="اختر المنتج"
-                       />
-
-                       <Input
-                         label="عدد الكراتين *"
-                         type="number"
-                         min="1"
-                         placeholder="أدخل عدد الكراتين"
-                         value={product.cartonCount === null || product.cartonCount === 0 ? '' : product.cartonCount}
-                         onChange={e => handleProductChange(index, 'cartonCount', e.target.value)}
-                       />
-                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-secondary-500">
-                <Icons.Package className="mx-auto h-12 w-12 mb-2 opacity-50" />
-                <p>لا توجد منتجات. قم بإضافة منتج أولاً.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Products Display for Returned Shipments */}
-        {isReturnedShipment && currentShipment.products && currentShipment.products.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="font-bold text-lg border-b pb-2 text-secondary-600 dark:text-secondary-400">
-              المنتجات (للعرض فقط)
+        {/* Products Section - Editable for all shipments */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center border-b pb-2">
+            <h3 className="font-bold text-lg">
+              {isReturnedShipment ? 'المنتجات (قابلة للتعديل)' : 'المنتجات'}
             </h3>
-            <div className="bg-secondary-50 dark:bg-secondary-900 p-4 rounded-lg">
-              <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-2">
-                المنتجات محددة مسبقاً ولا يمكن تعديلها للشحنات المرتجعة
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {currentShipment.products.map((product, index) => {
-                  const productInfo = products.find((p: Product) => p.id === product.productId);
-                  return (
-                    <div key={index} className="flex justify-between items-center p-2 bg-white dark:bg-secondary-800 rounded">
-                      <span className="text-sm font-medium">{productInfo?.name || `منتج ${index + 1}`}</span>
-                       <span className="text-sm text-secondary-600 dark:text-secondary-400">
-                         الكراتين: {product.cartonCount}
-                       </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <Button size="sm" variant="secondary" onClick={handleAddProduct}>
+              <Icons.Plus className="ml-2 h-4 w-4" />
+              إضافة منتج
+            </Button>
           </div>
-        )}
+
+          {currentShipment.products && currentShipment.products.length > 0 ? (
+            <div className="space-y-3">
+              {currentShipment.products.map((product, index) => (
+                <div key={index} className="bg-secondary-50 dark:bg-secondary-900 p-4 rounded-lg space-y-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium">منتج {index + 1}</span>
+                    {currentShipment.products && currentShipment.products.length > 1 && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRemoveProduct(index)}
+                      >
+                        <Icons.Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    )}
+                  </div>
+
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                     <SearchableSelect
+                       label="المنتج *"
+                       options={productOptions}
+                       value={product.productId}
+                       onChange={(val) => handleProductChange(index, 'productId', String(val))}
+                       placeholder="اختر المنتج"
+                     />
+
+                     <Input
+                       label="عدد الكراتين *"
+                       type="number"
+                       min="1"
+                       placeholder="أدخل عدد الكراتين"
+                       value={product.cartonCount === null || product.cartonCount === 0 ? '' : product.cartonCount}
+                       onChange={e => handleProductChange(index, 'cartonCount', e.target.value)}
+                     />
+                   </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-secondary-500">
+              <Icons.Package className="mx-auto h-12 w-12 mb-2 opacity-50" />
+              <p>لا توجد منتجات. قم بإضافة منتج أولاً.</p>
+            </div>
+          )}
+        </div>
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-3 pt-6 border-t">
