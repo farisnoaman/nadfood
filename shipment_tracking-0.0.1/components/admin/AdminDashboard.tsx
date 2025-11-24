@@ -19,8 +19,12 @@ const AdminDashboard: React.FC = () => {
         shipments.filter((s: Shipment) => s.status === ShipmentStatus.SENT_TO_ADMIN),
     [shipments]);
 
-    const draftShipments = useMemo(() =>
-        shipments.filter((s: Shipment) => s.status === ShipmentStatus.DRAFT),
+    const draftAndFinalShipments = useMemo(() =>
+        shipments.filter((s: Shipment) =>
+            s.status === ShipmentStatus.DRAFT ||
+            s.status === ShipmentStatus.FINAL ||
+            s.status === ShipmentStatus.FINAL_MODIFIED
+        ),
     [shipments]);
 
     const TabButton: React.FC<{tabId: Tab; label: string; icon: React.ElementType}> = ({ tabId, label, icon: Icon }) => (
@@ -45,7 +49,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="sm:hidden">
                     <div className="grid grid-cols-3 gap-2 border-b border-secondary-200 dark:border-secondary-700 pb-2">
                         <TabButton tabId="received" label="المستلمة" icon={Icons.Archive} />
-                    <TabButton tabId="all_shipments" label="المسودات" icon={Icons.Truck} />
+                                <TabButton tabId="all_shipments" label="الشحنات" icon={Icons.Truck} />
                         <TabButton tabId="reports" label="التقارير" icon={Icons.BarChart3} />
                         <TabButton tabId="data_management" label="البيانات" icon={Icons.Package} />
                         <TabButton tabId="user_management" label="المستخدمين" icon={Icons.Users} />
@@ -56,7 +60,7 @@ const AdminDashboard: React.FC = () => {
                 {/* Desktop: Original flex layout */}
                 <div className="hidden sm:flex flex-wrap gap-2 border-b border-secondary-200 dark:border-secondary-700 pb-2">
                     <TabButton tabId="received" label="المستلمة" icon={Icons.Archive} />
-                                <TabButton tabId="all_shipments" label="المسودات" icon={Icons.Truck} />
+                    <TabButton tabId="all_shipments" label="الشحنات" icon={Icons.Truck} />
                     <TabButton tabId="reports" label="التقارير" icon={Icons.BarChart3} />
                     <TabButton tabId="data_management" label="إدارة البيانات" icon={Icons.Package} />
                     <TabButton tabId="user_management" label="إدارة المستخدمين" icon={Icons.Users} />
@@ -66,7 +70,7 @@ const AdminDashboard: React.FC = () => {
             <div>
                 {activeTab === 'reports' && <AdminReports />}
                 {activeTab === 'received' && <AdminShipmentList shipments={receivedShipments} />}
-                {activeTab === 'all_shipments' && <AdminShipmentList shipments={draftShipments} />}
+                {activeTab === 'all_shipments' && <AdminShipmentList shipments={draftAndFinalShipments} defaultStatusFilter="draft" />}
                 {activeTab === 'data_management' && <ManageData />}
                 {activeTab === 'user_management' && <ManageUsers />}
                 {activeTab === 'settings' && <AdminSettings />}

@@ -6,12 +6,13 @@ interface UseShipmentFilterProps {
   baseShipments: Shipment[];
   drivers: Driver[];
   initialSortOption?: 'newest' | 'oldest' | 'highest_due' | 'lowest_due';
+  initialStatusFilter?: ShipmentStatus | 'all';
 }
 
-export const useShipmentFilter = ({ baseShipments, drivers, initialSortOption = 'newest' }: UseShipmentFilterProps) => {
+export const useShipmentFilter = ({ baseShipments, drivers, initialSortOption = 'newest', initialStatusFilter = 'all' }: UseShipmentFilterProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [regionFilter, setRegionFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<ShipmentStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<ShipmentStatus | 'all'>(initialStatusFilter);
   const [sortOption, setSortOption] = useState(initialSortOption);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');

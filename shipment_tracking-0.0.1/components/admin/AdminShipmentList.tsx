@@ -14,9 +14,10 @@ import SearchableSelect from '../common/SearchableSelect';
 
 interface AdminShipmentListProps {
   shipments: Shipment[];
+  defaultStatusFilter?: string;
 }
 
-const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments }) => {
+const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaultStatusFilter }) => {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const { regions, drivers } = useAppContext();
   const [view, setView] = useState<'grid' | 'list'>(window.innerWidth < 768 ? 'list' : 'grid');
@@ -31,7 +32,11 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments }) => {
     fromDate, setFromDate,
     toDate, setToDate,
     clearDateFilters,
-  } = useShipmentFilter({ baseShipments: shipments, drivers });
+  } = useShipmentFilter({
+    baseShipments: shipments,
+    drivers,
+    initialStatusFilter: defaultStatusFilter === 'draft' ? ShipmentStatus.DRAFT : 'all'
+  });
 
 
   const getRegionName = (id: string) => regions.find((r: Region) => r.id === id)?.name || 'غير معروف';

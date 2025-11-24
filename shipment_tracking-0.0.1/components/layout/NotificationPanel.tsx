@@ -96,7 +96,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen }) => {
             })}
         </div>
       </div>
-      <div className="max-h-80 overflow-y-auto">
+      <div className="max-h-60 sm:max-h-80 overflow-y-auto">
         {filteredUserNotifications.length > 0 ? (
           filteredUserNotifications.map(notification => (
             <div
@@ -147,7 +147,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen }) => {
   );
 
   return (
-    <div className="absolute top-14 end-0 z-50 w-80 max-w-sm bg-white dark:bg-secondary-800 rounded-lg shadow-lg border dark:border-secondary-700">
+    <div className="fixed sm:absolute top-16 right-4 sm:top-14 sm:right-0 sm:left-auto z-50 w-[calc(100vw-2rem)] max-w-sm bg-white dark:bg-secondary-800 rounded-lg shadow-lg border dark:border-secondary-700">
       {view === 'list' ? renderListView() : renderSettingsView()}
     </div>
   );
