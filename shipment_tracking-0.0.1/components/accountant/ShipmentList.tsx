@@ -34,35 +34,38 @@ const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, viewType, view }
               {/* Mobile List View */}
               <div className="md:hidden">
                   {shipments.map((shipment) => (
-                      <div key={shipment.id} className="bg-white dark:bg-secondary-800 rounded-lg shadow p-4">
-                          <div className="flex justify-between items-start mb-3">
-                              <div className="flex-1">
-                                  <h3 className="font-bold text-primary-600 dark:text-primary-400 mb-2">{shipment.salesOrder}</h3>
-                                  <div className="space-y-1 text-sm">
+                      <div key={shipment.id} className="bg-white dark:bg-secondary-800 rounded-lg shadow p-3 mb-2">
+                          <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between mb-1">
+                                      <h3 className="font-bold text-primary-600 dark:text-primary-400 text-sm truncate">{shipment.salesOrder}</h3>
+                                      <Badge status={shipment.status} />
+                                  </div>
+                                  <div className="space-y-0.5 text-xs">
                                       <div className="flex items-center">
-                                          <Icons.MapPin className="h-4 w-4 text-secondary-500 ml-2 flex-shrink-0" />
-                                          <span>{getRegionName(shipment.regionId)}</span>
+                                          <Icons.MapPin className="h-3 w-3 text-secondary-500 ml-1 flex-shrink-0" />
+                                          <span className="truncate">{getRegionName(shipment.regionId)}</span>
                                       </div>
                                       <div className="flex items-center">
-                                          <Icons.User className="h-4 w-4 text-secondary-500 ml-2 flex-shrink-0" />
-                                          <span>{getDriverName(shipment.driverId)}</span>
+                                          <Icons.User className="h-3 w-3 text-secondary-500 ml-1 flex-shrink-0" />
+                                          <span className="truncate">{getDriverName(shipment.driverId)}</span>
                                       </div>
                                       <div className="flex items-center">
-                                          <Icons.Package className="h-4 w-4 text-secondary-500 ml-2 flex-shrink-0" />
+                                          <Icons.Package className="h-3 w-3 text-secondary-500 ml-1 flex-shrink-0" />
                                           <span>{shipment.products.length} منتج</span>
                                       </div>
                                   </div>
                               </div>
-                              <div className="text-left">
-                                  <p className="text-xs text-secondary-500 mb-1">المبلغ المستحق</p>
-                                  <p className="font-bold text-green-600">
+                              <div className="text-left ml-2 flex-shrink-0">
+                                  <p className="text-xs text-secondary-500 leading-tight">المبلغ المستحق</p>
+                                  <p className="font-bold text-green-600 text-sm">
                                       {(shipment.dueAmountAfterDiscount ?? shipment.dueAmount ?? 0).toLocaleString('en-US')} ر.ي
                                   </p>
                               </div>
                           </div>
                           <div className="flex justify-end">
-                              <Button size="sm" onClick={() => setSelectedShipment(shipment)} disabled={shipment.isPendingSync}>
-                                  <Icons.Edit className="ml-2 h-4 w-4" />
+                              <Button size="sm" onClick={() => setSelectedShipment(shipment)} disabled={shipment.isPendingSync} className="text-xs px-3 py-1">
+                                  <Icons.Edit className="ml-1 h-3 w-3" />
                                   {actionLabel}
                               </Button>
                           </div>
