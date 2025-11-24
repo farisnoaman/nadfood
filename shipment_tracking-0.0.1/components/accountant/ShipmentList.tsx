@@ -28,10 +28,50 @@ const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, viewType, view }
 
   return (
     <div>
-      {/* List View for Desktop */}
-      <div className="hidden md:block">
-          {view === 'list' && (
-              <div className="space-y-2">
+      {/* List View */}
+      {view === 'list' && (
+          <div className="space-y-2">
+              {/* Mobile List View */}
+              <div className="md:hidden">
+                  {shipments.map((shipment) => (
+                      <div key={shipment.id} className="bg-white dark:bg-secondary-800 rounded-lg shadow p-4">
+                          <div className="flex justify-between items-start mb-3">
+                              <div className="flex-1">
+                                  <h3 className="font-bold text-primary-600 dark:text-primary-400 mb-2">{shipment.salesOrder}</h3>
+                                  <div className="space-y-1 text-sm">
+                                      <div className="flex items-center">
+                                          <Icons.MapPin className="h-4 w-4 text-secondary-500 ml-2 flex-shrink-0" />
+                                          <span>{getRegionName(shipment.regionId)}</span>
+                                      </div>
+                                      <div className="flex items-center">
+                                          <Icons.User className="h-4 w-4 text-secondary-500 ml-2 flex-shrink-0" />
+                                          <span>{getDriverName(shipment.driverId)}</span>
+                                      </div>
+                                      <div className="flex items-center">
+                                          <Icons.Package className="h-4 w-4 text-secondary-500 ml-2 flex-shrink-0" />
+                                          <span>{shipment.products.length} منتج</span>
+                                      </div>
+                                  </div>
+                              </div>
+                              <div className="text-left">
+                                  <p className="text-xs text-secondary-500 mb-1">المبلغ المستحق</p>
+                                  <p className="font-bold text-green-600">
+                                      {(shipment.dueAmountAfterDiscount ?? shipment.dueAmount ?? 0).toLocaleString('en-US')} ر.ي
+                                  </p>
+                              </div>
+                          </div>
+                          <div className="flex justify-end">
+                              <Button size="sm" onClick={() => setSelectedShipment(shipment)} disabled={shipment.isPendingSync}>
+                                  <Icons.Edit className="ml-2 h-4 w-4" />
+                                  {actionLabel}
+                              </Button>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+
+              {/* Desktop List View */}
+              <div className="hidden md:block">
                   <div className="grid grid-cols-6 gap-4 px-3 py-2 text-xs font-bold text-secondary-500 dark:text-secondary-400 uppercase">
                       <div className="col-span-2 sm:col-span-1">أمر المبيعات</div>
                       <div className="hidden sm:block">المنطقة</div>
@@ -52,11 +92,11 @@ const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, viewType, view }
                       />
                   ))}
               </div>
-          )}
-      </div>
+          </div>
+      )}
       
       {/* Grid View (default for mobile, optional for desktop) */}
-      <div className={view === 'list' ? 'md:hidden' : ''}>
+      <div className={view === 'list' ? 'hidden' : ''}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {shipments.map((shipment) => (
             <div key={shipment.id} className={`bg-white dark:bg-secondary-800 shadow rounded-lg overflow-hidden flex flex-col transition-opacity ${shipment.isPendingSync ? 'opacity-60' : ''}`}>

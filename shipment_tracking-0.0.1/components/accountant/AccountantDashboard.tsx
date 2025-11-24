@@ -143,15 +143,15 @@ const AccountantDashboard: React.FC = () => {
             </div>
         )}
 
-        <div className="hidden md:flex justify-end items-center mt-4 pt-4 border-t border-secondary-200 dark:border-secondary-700">
+        <div className="flex justify-end items-center mt-4 pt-4 border-t border-secondary-200 dark:border-secondary-700">
             <span className="text-sm font-medium text-secondary-600 dark:text-secondary-400 ml-3">طريقة العرض:</span>
             <div className="inline-flex rounded-md shadow-sm bg-secondary-100 dark:bg-secondary-900 p-1">
                  <button onClick={() => setView('grid')} className={`p-1.5 rounded-md transition-colors ${view === 'grid' ? 'bg-white dark:bg-secondary-700' : 'text-secondary-500 hover:bg-white/50 dark:hover:bg-secondary-700/50'}`} aria-label="عرض شبكي">
                     <Icons.Grid className="h-5 w-5" />
-                </button>
+                 </button>
                  <button onClick={() => setView('list')} className={`p-1.5 rounded-md transition-colors ${view === 'list' ? 'bg-white dark:bg-secondary-700' : 'text-secondary-500 hover:bg-white/50 dark:hover:bg-secondary-700/50'}`} aria-label="عرض قائمة">
                     <Icons.List className="h-5 w-5" />
-                </button>
+                 </button>
             </div>
         </div>
       </Card>

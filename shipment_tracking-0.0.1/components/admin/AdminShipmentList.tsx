@@ -179,25 +179,68 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments }) => {
                 </div>
             )}
 
-            <div className="hidden md:flex justify-end items-center mt-4 pt-4 border-t border-secondary-200 dark:border-secondary-700">
+            <div className="flex justify-end items-center mt-4 pt-4 border-t border-secondary-200 dark:border-secondary-700">
                 <span className="text-sm font-medium text-secondary-600 dark:text-secondary-400 ml-3">طريقة العرض:</span>
                 <div className="inline-flex rounded-md shadow-sm bg-secondary-100 dark:bg-secondary-900 p-1">
                      <button onClick={() => setView('grid')} className={`p-1.5 rounded-md transition-colors ${view === 'grid' ? 'bg-white dark:bg-secondary-700' : 'text-secondary-500 hover:bg-white/50 dark:hover:bg-secondary-700/50'}`} aria-label="عرض شبكي">
                         <Icons.Grid className="h-5 w-5" />
-                    </button>
+                     </button>
                      <button onClick={() => setView('list')} className={`p-1.5 rounded-md transition-colors ${view === 'list' ? 'bg-white dark:bg-secondary-700' : 'text-secondary-500 hover:bg-white/50 dark:hover:bg-secondary-700/50'}`} aria-label="عرض قائمة">
                         <Icons.List className="h-5 w-5" />
-                    </button>
+                     </button>
                 </div>
             </div>
         </Card>
 
         {filteredShipments.length > 0 ? (
             <div>
-                 {/* List View for Desktop */}
-                <div className="hidden md:block">
-                    {view === 'list' && (
-                        <div className="space-y-2">
+                 {/* List View */}
+                {view === 'list' && (
+                    <div className="space-y-2">
+                        {/* Mobile List View */}
+                        <div className="md:hidden">
+                            {filteredShipments.map((shipment) => {
+                                const finalAmount = shipment.totalDueAmount ?? calculateAdminValues(shipment).totalDueAmount ?? 0;
+                                return (
+                                    <div key={shipment.id} className="bg-white dark:bg-secondary-800 rounded-lg shadow p-4">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex-1">
+                                                <h3 className="font-bold text-primary-600 dark:text-primary-400 mb-2">{shipment.salesOrder}</h3>
+                                                <div className="space-y-1 text-sm">
+                                                    <div className="flex items-center">
+                                                        <Icons.MapPin className="h-4 w-4 text-secondary-500 ml-2 flex-shrink-0" />
+                                                        <span>{getRegionName(shipment.regionId)}</span>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <Icons.User className="h-4 w-4 text-secondary-500 ml-2 flex-shrink-0" />
+                                                        <span>{getDriverName(shipment.driverId)}</span>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <Icons.Package className="h-4 w-4 text-secondary-500 ml-2 flex-shrink-0" />
+                                                        <span>{shipment.products.length} منتج</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-xs text-secondary-500 mb-1">المبلغ النهائي</p>
+                                                <p className="font-bold text-purple-600">
+                                                    {finalAmount.toLocaleString('en-US')} ر.ي
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end">
+                                            <Button size="sm" onClick={() => setSelectedShipment(shipment)}>
+                                                <Icons.Edit className="ml-2 h-4 w-4" />
+                                                عرض وتعديل
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop List View */}
+                        <div className="hidden md:block">
                              <div className="grid grid-cols-6 gap-4 px-3 py-2 text-xs font-bold text-secondary-500 dark:text-secondary-400 uppercase">
                                 <div className="col-span-2 sm:col-span-1">أمر المبيعات</div>
                                 <div className="hidden sm:block">المنطقة</div>
@@ -218,11 +261,11 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments }) => {
                                 />
                             ))}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
 
                 {/* Grid View (default for mobile, optional for desktop) */}
-                <div className={view === 'list' ? 'md:hidden' : ''}>
+                <div className={view === 'list' ? 'hidden' : ''}>
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredShipments.map((shipment) => {
                             const finalAmount = shipment.totalDueAmount ?? calculateAdminValues(shipment).totalDueAmount ?? 0;
