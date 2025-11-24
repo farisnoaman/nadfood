@@ -30,42 +30,19 @@ const BasicInformationSection: React.FC<{ shipment: Shipment; regionRoadExpenses
 );
 
 /** Deductions Section - Editable form for all deductions */
-const DeductionsSection: React.FC<{ 
+const DeductionsSection: React.FC<{
     shipment: Shipment;
-    isEditable: boolean; 
     onValueChange: (field: keyof Shipment, value: string) => void;
-    onEditClick: () => void;
     amountAfterDeductions: number;
-}> = ({ shipment, isEditable, onValueChange, onEditClick, amountAfterDeductions }) => (
+}> = ({ shipment, onValueChange, amountAfterDeductions }) => (
     <div className="space-y-2 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
-        <div className="flex justify-between items-center">
-            <h4 className="font-bold text-lg">قسم الخصميات</h4>
-            {!isEditable && (
-                <Button size="sm" variant="ghost" onClick={onEditClick}>
-                    <Icons.Edit className="ml-2 h-4 w-4" />
-                    تعديل الخصميات
-                </Button>
-            )}
-        </div>
+        <h4 className="font-bold text-lg">قسم الخصميات</h4>
         <div className="pt-2 border-t dark:border-secondary-700">
-            {isEditable ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
-                    <Input label="التالف" type="number" min="0" value={shipment.damagedValue || ''} onChange={e => onValueChange('damagedValue', e.target.value)} />
-                    <Input label="النقص" type="number" min="0" value={shipment.shortageValue || ''} onChange={e => onValueChange('shortageValue', e.target.value)} />
-                    <Input label="مبالغ أخرى" type="number" min="0" value={shipment.otherAmounts || ''} onChange={e => onValueChange('otherAmounts', e.target.value)} />
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                    <FieldValue label="التالف" value={shipment.damagedValue} />
-                    <FieldValue label="النقص" value={shipment.shortageValue} />
-                    <FieldValue label="مبالغ أخرى" value={shipment.otherAmounts} />
-                </div>
-            )}
-            {shipment.deductionsEditedBy && shipment.deductionsEditedAt && (
-                <div className="text-xs text-yellow-600 dark:text-yellow-400 pt-2 mt-2 border-t border-dashed dark:border-secondary-600/50">
-                    تم تعديل الخصميات بواسطة {shipment.deductionsEditedBy} في {new Date(shipment.deductionsEditedAt).toLocaleString('ar-EG')}
-                </div>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
+                <Input label="التالف" type="number" min="1" value={shipment.damagedValue || ''} onChange={e => onValueChange('damagedValue', e.target.value)} />
+                <Input label="النقص" type="number" min="1" value={shipment.shortageValue || ''} onChange={e => onValueChange('shortageValue', e.target.value)} />
+                <Input label="مبالغ أخرى" type="number" min="1" value={shipment.otherAmounts || ''} onChange={e => onValueChange('otherAmounts', e.target.value)} />
+            </div>
             <div className="font-bold pt-2 mt-2 border-t dark:border-secondary-700">
                 <FieldValue label="المبلغ بعد الخصم" value={amountAfterDeductions} />
             </div>
@@ -140,8 +117,6 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
   } = useAppContext();
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
-  const [isDeductionsEditable, setIsDeductionsEditable] = useState(false);
-  const [showDeductionsEditConfirm, setShowDeductionsEditConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Get region to display road expenses in basic info
@@ -168,51 +143,38 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
   useEffect(() => {
     setCurrentShipment({ ...shipment });
     setIsProductsExpanded(false);
-    setIsDeductionsEditable(false);
-    setShowDeductionsEditConfirm(false);
   }, [shipment]);
 
   const handleValueChange = (field: keyof Shipment, value: string) => {
     let processedValue: string | number = value;
-    const numericFields: (keyof Shipment)[] = ['otherAmounts', 'improvementBonds', 'eveningAllowance', 'damagedValue', 'shortageValue'];
-  
-    if (numericFields.includes(field)) {
-      processedValue = Math.max(0, Number(value));
-    }
-    
-    let updatedShipment = { ...currentShipment, [field]: processedValue };
-    
-    // Track deductions editing
+    const additionFields: (keyof Shipment)[] = ['improvementBonds', 'eveningAllowance'];
     const deductionFields: (keyof Shipment)[] = ['damagedValue', 'shortageValue', 'otherAmounts'];
-    if (deductionFields.includes(field) && isDeductionsEditable && currentUser) {
-        if (Number(processedValue) > 0) {
-            updatedShipment = {
-                ...updatedShipment,
-                deductionsEditedBy: currentUser.username,
-                deductionsEditedAt: new Date().toISOString(),
-            };
-        }
+
+    if (additionFields.includes(field)) {
+      processedValue = value === '' ? '' : Math.max(0, Number(value));
+    } else if (deductionFields.includes(field)) {
+      processedValue = value === '' ? '' : Math.max(1, Number(value));
     }
-    
-    setCurrentShipment(updatedShipment);
+
+    setCurrentShipment({ ...currentShipment, [field]: processedValue });
   };
-  
-  const handleReturnToAccountant = async () => {
-    setIsSubmitting(true);
-    try {
-        const returnedShipment = { ...currentShipment, status: ShipmentStatus.RETURNED_FOR_EDIT };
-        await updateShipment(returnedShipment.id, returnedShipment);
-        await addNotification({ message: `تم إرجاع الشحنة (${returnedShipment.salesOrder}) للتعديل.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ACCOUNTANT] });
-        onClose();
-    } catch(err) {
-        console.error(err);
-        alert("فشل إرجاع الشحنة");
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-  
-  const handleFinalize = async () => {
+
+   const handleSaveAsDraft = async () => {
+     setIsSubmitting(true);
+     try {
+         const draftShipment = { ...currentShipment, status: ShipmentStatus.DRAFT };
+         await updateShipment(draftShipment.id, draftShipment);
+         await addNotification({ message: `تم حفظ الشحنة (${draftShipment.salesOrder}) كمسودة.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ADMIN] });
+         onClose();
+     } catch(err) {
+         console.error(err);
+         alert("فشل حفظ المسودة");
+     } finally {
+         setIsSubmitting(false);
+     }
+   };
+
+   const handleFinalize = async () => {
     // Validate transfer number before finalizing
     if (!currentShipment.transferNumber || currentShipment.transferNumber.trim().length < 8) {
       alert('رقم الحوالة يجب أن يكون 8 أرقام على الأقل قبل الاعتماد النهائي');
@@ -266,10 +228,9 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
   const finalAmount = calculateFinalAmount(currentShipment);
 
   return (
-    <>
     <Modal isOpen={isOpen} onClose={onClose} title={`إدارة الشحنة: ${shipment.salesOrder}`} size="xl">
       <div className="space-y-4 p-1">
-        
+
         <ShipmentStepper status={currentShipment.status} />
 
         <ProductDetails
@@ -278,29 +239,27 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
             onToggle={() => setIsProductsExpanded(!isProductsExpanded)}
         />
 
-        <BasicInformationSection 
-            shipment={currentShipment} 
+        <BasicInformationSection
+            shipment={currentShipment}
             regionRoadExpenses={regionRoadExpenses}
+        />
+
+        <AdditionsSection
+            shipment={currentShipment}
+            onValueChange={handleValueChange}
         />
 
         <DeductionsSection
             shipment={currentShipment}
-            isEditable={isDeductionsEditable}
             onValueChange={handleValueChange}
-            onEditClick={() => setShowDeductionsEditConfirm(true)}
             amountAfterDeductions={amountAfterDeductions}
         />
-        
-        <AdditionsSection 
-            shipment={currentShipment} 
-            onValueChange={handleValueChange} 
-        />
-        
+
         <FinalCalculationSection
             finalAmount={finalAmount}
             shipment={currentShipment}
         />
-        
+
         <TransferSection
             shipment={currentShipment}
             onValueChange={handleValueChange}
@@ -315,33 +274,20 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
                     </Button>
                 )}
             </div>
-            <div className="flex flex-wrap justify-end gap-3">
-                <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
-                    إغلاق
-                </Button>
-                <Button variant="destructive" onClick={handleReturnToAccountant} disabled={isSubmitting}>
-                    {isSubmitting ? 'جاري الإرجاع...' : <> <Icons.Undo2 className="ml-2 h-4 w-4" /> إرجاع للمحاسب </>}
-                </Button>
-                <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting}>
-                    {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'اعتماد نهائي'} </>}
-                </Button>
-            </div>
+              <div className="flex flex-wrap justify-end gap-3">
+                  <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
+                      إغلاق
+                  </Button>
+                  <Button variant="outline" onClick={handleSaveAsDraft} disabled={isSubmitting}>
+                      {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Save className="ml-2 h-4 w-4" /> حفظ كمسودة </>}
+                  </Button>
+                  <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting}>
+                      {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'إغلاق نهائي'} </>}
+                  </Button>
+              </div>
         </div>
       </div>
     </Modal>
-    
-    <Modal isOpen={showDeductionsEditConfirm} onClose={() => setShowDeductionsEditConfirm(false)} title="تأكيد تعديل الخصميات">
-        <div className="p-4 text-center">
-            <Icons.AlertTriangle className="mx-auto h-12 w-12 text-yellow-500" />
-            <p className="mt-4 text-lg">أنت على وشك تعديل بيانات تم إدخالها من قبل المحاسب.</p>
-            <p className="mt-2 text-secondary-500">سيتم تسجيل هذا التغيير باسمك والتوقيت الحالي. هل أنت متأكد؟</p>
-            <div className="mt-6 flex justify-center space-x-4 rtl:space-x-reverse">
-                <Button variant="secondary" onClick={() => setShowDeductionsEditConfirm(false)}>إلغاء</Button>
-                <Button variant="primary" onClick={() => { setIsDeductionsEditable(true); setShowDeductionsEditConfirm(false); }}>نعم، تأكيد ومتابعة</Button>
-            </div>
-        </div>
-    </Modal>
-    </>
   );
 };
 
