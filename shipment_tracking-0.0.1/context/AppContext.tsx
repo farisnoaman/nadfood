@@ -203,6 +203,7 @@ interface AppContextType {
     error: string | null;
     isOnline: boolean;
     isSyncing: boolean;
+    isProfileLoaded: boolean;
     refreshAllData: () => Promise<void>;
 }
 
@@ -215,6 +216,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isSyncing, setIsSyncing] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true); // Track if this is the first load
+    const [isProfileLoaded, setIsProfileLoaded] = useState(false); // Track if user profile has been loaded
     const isInitializing = useRef(true); // Track IndexedDB initialization
     
     // Data states - will be hydrated from IndexedDB after mount
@@ -594,6 +596,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // Update user profile if found
             if (userProfile) {
                 setCurrentUser(userProfile);
+                setIsProfileLoaded(true); // Profile loaded successfully
             }
 
             // Load application data
@@ -873,6 +876,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     role: Role.SALES, // Default role, will be updated when profile loads
                     isActive: true
                 });
+                setIsProfileLoaded(false); // Profile not loaded yet
                 setLoading(false); // Clear loading immediately after session validation
 
                 // PHASE 2: Background data loading (progressive)
@@ -996,6 +1000,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 const userProfile = cachedUsers.find(u => u.id === offlineSession.userId);
                 if (userProfile) {
                     setCurrentUser(userProfile);
+                    setIsProfileLoaded(true); // Profile loaded for offline user
                     // Load data for offline user
                     await loadData(true, navigator.onLine, userProfile);
                 }
@@ -1260,7 +1265,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         accountantPrintAccess, setAccountantPrintAccess, isPrintHeaderEnabled, setIsPrintHeaderEnabled,
         appName, setAppName, companyName, setCompanyName, companyAddress, setCompanyAddress, companyPhone, setCompanyPhone,
         companyLogo, setCompanyLogo, isTimeWidgetVisible, setIsTimeWidgetVisible,
-        loading, error, isOnline, isSyncing,
+        loading, error, isOnline, isSyncing, isProfileLoaded,
         refreshAllData: fetchAllData,
     }), [
         currentUser, handleLogout, loadOfflineUser, users, addUser, updateUser,
@@ -1271,7 +1276,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         productPrices, addProductPrice, updateProductPrice, deleteProductPrice,
         notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
         accountantPrintAccess, isPrintHeaderEnabled, appName, companyName, companyAddress, companyPhone, companyLogo, isTimeWidgetVisible,
-        loading, error, isOnline, isSyncing, setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible,
+        loading, error, isOnline, isSyncing, isProfileLoaded, setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible,
         fetchAllData
     ]);
 

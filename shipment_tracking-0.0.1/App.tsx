@@ -25,7 +25,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[]
 };
 
 const AppRoutes: React.FC = () => {
-    const { currentUser, loading, error } = useAppContext();
+    const { currentUser, loading, error, isProfileLoaded } = useAppContext();
     const [loadingTimeout, setLoadingTimeout] = useState(false);
     const loadingTimeoutRef = useRef<{ primary: NodeJS.Timeout; emergency: NodeJS.Timeout } | null>(null);
 
@@ -137,11 +137,22 @@ const AppRoutes: React.FC = () => {
                             <Layout>
                                 <Routes>
                                     <Route path="/" element={
-                                        <>
-                                            {currentUser.role === Role.SALES && <Navigate to="/sales" />}
-                                            {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
-                                            {currentUser.role === Role.ADMIN && <Navigate to="/admin" />}
-                                        </>
+                                        !isProfileLoaded ? (
+                                            <div className="flex items-center justify-center min-h-screen bg-secondary-100 dark:bg-secondary-900">
+                                                <div className="flex flex-col items-center">
+                                                    <Icons.Truck className="h-16 w-16 text-primary-600 animate-pulse" />
+                                                    <p className="mt-4 text-lg font-semibold text-secondary-700 dark:text-secondary-300">
+                                                        جاري تحميل الملف الشخصي...
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {currentUser.role === Role.SALES && <Navigate to="/sales" />}
+                                                {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
+                                                {currentUser.role === Role.ADMIN && <Navigate to="/admin" />}
+                                            </>
+                                        )
                                     } />
                                     <Route path="/sales/*" element={<ProtectedRoute allowedRoles={[Role.SALES]}><SalesDashboard /></ProtectedRoute>} />
                                     <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
