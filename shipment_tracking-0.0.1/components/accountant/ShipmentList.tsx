@@ -50,16 +50,12 @@ const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, viewType, view }
                                           <Icons.User className="h-3 w-3 text-secondary-500 ml-1 flex-shrink-0" />
                                           <span className="truncate">{getDriverName(shipment.driverId)}</span>
                                       </div>
-                                      <div className="flex items-center">
-                                          <Icons.Package className="h-3 w-3 text-secondary-500 ml-1 flex-shrink-0" />
-                                          <span>{shipment.products.length} منتج</span>
-                                      </div>
                                   </div>
                               </div>
                               <div className="text-left ml-2 flex-shrink-0">
-                                  <p className="text-xs text-secondary-500 leading-tight">المبلغ المستحق</p>
-                                  <p className="font-bold text-green-600 text-sm">
-                                      {(shipment.dueAmountAfterDiscount ?? shipment.dueAmount ?? 0).toLocaleString('en-US')} ر.ي
+                                  <p className="text-xs text-secondary-500 leading-tight">تاريخ الأمر</p>
+                                  <p className="font-bold text-blue-600 text-sm">
+                                      {new Date(shipment.orderDate).toLocaleDateString('en-GB')}
                                   </p>
                               </div>
                           </div>

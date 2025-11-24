@@ -200,7 +200,6 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments }) => {
                         {/* Mobile List View */}
                         <div className="md:hidden">
                             {filteredShipments.map((shipment) => {
-                                const finalAmount = shipment.totalDueAmount ?? calculateAdminValues(shipment).totalDueAmount ?? 0;
                                 return (
                                     <div key={shipment.id} className="bg-white dark:bg-secondary-800 rounded-lg shadow p-3 mb-2">
                                         <div className="flex justify-between items-start mb-2">
@@ -218,16 +217,12 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments }) => {
                                                         <Icons.User className="h-3 w-3 text-secondary-500 ml-1 flex-shrink-0" />
                                                         <span className="truncate">{getDriverName(shipment.driverId)}</span>
                                                     </div>
-                                                    <div className="flex items-center">
-                                                        <Icons.Package className="h-3 w-3 text-secondary-500 ml-1 flex-shrink-0" />
-                                                        <span>{shipment.products.length} منتج</span>
-                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="text-left ml-2 flex-shrink-0">
-                                                <p className="text-xs text-secondary-500 leading-tight">المبلغ النهائي</p>
-                                                <p className="font-bold text-purple-600 text-sm">
-                                                    {finalAmount.toLocaleString('en-US')} ر.ي
+                                                <p className="text-xs text-secondary-500 leading-tight">تاريخ الأمر</p>
+                                                <p className="font-bold text-blue-600 text-sm">
+                                                    {new Date(shipment.orderDate).toLocaleDateString('en-GB')}
                                                 </p>
                                             </div>
                                         </div>
