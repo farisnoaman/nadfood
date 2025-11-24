@@ -5,7 +5,7 @@ import { supabase } from '../utils/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 import { Database } from '../supabase/database.types';
 import * as IndexedDB from '../utils/indexedDB';
-import { clearOfflineSession, getOfflineSession } from '../utils/offlineAuth';
+import { clearOfflineSession, getOfflineSession, shouldClearOfflineSessionOnLaunch } from '../utils/offlineAuth';
 
 // Type alias for Supabase row types
 type UserRow = Database['public']['Tables']['users']['Row'];
@@ -495,9 +495,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Data loading function
     const loadData = useCallback(async (hasCachedData: boolean, isOnline: boolean, offlineSession: any) => {
         if (hasCachedData) {
-            // We have cached data - load it immediately
-            console.log('Loading cached data immediately');
             try {
+                // Increase timeout for cache loading to prevent premature failures
+                const cacheTimeout = 10000; // 10 seconds instead of default 3000
+
                 const [
                     cachedUsers,
                     cachedProducts,
@@ -507,15 +508,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     cachedPrices,
                     cachedNotifications
                 ] = await Promise.all([
-                    IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
-                    IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
-                    IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
-                    IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
-                    IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
-                    IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
-                    IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
+                    IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS, cacheTimeout),
+                    IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS, cacheTimeout),
+                    IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS, cacheTimeout),
+                    IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS, cacheTimeout),
+                    IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS, cacheTimeout),
+                    IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES, cacheTimeout),
+                    IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS, cacheTimeout)
                 ]);
 
+                // Update state with cached data
                 if (cachedUsers.length > 0) setUsers(cachedUsers);
                 if (cachedProducts.length > 0) setProducts(cachedProducts);
                 if (cachedDrivers.length > 0) setDrivers(cachedDrivers);
@@ -526,25 +528,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
                 console.log('Cached data loaded successfully');
 
-                // Try background refresh if online
+                // Try background refresh if online and no offline session
                 if (isOnline && !offlineSession) {
                     fetchAllData().catch(err =>
                         console.warn('Background refresh failed:', err)
                     );
                 }
             } catch (cacheErr) {
-                console.error('Error loading cached data:', cacheErr);
-                setError('فشل تحميل البيانات المحفوظة.');
+                console.error('Cache loading failed:', cacheErr);
+                // CRITICAL FIX: If cache fails and we have offline session, don't try server fetch
+                if (!isOnline || offlineSession) {
+                    setError('فشل تحميل البيانات المحفوظة. يرجى تسجيل الدخول مرة أخرى.');
+                    return;
+                }
+                // Only try server fetch if online and no offline session
+                await fetchAllData();
             }
         } else if (isOnline && !offlineSession) {
-            // Online and no cached data - fetch from server in background to prevent stuck loading
-            console.log('No cached data, fetching from server in background');
-            fetchAllData().catch(refreshErr => {
-                console.warn('Data refresh failed:', refreshErr);
-                setError('فشل تحميل البيانات من الخادم. يرجى التحقق من الاتصال بالإنترنت.');
-            });
+            // Online and no cached data - fetch from server
+            console.log('No cached data, fetching from server');
+            await fetchAllData();
         } else {
-            // Offline and no cached data
+            // Offline with no cached data
             console.log('Offline mode with no cached data');
             setError('لا توجد بيانات محفوظة. يرجى الاتصال بالإنترنت لأول مرة.');
         }
@@ -826,7 +831,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setProductPrices([]);
         setNotifications([]);
     }, []);
-    
+
+    // CRITICAL FIX: Clear offline session when app launches online to prevent automatic login bypass
+    useEffect(() => {
+        const initializeApp = async () => {
+            // Use helper function for consistent session clearing logic
+            const shouldClear = await shouldClearOfflineSessionOnLaunch();
+            if (shouldClear) {
+                console.log('App launched online - clearing any offline session for security');
+                await clearOfflineSession();
+            }
+        };
+
+        initializeApp();
+    }, []);
+
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session: Session | null) => {
             console.log('Auth state change:', event, 'Initial load:', isInitialLoad);

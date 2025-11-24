@@ -293,20 +293,30 @@ export const getLastOnlineLogin = async (): Promise<string | null> => {
  * Returns true if last online login was more than 7 days ago
  */
 export const shouldReauthenticateOnline = async (): Promise<boolean> => {
-  try {
-    const lastOnlineLogin = await getLastOnlineLogin();
-    
-    if (!lastOnlineLogin) {
-      return true;
+    try {
+        const lastOnlineLogin = await getLastOnlineLogin();
+
+        if (!lastOnlineLogin) {
+            return true;
+        }
+
+        const lastLogin = new Date(lastOnlineLogin);
+        const now = new Date();
+        const daysSinceLastLogin = (now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24);
+
+        return daysSinceLastLogin > 7;
+    } catch (error) {
+        console.error('Error checking reauth requirement:', error);
+        return false;
     }
-    
-    const lastLogin = new Date(lastOnlineLogin);
-    const now = new Date();
-    const daysSinceLastLogin = (now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24);
-    
-    return daysSinceLastLogin > 7;
-  } catch (error) {
-    console.error('Error checking reauth requirement:', error);
-    return false;
-  }
+};
+
+/**
+ * Check if offline session should be cleared on app launch
+ * Returns true if app is online (should clear offline session for security)
+ */
+export const shouldClearOfflineSessionOnLaunch = async (): Promise<boolean> => {
+    // Always clear offline session when app launches online for security
+    // This prevents automatic login bypass when reopening app online
+    return navigator.onLine;
 };
