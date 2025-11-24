@@ -133,26 +133,24 @@ const AppRoutes: React.FC = () => {
                 <Routes>
                     <Route path="/login" element={!currentUser ? <Login /> : <Navigate to="/" />} />
                     <Route path="/*" element={
-                        <Layout>
-                            {!currentUser ? <Navigate to="/login" /> : (
-                                <>
-                                    <Routes>
-                                        <Route path="/" element={
-                                            <>
-                                                {currentUser.role === Role.SALES && <Navigate to="/sales" />}
-                                                {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
-                                                {currentUser.role === Role.ADMIN && <Navigate to="/admin" />}
-                                            </>
-                                        } />
-                                        <Route path="/sales/*" element={<ProtectedRoute allowedRoles={[Role.SALES]}><SalesDashboard /></ProtectedRoute>} />
-                                        <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
-                                        <Route path="/admin/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN]}><AdminDashboard /></ProtectedRoute>} />
-                                    </Routes>
-                                    {/* Sync Status Indicator - shown when logged in */}
-                                    <SyncStatusIndicator />
-                                </>
-                            )}
-                        </Layout>
+                        currentUser ? (
+                            <Layout>
+                                <Routes>
+                                    <Route path="/" element={
+                                        <>
+                                            {currentUser.role === Role.SALES && <Navigate to="/sales" />}
+                                            {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
+                                            {currentUser.role === Role.ADMIN && <Navigate to="/admin" />}
+                                        </>
+                                    } />
+                                    <Route path="/sales/*" element={<ProtectedRoute allowedRoles={[Role.SALES]}><SalesDashboard /></ProtectedRoute>} />
+                                    <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
+                                    <Route path="/admin/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN]}><AdminDashboard /></ProtectedRoute>} />
+                                </Routes>
+                                {/* Sync Status Indicator - shown when logged in */}
+                                <SyncStatusIndicator />
+                            </Layout>
+                        ) : <Login />
                     } />
                 </Routes>
             </HashRouter>

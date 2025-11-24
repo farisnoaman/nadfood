@@ -157,6 +157,7 @@ const shipmentToRow = (shipment: Partial<Shipment>): Partial<Database['public'][
 interface AppContextType {
     currentUser: User | null;
     handleLogout: () => Promise<void>;
+    loadOfflineUser: () => Promise<void>;
     users: User[];
     addUser: (userData: Omit<User, 'id'>, password: string) => Promise<User | null>;
     updateUser: (userId: string, updates: Partial<User>) => Promise<void>;
@@ -959,19 +960,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return () => subscription.unsubscribe();
     }, [fetchAllData, clearData, isInitialLoad, users.length, products.length, loadData]);
 
+    const loadOfflineUser = useCallback(async () => {
+        try {
+            const offlineSession = await getOfflineSession();
+            if (offlineSession) {
+                const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS);
+                const userProfile = cachedUsers.find(u => u.id === offlineSession.userId);
+                if (userProfile) {
+                    setCurrentUser(userProfile);
+                    // Load data for offline user
+                    await loadData(true, navigator.onLine, userProfile);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading offline user:', error);
+        }
+    }, [loadData]);
+
     const handleLogout = useCallback(async () => {
         try {
             // Clear offline session (this keeps credentials for next login)
             await clearOfflineSession();
             
-            // If online, also sign out from Supabase
-            if (navigator.onLine) {
-                const { error } = await supabase.auth.signOut();
-                if (error) {
-                    console.error("Error signing out from Supabase:", error);
-                }
-            } else {
-                console.log("Offline logout - session cleared locally");
+            // Sign out from Supabase (works even offline to trigger auth state change)
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error("Error signing out from Supabase:", error);
             }
             
             // Clear app data from state (but keeps IndexedDB cache)
@@ -1198,7 +1212,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, [fetchAllData]);
     
     const value = useMemo(() => ({
-        currentUser, handleLogout, users, addUser, updateUser,
+        currentUser, handleLogout, loadOfflineUser, users, addUser, updateUser,
         products, addProduct, updateProduct,
         drivers, addDriver, updateDriver, deleteDriver,
         regions, addRegion, updateRegion, deleteRegion,
@@ -1211,7 +1225,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loading, error, isOnline, isSyncing,
         refreshAllData: fetchAllData,
     }), [
-        currentUser, handleLogout, users, addUser, updateUser,
+        currentUser, handleLogout, loadOfflineUser, users, addUser, updateUser,
         products, addProduct, updateProduct,
         drivers, addDriver, updateDriver, deleteDriver,
         regions, addRegion, updateRegion, deleteRegion,

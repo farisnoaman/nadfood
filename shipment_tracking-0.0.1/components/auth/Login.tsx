@@ -17,7 +17,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { isTimeWidgetVisible } = useAppContext();
+  const { isTimeWidgetVisible, loadOfflineUser } = useAppContext();
   
   const {
     isOffline,
@@ -64,8 +64,9 @@ const Login: React.FC = () => {
 
         // Create offline session
         await createSession(validation.userId!, email);
-        
-        // User will be set by onAuthStateChange in AppContext
+
+        // Load offline user manually since no Supabase auth state change
+        await loadOfflineUser();
         console.log('Offline login successful');
         setLoading(false);
         return;
