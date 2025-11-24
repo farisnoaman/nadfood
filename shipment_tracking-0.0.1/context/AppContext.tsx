@@ -849,7 +849,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session: Session | null) => {
             console.log('Auth state change:', event, 'Initial load:', isInitialLoad);
-            
+
+            // Handle sign out event explicitly
+            if (event === 'SIGNED_OUT') {
+                console.log('User signed out, clearing data');
+                clearData();
+                setCurrentUser(null);
+                setLoading(false);
+                return;
+            }
+
             if (session?.user) {
                 const isOnline = navigator.onLine;
 
@@ -998,18 +1007,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const handleLogout = useCallback(async () => {
         try {
-            // Clear offline session (this keeps credentials for next login)
+            // Clear offline session first to prevent restoration
             await clearOfflineSession();
-            
-            // Sign out from Supabase (works even offline to trigger auth state change)
+
+            // Clear app data from state
+            clearData();
+            setCurrentUser(null);
+
+            // Manually clear Supabase localStorage for offline logout
+            if (!navigator.onLine) {
+                const keys = Object.keys(localStorage);
+                keys.forEach(key => {
+                    if (key.includes('supabase') || key.includes('auth') || key.startsWith('sb-')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+            }
+
+            // Always attempt signOut (works online, harmless offline after manual clear)
             const { error } = await supabase.auth.signOut();
             if (error) {
                 console.error("Error signing out from Supabase:", error);
             }
-            
-            // Clear app data from state (but keeps IndexedDB cache)
-            clearData();
-            setCurrentUser(null);
         } catch (error) {
             console.error("Error during logout:", error);
         }
