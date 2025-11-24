@@ -47,8 +47,8 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments }) => {
       'المعرف', 'أمر المبيعات', 'تاريخ الأمر', 'وقت الإدخال', 'المنطقة', 'السائق', 'رقم اللوحة', 'الحالة',
       'المنتجات', 'إجمالي أجر المنتجات', 'إجمالي الديزل', 'رسوم زعيتري', 'مصروفات إدارية', 'المبلغ المستحق',
       'قيمة التالف', 'قيمة النقص', 'خرج الطريق', 'المبلغ المستحق بعد الخصم',
-      'مبالغ أخرى', 'سندات تحسين', 'ممسى', 'نسبة الضريبة (%)', 'إجمالي الضريبة', 'إجمالي المبلغ المستحق النهائي',
-      'رقم الحوالة', 'تاريخ الحوالة', 'تم التعديل بواسطة', 'وقت التعديل'
+      'مبالغ أخرى', 'سندات تحسين', 'ممسى', 'إجمالي المبلغ المستحق النهائي',
+      'رقم الحوالة', 'تاريخ الحوالة'
     ];
 
     const csvRows = [headers.join(',')];
@@ -82,13 +82,9 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments }) => {
         shipment.otherAmounts ?? 0,
         shipment.improvementBonds ?? 0,
         shipment.eveningAllowance ?? 0,
-        shipment.taxRate ?? 0,
-        shipment.totalTax ?? 0,
         shipment.totalDueAmount ?? 0,
         shipment.transferNumber ?? '',
         shipment.transferDate ?? '',
-        shipment.modifiedBy ?? '',
-        shipment.modifiedAt ?? '',
       ];
 
       const row = rowData.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`);
