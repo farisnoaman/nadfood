@@ -12,7 +12,7 @@ export enum Role {
  * Represents the various statuses a shipment can have as it moves through the workflow.
  */
 export enum ShipmentStatus {
-  FROM_SALES = 'من المبيعات', // Newly created by Sales, ready for Accountant
+   FROM_SALES = 'من مسؤول الحركة', // Newly created by Sales, ready for Accountant
   DRAFT = 'مسودة', // Saved by Accountant, not yet sent to Admin
   SENT_TO_ADMIN = 'مرسلة للادمن', // Sent by Accountant, awaiting Admin review
   RETURNED_FOR_EDIT = 'طلب تعديل', // Returned by Admin to Accountant for changes

@@ -304,6 +304,34 @@ export const validateMinLength = (value: string, minLength: number, fieldName: s
       error: MESSAGES.VALIDATION.MIN_LENGTH(fieldName, minLength),
     };
   }
-  
+
+  return { isValid: true };
+};
+
+/**
+ * Check for duplicate sales order
+ */
+export const checkDuplicateSalesOrder = (salesOrder: string, shipments: any[], excludeId?: string): ValidationResult => {
+  const trimmed = salesOrder.trim();
+
+  if (!trimmed) {
+    return { isValid: true }; // Empty sales order is allowed
+  }
+
+  const isDuplicate = shipments.some((s: any) => {
+    // Exclude the current shipment if editing
+    if (excludeId && s.id === excludeId) {
+      return false;
+    }
+    return s.salesOrder === trimmed;
+  });
+
+  if (isDuplicate) {
+    return {
+      isValid: false,
+      error: `رقم أمر المبيعات "${trimmed}" موجود بالفعل. يرجى استخدام رقم آخر.`,
+    };
+  }
+
   return { isValid: true };
 };

@@ -84,20 +84,9 @@ const ReturnedShipmentsTab: React.FC<ReturnedShipmentsTabProps> = ({
               console.log(`Rendering shipment ${index + 1}:`, shipment);
               
               return (
-                <Card 
-                  key={shipment.id} 
-                  className="p-4 bg-white dark:bg-secondary-800 shadow-sm hover:shadow-md transition-all border border-red-200 dark:border-red-800"
-                >
-                  {/* Shipment Header */}
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h4 className="font-semibold text-primary-600 dark:text-primary-400">
-                        {shipment.salesOrder || `شحنة ${index + 1}`}
-                      </h4>
-                      <p className="text-sm text-secondary-500 dark:text-secondary-400">
-                        رقم الشحنة: {shipment.id}
-                      </p>
-                    </div>
+                <div key={shipment.id} className="bg-white dark:bg-secondary-800 shadow rounded-lg overflow-hidden flex flex-col border border-red-200 dark:border-red-800">
+                  <div className="px-4 py-3 bg-secondary-50 dark:bg-secondary-800/50 flex justify-between items-center border-b border-secondary-200 dark:border-secondary-700">
+                    <h3 className="font-bold text-lg text-primary-600 dark:text-primary-400">{shipment.salesOrder || `شحنة ${index + 1}`}</h3>
                     <div className="flex items-center gap-2">
                       <Badge status={shipment.status} />
                       <span className="text-xs px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full">
@@ -106,52 +95,57 @@ const ReturnedShipmentsTab: React.FC<ReturnedShipmentsTabProps> = ({
                     </div>
                   </div>
 
-                  {/* Shipment Details Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <label className="text-xs font-medium text-secondary-500 dark:text-secondary-400">
-                        المنطقة
-                      </label>
-                      <p className="text-sm font-medium text-secondary-800 dark:text-secondary-200">
-                        {getRegionName(shipment.regionId)}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="text-xs font-medium text-secondary-500 dark:text-secondary-400">
-                        السائق
-                      </label>
-                      <p className="text-sm font-medium text-secondary-800 dark:text-secondary-200">
-                        {getDriverName(shipment.driverId)}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="text-xs font-medium text-secondary-500 dark:text-secondary-400">
-                        المبلغ الإجمالي
-                      </label>
-                      <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                        {calculateFinalAmount(shipment).toLocaleString('en-US')} ر.ي
-                      </p>
-                    </div>
-                    
+                  <div className="p-4 space-y-4 flex-grow">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center">
+                        <IconsWithFallback.MapPin className="h-5 w-5 text-secondary-500 ml-2 flex-shrink-0" />
+                        <div>
+                          <p className="text-secondary-500 text-xs">المنطقة</p>
+                          <p className="font-semibold">{getRegionName(shipment.regionId)}</p>
+                        </div>
+                      </div>
 
+                      <div className="flex items-center">
+                        <IconsWithFallback.User className="h-5 w-5 text-secondary-500 ml-2 flex-shrink-0" />
+                        <div>
+                          <p className="text-secondary-500 text-xs">السائق</p>
+                          <p className="font-semibold">{getDriverName(shipment.driverId)}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <IconsWithFallback.Truck className="h-5 w-5 text-secondary-500 ml-2 flex-shrink-0" />
+                        <div>
+                          <p className="text-secondary-500 text-xs">رقم الشحنة</p>
+                          <p className="font-semibold">{shipment.id}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <div className="w-7 h-5 flex items-center justify-center ml-2">
+                          <span className="text-green-500 font-bold text-sm">ر.ي</span>
+                        </div>
+                        <div>
+                          <p className="text-secondary-500 text-xs">المبلغ الإجمالي</p>
+                          <p className="font-bold text-green-600 dark:text-green-400">
+                            {calculateFinalAmount(shipment).toLocaleString('en-US')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2 border-t border-secondary-200 dark:border-secondary-700">
+                      <Button
+                        onClick={() => handleEditClick(shipment)}
+                        variant="primary"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <IconsWithFallback.Edit className="ml-2 h-4 w-4" />
+                        تعديل
+                      </Button>
+                    </div>
                   </div>
-
-
-
-                  {/* Actions */}
-                  <div className="flex justify-end border-t border-secondary-200 dark:border-secondary-700 pt-4">
-                    <Button 
-                      onClick={() => handleEditClick(shipment)}
-                      variant="primary"
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      <IconsWithFallback.Edit className="ml-2 h-4 w-4" />
-                      تعديل الشحنة
-                    </Button>
-                  </div>
-                </Card>
+                </div>
               );
             } catch (error) {
               console.error('Error rendering shipment:', error, shipment);

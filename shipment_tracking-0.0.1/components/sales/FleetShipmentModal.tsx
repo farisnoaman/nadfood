@@ -7,6 +7,7 @@ import Input from '../common/Input';
 import SearchableSelect from '../common/SearchableSelect';
 import { Icons } from '../Icons';
 import { useAppContext } from '../../context/AppContext';
+import { checkDuplicateSalesOrder } from '../../utils/validation';
 
 interface FleetShipmentModalProps {
   shipment: Shipment;
@@ -129,6 +130,13 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
 
   const handleSubmit = async () => {
     if (!validateShipment()) return;
+
+    // Check for duplicate sales order
+    const duplicateCheck = checkDuplicateSalesOrder(currentShipment.salesOrder, shipments, currentShipment.id);
+    if (!duplicateCheck.isValid) {
+      alert(duplicateCheck.error);
+      return;
+    }
 
     setIsSubmitting(true);
     try {

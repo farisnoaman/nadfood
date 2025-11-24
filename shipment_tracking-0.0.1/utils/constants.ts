@@ -127,7 +127,7 @@ export const ROLES = {
 
 // === SHIPMENT STATUSES ===
 export const SHIPMENT_STATUS = {
-  FROM_SALES: 'من المبيعات' as const,
+   FROM_SALES: 'من مسؤول الحركة' as const,
   DRAFT: 'مسودة' as const,
   FROM_ACCOUNTANT: 'من المحاسب' as const,
   FINALIZED: 'منتهي' as const,

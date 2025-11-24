@@ -45,7 +45,7 @@ const Navbar: React.FC = () => {
         <div className="flex h-16 justify-between">
           <a href="/#" className="flex items-center no-underline">
              <Icons.Truck className="h-8 w-8 text-primary-600" />
-             <span className="mr-3 text-2xl font-extrabold text-secondary-800 dark:text-secondary-100">{appName}</span>
+              <span className="mr-2 sm:mr-3 text-lg sm:text-2xl font-extrabold text-secondary-800 dark:text-secondary-100">{appName}</span>
           </a>
           <div className="flex items-center">
             <div className="mr-3">

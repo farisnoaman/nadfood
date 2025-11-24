@@ -527,7 +527,7 @@
 
 14. **Status Badges**
     - Color-coded by status:
-      - من المبيعات (FROM_SALES): Blue
+      - من مسؤول الحركة (FROM_SALES): Blue
       - مسودة (DRAFT): Gray
       - مرسلة للادمن (SENT_TO_ADMIN): Yellow
       - طلب تعديل (RETURNED_FOR_EDIT): Orange

@@ -9,6 +9,7 @@ import Modal from '../common/Modal';
 import { Icons } from '../Icons';
 import SearchableSelect from '../common/SearchableSelect';
 import { useAppContext } from '../../context/AppContext';
+import { checkDuplicateSalesOrder } from '../../utils/validation';
 
 /**
  * Enhanced SearchableSelect for drivers that allows searching by name or plate number
@@ -248,9 +249,9 @@ const NewShipmentForm: React.FC = () => {
     }
 
     // Check for duplicate sales order
-    const isDuplicate = shipments.some((s: Shipment) => s.salesOrder === sanitizedSalesOrder);
-    if (isDuplicate) {
-        setError(`رقم أمر المبيعات "${sanitizedSalesOrder}" موجود بالفعل. يرجى استخدام رقم آخر.`);
+    const duplicateCheck = checkDuplicateSalesOrder(sanitizedSalesOrder, shipments);
+    if (!duplicateCheck.isValid) {
+        setError(duplicateCheck.error);
         setSubmitting(false);
         return;
     }

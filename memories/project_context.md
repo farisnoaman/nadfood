@@ -154,7 +154,7 @@ Tables: users, products, drivers, regions, product_prices, shipments, shipment_p
       - Accountants can return shipments to fleet for corrections using "إرجاع الى مسؤول الحركة" button
       - Fleet users see returned shipments in new "المرتجعة" tab with badge count
       - Fleet can fully edit returned shipments (driver, region, products, quantities, cartons)
-      - After editing, shipment returns to accountant with status "من المبيعات"
+      - After editing, shipment returns to accountant with status "من مسؤول الحركة"
       - Automatic recalculation of all values on submission
     - **Files Created**:
       - components/sales/FleetShipmentModal.tsx (364 lines) - Edit modal for returned shipments
