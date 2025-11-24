@@ -1,0 +1,26 @@
+syncQueue.ts:436 Sync service initialized
+index.tsx:32 App is online
+indexedDB.ts:94 IndexedDB object stores created
+AppContext.tsx:97 Initializing IndexedDB (fast path) and scheduling full hydration...
+indexedDB.ts:384 Starting migration from localStorage to IndexedDB...
+AppContext.tsx:567 Cleaning up shipments subscription
+AppContext.tsx:560 Shipments subscription status: CLOSED
+AppContext.tsx:561 Current user: null
+AppContext.tsx:562 Current shipments count: 0
+AppContext.tsx:97 Initializing IndexedDB (fast path) and scheduling full hydration...
+indexedDB.ts:384 Starting migration from localStorage to IndexedDB...
+index.js:1 content script loaded
+4indexedDB.ts:44 IndexedDB initialized successfully
+indexedDB.ts:451 Migration from localStorage to IndexedDB completed successfully
+AppContext.tsx:122 Starting background full hydration (initAndLoad)...
+indexedDB.ts:451 Migration from localStorage to IndexedDB completed successfully
+AppContext.tsx:178 Background full hydration completed
+AppContext.tsx:122 Starting background full hydration (initAndLoad)...
+AppContext.tsx:178 Background full hydration completed
+AppContext.tsx:594 Auth state change: INITIAL_SESSION Initial load: true
+AppContext.tsx:601 INITIAL_SESSION with no session - deferring handling
+AppContext.tsx:560 Shipments subscription status: SUBSCRIBED
+AppContext.tsx:561 Current user: null
+AppContext.tsx:562 Current shipments count: 0
+AppContext.tsx:594 Auth state change: INITIAL_SESSION Initial load: false
+AppContext.tsx:601 INITIAL_SESSION with no session - deferring handling

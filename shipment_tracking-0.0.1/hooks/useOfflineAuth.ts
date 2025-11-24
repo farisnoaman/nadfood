@@ -4,15 +4,13 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  validateOfflineCredentials,
-  createOfflineSession,
-  getOfflineSession,
+import {
   hasOfflineCredentials,
   shouldReauthenticateOnline,
   clearOfflineSession,
-  getCachedUserProfile,
-  OfflineSession
+  getOfflineSession,
+  validateOfflineCredentials,
+  createOfflineSession
 } from '../utils/offlineAuth';
 
 interface OfflineAuthState {
@@ -46,13 +44,11 @@ export const useOfflineAuth = (): UseOfflineAuthReturn => {
       const [
         hasCredentials,
         offlineSession,
-        shouldReauth,
-        cachedProfile
+        shouldReauth
       ] = await Promise.all([
         hasOfflineCredentials(),
         getOfflineSession(),
-        shouldReauthenticateOnline(),
-        getCachedUserProfile()
+        shouldReauthenticateOnline()
       ]);
 
       setState(prev => ({

@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { 
-    Sun, Moon, Laptop, Palette, LogIn, LogOut, User, KeyRound, Truck, 
-    FilePlus, Send, Archive, Edit, X, Check, Search, Calendar, Hash, 
-    ChevronDown, Plus, Trash2, FileInput, FileOutput, Users, MapPin, 
+import {
+    Sun, Moon, Laptop, Palette, LogIn, LogOut, User, KeyRound, Truck,
+    FilePlus, Send, Archive, Edit, X, Check, Search, Calendar, Hash,
+    ChevronDown, Plus, Trash2, FileInput, FileOutput, Users, MapPin,
     Package, Bell, Save, AlertTriangle, ChevronsRightLeft, Undo2, FileText, UserPlus,
     FileDown, CircleCheck, CircleX, Grid, List, Settings, ArrowRight, ArrowLeft, Printer,
-    ArrowUp, ArrowDown, Share, BarChart3, WifiOff, RefreshCw, Wifi
+    ArrowUp, ArrowDown, Share, BarChart3, WifiOff, RefreshCw, Wifi, CheckCircle
 } from 'lucide-react';
 
 // Type guard to ensure all icons are valid components
@@ -55,6 +55,7 @@ export const Icons = {
     UserPlus: validateIcon(UserPlus, 'UserPlus'),
     FileDown: validateIcon(FileDown, 'FileDown'),
     CircleCheck: validateIcon(CircleCheck, 'CircleCheck'),
+    CheckCircle: validateIcon(CheckCircle, 'CheckCircle'),
     CircleX: validateIcon(CircleX, 'CircleX'),
     Grid: validateIcon(Grid, 'Grid'),
     List: validateIcon(List, 'List'),

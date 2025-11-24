@@ -27,24 +27,30 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[]
 const AppRoutes: React.FC = () => {
     const { currentUser, loading, error } = useAppContext();
     const [loadingTimeout, setLoadingTimeout] = useState(false);
-    const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const loadingTimeoutRef = useRef<{ primary: NodeJS.Timeout; emergency: NodeJS.Timeout } | null>(null);
 
-    // CRITICAL: Add safety timeout to prevent infinite loading
+    // CRITICAL: Multiple safety timeouts to prevent infinite loading
     useEffect(() => {
         if (loading) {
-            // Set a maximum loading time of 10 seconds (reduced for better UX)
-            loadingTimeoutRef.current = setTimeout(() => {
-                console.warn('Loading timeout reached - forcing navigation to login');
+            // Primary timeout (15s) - show retry screen
+            const primaryTimeout = setTimeout(() => {
+                console.warn('Primary loading timeout reached - showing retry screen');
                 setLoadingTimeout(true);
-                // Force reload to try to resolve loading issues
-                setTimeout(() => {
-                    window.location.reload();
-                }, 3000);
-            }, 10000);
+            }, 15000);
+
+            // Emergency timeout (30s) - force reload as last resort
+            const emergencyTimeout = setTimeout(() => {
+                console.error('Emergency loading timeout - forcing page reload');
+                window.location.reload();
+            }, 30000);
+
+            // Store both timeouts for cleanup
+            loadingTimeoutRef.current = { primary: primaryTimeout, emergency: emergencyTimeout };
         } else {
-            // Clear timeout when loading completes
+            // Clear all timeouts when loading completes
             if (loadingTimeoutRef.current) {
-                clearTimeout(loadingTimeoutRef.current);
+                clearTimeout(loadingTimeoutRef.current.primary);
+                clearTimeout(loadingTimeoutRef.current.emergency);
                 loadingTimeoutRef.current = null;
             }
             setLoadingTimeout(false);
@@ -52,7 +58,8 @@ const AppRoutes: React.FC = () => {
 
         return () => {
             if (loadingTimeoutRef.current) {
-                clearTimeout(loadingTimeoutRef.current);
+                clearTimeout(loadingTimeoutRef.current.primary);
+                clearTimeout(loadingTimeoutRef.current.emergency);
             }
         };
     }, [loading]);

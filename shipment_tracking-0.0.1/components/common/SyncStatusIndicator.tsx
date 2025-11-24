@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../Icons';
-import { 
-  getSyncStatus, 
-  subscribeSyncStatus, 
-  processSyncQueue, 
-  SyncStatus 
+import {
+  getSyncStatus,
+  subscribeSyncStatus,
+  processSyncQueue,
+  SyncStatus
 } from '../../utils/syncQueue';
+
 
 const SyncStatusIndicator: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(getSyncStatus());
@@ -78,7 +79,7 @@ const SyncStatusIndicator: React.FC = () => {
           ) : (
             <Icons.WifiOff className="h-4 w-4" />
           )}
-          
+
           {syncStatus.pendingCount > 0 && (
             <span className="flex items-center gap-1">
               <span className="text-xs font-semibold">{syncStatus.pendingCount}</span>
@@ -93,25 +94,25 @@ const SyncStatusIndicator: React.FC = () => {
         {showDetails && (
           <div className="absolute bottom-full left-0 mb-2 w-72 bg-white dark:bg-secondary-800 rounded-lg shadow-2xl border border-secondary-200 dark:border-secondary-700 p-4">
             <div className="space-y-3">
-              {/* Connection Status */}
-              <div className="flex items-center justify-between pb-3 border-b border-secondary-200 dark:border-secondary-700">
-                <span className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
-                  حالة الاتصال
-                </span>
-                <div className="flex items-center gap-2">
-                  {syncStatus.isOnline ? (
-                    <>
-                      <Icons.Wifi className="h-4 w-4 text-green-500" />
-                      <span className="text-sm text-green-600 dark:text-green-400">متصل</span>
-                    </>
-                  ) : (
-                    <>
-                      <Icons.WifiOff className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">غير متصل</span>
-                    </>
-                  )}
-                </div>
-              </div>
+               {/* Connection Status */}
+               <div className="flex items-center justify-between pb-3 border-b border-secondary-200 dark:border-secondary-700">
+                 <span className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
+                   حالة الاتصال
+                 </span>
+                 <div className="flex items-center gap-2">
+                   {syncStatus.isOnline ? (
+                     <>
+                       <Icons.Wifi className="h-4 w-4 text-green-500" />
+                       <span className="text-sm text-green-600 dark:text-green-400">متصل</span>
+                     </>
+                   ) : (
+                     <>
+                       <Icons.WifiOff className="h-4 w-4 text-gray-500" />
+                       <span className="text-sm text-gray-600 dark:text-gray-400">غير متصل</span>
+                     </>
+                   )}
+                 </div>
+               </div>
 
               {/* Pending Count */}
               <div className="flex items-center justify-between">

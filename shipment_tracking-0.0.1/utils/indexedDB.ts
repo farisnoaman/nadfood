@@ -99,7 +99,7 @@ export const initDB = (): Promise<IDBDatabase> => {
 /**
  * Get all records from a store
  */
-export const getAllFromStore = async <T>(storeName: string): Promise<T[]> => {
+export const getAllFromStore = async <T>(storeName: string, timeoutMs: number = 5000): Promise<T[]> => {
   try {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -107,8 +107,27 @@ export const getAllFromStore = async <T>(storeName: string): Promise<T[]> => {
       const store = transaction.objectStore(storeName);
       const request = store.getAll();
 
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      // Set up timeout
+      const timeoutId = setTimeout(() => {
+        transaction.abort();
+        reject(new Error(`getAllFromStore timeout after ${timeoutMs}ms for ${storeName}`));
+      }, timeoutMs);
+
+      request.onsuccess = () => {
+        clearTimeout(timeoutId);
+        resolve(request.result);
+      };
+
+      request.onerror = () => {
+        clearTimeout(timeoutId);
+        reject(request.error);
+      };
+
+      // Handle transaction abort
+      transaction.onabort = () => {
+        clearTimeout(timeoutId);
+        reject(new Error(`Transaction aborted for ${storeName}`));
+      };
     });
   } catch (error) {
     console.error(`Error getting all from ${storeName}:`, error);
@@ -119,7 +138,7 @@ export const getAllFromStore = async <T>(storeName: string): Promise<T[]> => {
 /**
  * Get a single record from a store by key
  */
-export const getFromStore = async <T>(storeName: string, key: string | number): Promise<T | null> => {
+export const getFromStore = async <T>(storeName: string, key: string | number, timeoutMs: number = 5000): Promise<T | null> => {
   try {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -127,8 +146,27 @@ export const getFromStore = async <T>(storeName: string, key: string | number): 
       const store = transaction.objectStore(storeName);
       const request = store.get(key);
 
-      request.onsuccess = () => resolve(request.result || null);
-      request.onerror = () => reject(request.error);
+      // Set up timeout
+      const timeoutId = setTimeout(() => {
+        transaction.abort();
+        reject(new Error(`getFromStore timeout after ${timeoutMs}ms for ${storeName}:${key}`));
+      }, timeoutMs);
+
+      request.onsuccess = () => {
+        clearTimeout(timeoutId);
+        resolve(request.result || null);
+      };
+
+      request.onerror = () => {
+        clearTimeout(timeoutId);
+        reject(request.error);
+      };
+
+      // Handle transaction abort
+      transaction.onabort = () => {
+        clearTimeout(timeoutId);
+        reject(new Error(`Transaction aborted for ${storeName}:${key}`));
+      };
     });
   } catch (error) {
     console.error(`Error getting from ${storeName}:`, error);
