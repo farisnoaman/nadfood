@@ -1,11 +1,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../providers/ThemeContext';
 import { Icons } from '../Icons';
-import Button from '../common/Button';
+import Button from '../common/ui/Button';
 import { Notification } from '../../types';
 import NotificationPanel from './NotificationPanel';
-import { useAppContext } from '../../context/AppContext';
+import { useAppContext } from '../../providers/AppContext';
 
 const Navbar: React.FC = () => {
   const { currentUser, handleLogout, notifications, appName } = useAppContext();

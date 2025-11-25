@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Shipment, Driver, User } from '../types';
 import { sanitizeFilename } from './sanitization';
-import PrintableShipment from '../components/common/PrintableShipment';
+import PrintableShipment from '../components/common/components/PrintableShipment';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { TIMEOUTS, PDF, MESSAGES } from './constants';

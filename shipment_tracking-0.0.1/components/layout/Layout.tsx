@@ -1,7 +1,7 @@
 import React from 'react';
 import Navbar from './Navbar';
-import TimeWidget from '../common/TimeWidget';
-import { useAppContext } from '../../context/AppContext';
+import TimeWidget from '../common/display/TimeWidget';
+import { useAppContext } from '../../providers/AppContext';
 import { Icons } from '../Icons';
 
 const OfflineBanner: React.FC = () => {

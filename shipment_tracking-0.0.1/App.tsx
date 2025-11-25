@@ -1,15 +1,15 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from './context/ThemeContext';
-import { AppProvider, useAppContext } from './context/AppContext';
+import { ThemeProvider } from './providers/ThemeContext';
+import { AppProvider, useAppContext } from './providers/AppContext';
 import { Role } from './types';
-import Login from './components/auth/Login';
-import SalesDashboard from './components/sales/SalesDashboard';
-import AccountantDashboard from './components/accountant/AccountantDashboard';
-import AdminDashboard from './components/admin/AdminDashboard';
+import Login from './components/features/auth/auth/Login';
+import SalesDashboard from './components/features/sales/sales/SalesDashboard';
+import AccountantDashboard from './components/features/accountant/accountant/AccountantDashboard';
+import AdminDashboard from './components/features/admin/admin/AdminDashboard';
 import Layout from './components/layout/Layout';
-import SyncStatusIndicator from './components/common/SyncStatusIndicator';
+import SyncStatusIndicator from './components/common/display/SyncStatusIndicator';
 import { Icons } from './components/Icons';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[] }> = ({ children, allowedRoles }) => {

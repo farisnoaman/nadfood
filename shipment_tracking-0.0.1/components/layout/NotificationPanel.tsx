@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Notification, NotificationCategory } from '../../types';
 import { Icons } from '../Icons';
-import { useAppContext } from '../../context/AppContext';
+import { useAppContext } from '../../providers/AppContext';
 
 interface NotificationPanelProps {
   isOpen: boolean;

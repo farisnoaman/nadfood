@@ -1,214 +1,247 @@
-# تطبيق تتبع الشحنات
+# Shipment Tracking System v1.0.0
 
-تطبيق ويب شامل ومتقدم مصمم لإدارة وتتبع عمليات الشحنات بكفاءة عالية. يوفر التطبيق واجهات مخصصة لأدوار مختلفة داخل المؤسسة، مما يضمن سير عمل سلساً ومنظماً بدءاً من إنشاء الشحنة وحتى تسويتها النهائية.
+A comprehensive shipment tracking and management system built with React, TypeScript, and Supabase for managing fleet operations, accounting, and administrative tasks.
 
----
-## البنية البرمجية والهيكلة (Architecture)
+## 🚀 Features
 
-تم تصميم التطبيق ببنية حديثة وقابلة للتطوير باستخدام **React** و **Supabase** كواجهة خلفية (Backend-as-a-Service).
+### 👥 User Roles
+- **مسؤول الحركة (Sales/Fleet)**: Create and manage shipments, handle returned shipments
+- **محاسب (Accountant)**: Review and process shipments, manage financial calculations
+- **ادمن (Admin)**: Full system administration, user management, data management
 
-- **الواجهة الخلفية (Backend):** يعتمد التطبيق على **Supabase** لتوفير قاعدة بيانات PostgreSQL قوية، ونظام مصادقة آمن، وإمكانيات الوقت الفعلي. جميع البيانات مستمرة وتتم إدارتها من خلال مشروع Supabase.
-- **إدارة الحالة المركزية (Centralized State Management):** يتم استخدام `React Context API` لتوفير حالة التطبيق العامة (مثل بيانات الشحنات، المستخدمين، المنتجات) بعد جلبها من Supabase. هذا يضمن وجود مصدر واحد للحقيقة (Single Source of Truth) في الواجهة الأمامية.
-- **الخطافات المخصصة (Custom Hooks):** تم استخلاص المنطق المتكرر والمعقد، مثل تصفية وفرز الشحنات، في خطافات مخصصة (`useShipmentFilter`) قابلة لإعادة الاستخدام. هذا يقلل من تكرار الكود ويجعل المكونات أكثر نظافة وتركيزاً على العرض.
-- **هيكلة المكونات (Component Structure):** تم تقسيم المكونات الكبيرة والمعقدة إلى مكونات فرعية أصغر وأكثر تخصصاً. على سبيل المثال، تم تفكيك لوحة "إدارة البيانات" إلى مكونات منفصلة لكل نوع من البيانات (المنتجات، السائقين، إلخ)، مما يسهل فهمها وتعديلها بشكل مستقل.
-- **معرفات فريدة (UUIDs):** تم استخدام المعرفات الفريدة عالمياً (UUIDs) التي يوفرها Supabase ك مفاتيح أساسية لمعظم الجداول، مما يضمن عدم تضارب البيانات وقابليتها للتوسع.
+### 📦 Core Functionality
+- **Shipment Creation**: Multi-product shipments with automatic pricing calculations
+- **Real-time Updates**: Live synchronization across all user roles
+- **Offline Support**: Full PWA functionality with background sync
+- **PDF Generation**: Professional shipment receipts and reports
+- **Notification System**: Real-time alerts for all users
+- **Data Export**: CSV export for reports and analytics
 
----
+### 🛠️ Technical Features
+- **Progressive Web App (PWA)**: Installable on mobile devices
+- **Offline-First Architecture**: Works without internet connection
+- **Real-time Synchronization**: Instant updates across all clients
+- **Responsive Design**: Optimized for desktop and mobile
+- **Type-Safe**: Full TypeScript implementation
+- **Modern UI**: Clean, intuitive interface with Arabic RTL support
 
-## الميزات الأساسية
+## 📋 Prerequisites
 
-- **نظام أدوار وصلاحيات:** أدوار مخصصة (مبيعات، محاسب، مدير) مع صلاحيات محددة لكل دور، تدار عبر Supabase Auth وملفات المستخدمين (profiles).
-- **إدارة شاملة للبيانات:** لوحة تحكم مركزية للمدير لإدارة بيانات المنتجات، السائقين، المناطق، والأسعار بشكل فوري في قاعدة البيانات.
-- **سير عمل متكامل ومرن:**
-  - عملية واضحة لنقل الشحنة بين الأقسام (المبيعات، المحاسبة، الإدارة).
-  - يمكن للمبيعات إرسال الشحنات بأسعار غير محددة، مع تنبيه المدير. يقوم النظام بإعادة الحسابات تلقائياً لضمان استخدام أحدث الأسعار من قاعدة البيانات.
-- **حسابات تلقائية:** يقوم النظام بحساب التكاليف والمستحقات تلقائياً في كل مرحلة لتقليل الأخطاء البشرية.
-- **لوحات تحكم قوية:**
-  - خلاصات مالية للمدير مع تصور بياني للإيرادات الشهرية.
-  - تتبع حي لحالة الشحنات (جديدة، معلقة، محولة).
-- **إعدادات تخصيص متقدمة:**
-  - التحكم في صلاحيات الطباعة للمحاسب.
-  - تخصيص رأس التقرير (اسم الشركة، الشعار).
-  - تخصيص اسم التطبيق ليعكس العلامة التجارية.
-  - التحكم في ظهور أو إخفاء أداة عرض الوقت والتاريخ.
-- **تقارير احترافية:**
-  - إنشاء تقارير PDF بتصميم حديث ومحسن للطباعة (باستخدام `jsPDF` و `html2canvas`).
-  - تصدير بيانات الشحنات والملخصات المالية إلى ملفات CSV.
-- **واجهة عصرية ومحسنة:**
-  - تصميم حديث ومتجاوب يعمل على جميع الأجهزة.
-  - قوائم منسدلة قابلة للبحث في جميع أنحاء التطبيق لتسهيل اختيار البيانات.
-  - عرض متكيف لإدارة البيانات على الأجهزة المحمولة (يتحول من تبويبات إلى قائمة منسدلة).
-  - إمكانية التبديل بين عرض القائمة والعرض الشبكي للبيانات.
-- **نظام إشعارات قابل للتخصيص:** تنبيهات فورية للمستخدمين مع إمكانية تحديد فئات الإشعارات التي يرغبون في استقبالها.
-- **دعم الوضع الليلي:** إمكانية التبديل بين الوضع الفاتح والداكن لراحة العين.
-- **صفحة تسجيل دخول احترافية:** تتضمن تذييلاً يعرض حقوق النشر.
+- Node.js 18+
+- npm or yarn
+- Supabase account and project
+- Android Studio (for APK builds)
 
----
+## 🏗️ Quick Start
 
-## أدوار المستخدمين والصلاحيات
-
-يحتوي التطبيق على ثلاثة أدوار رئيسية:
-
-### 1. المبيعات (Sales)
-
-مسؤول عن إنشاء الشحنات الأولية.
-- **الوظائف:**
-  - إدخال بيانات الشحنة الجديدة (تاريخ الأمر، رقم أمر المبيعات، المنطقة، السائق).
-  - إضافة المنتجات وعدد الكراتين لكل شحنة.
-  - إرسال الشحنة إلى قسم المحاسبة للمراجعة، حتى لو كان سعر المنتج غير محدد.
-
-### 2. المحاسب (Accountant)
-
-يقوم بمراجعة الشحنات المستلمة من مسؤول الحركة وإضافة الخصميات الأولية.
-- **الوظائف:**
-  - استعراض الشحنات مع خيارات تصفية وفرز متقدمة.
-  - إضافة قيم الخصميات مثل (التالف، النقص، خرج الطريق).
-  - ترحيل الشحنة إلى المدير للاعتماد النهائي (مع إعادة حساب تلقائية لضمان دقة الأسعار).
-  - **طباعة التقارير:** يمكنه طباعة تقارير الشحنات النهائية كملف PDF **إذا منحه المدير الصلاحية**.
-
-### 3. المدير (Admin)
-
-يمتلك صلاحيات كاملة على النظام، وهو المسؤول عن المراجعة النهائية وإدارة البيانات الأساسية.
-- **الوظائف:**
-  - **مراجعة الشحنات:**
-    - اعتماد الشحنة بشكل نهائي أو إرجاعها للمحاسب.
-    - **طباعة التقارير:** طباعة أي تقرير شحنة نهائي كملف PDF.
-  - **إدارة البيانات الرئيسية:**
-    - إضافة، تعديل، وحذف بيانات (المنتجات، السائقين، المناطق، أسعار المنتجات لكل منطقة).
-  - **إدارة المستخدمين:**
-    - إضافة مستخدمين جدد، تغيير كلمات المرور، وتفعيل/تعطيل الحسابات.
-  - **عرض الخلاصات:**
-    - لوحة تحكم تعرض ملخصات مالية ورسم بياني للإيرادات الشهرية مع إمكانية التصدير إلى Excel.
-    - تتبع حي لحالة الشحنات (جديدة، معلقة، محولة).
-  - **الإعدادات:**
-    - **صلاحيات الطباعة:** منح أو منع المحاسب من صلاحية طباعة التقارير.
-    - **تخصيص الواجهة والتطبيق:** تعديل اسم التطبيق، بيانات الشركة، والتحكم في عناصر الواجهة.
-
----
-
-## إعداد قاعدة البيانات والتثبيت
-
-يعتمد هذا التطبيق على Supabase. لتشغيله، ستحتاج إلى إعداد مشروع Supabase وإنشاء الجداول التالية.
-
-### 1. إعداد مشروع Supabase
-
-1.  اذهب إلى [supabase.com](https://supabase.com/) وأنشئ مشروعاً جديداً.
-2.  بمجرد إنشاء المشروع، اذهب إلى `Project Settings` > `API`.
-3.  انسخ **Project URL** و **anon public key**.
-4.  الصق هذه القيم في ملف `src/utils/supabaseClient.ts`.
-
-### 2. مخطط قاعدة البيانات (SQL Schema)
-
-اذهب إلى `SQL Editor` في لوحة تحكم Supabase وقم بتنفيذ الأوامر التالية لإنشاء الجداول اللازمة.
-
-```sql
--- جدول المستخدمين (يتم ربطه تلقائيًا بـ auth.users)
-CREATE TABLE public.users (
-  id uuid NOT NULL PRIMARY KEY REFERENCES auth.users(id),
-  username TEXT NOT NULL,
-  role TEXT NOT NULL,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- جدول المنتجات
-CREATE TABLE public.products (
-  id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL UNIQUE,
-  is_active BOOLEAN DEFAULT true
-);
-
--- جدول السائقين
-CREATE TABLE public.drivers (
-  id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL,
-  plate_number TEXT NOT NULL,
-  is_active BOOLEAN DEFAULT true
-);
-
--- جدول المناطق
-CREATE TABLE public.regions (
-  id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL UNIQUE,
-  diesel_liter_price NUMERIC NOT NULL,
-  diesel_liters NUMERIC NOT NULL,
-  zaitri_fee NUMERIC NOT NULL
-);
-
--- جدول أسعار المنتجات (يربط المنتجات بالمناطق)
-CREATE TABLE public.product_prices (
-  id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-  region_id uuid NOT NULL REFERENCES public.regions(id) ON DELETE CASCADE,
-  product_id uuid NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
-  price NUMERIC NOT NULL,
-  UNIQUE(region_id, product_id)
-);
-
--- جدول الشحنات الرئيسي
-CREATE TABLE public.shipments (
-  id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-  sales_order TEXT NOT NULL UNIQUE,
-  order_date DATE NOT NULL,
-  entry_timestamp TIMESTAMPTZ NOT NULL DEFAULT now(),
-  region_id uuid NOT NULL REFERENCES public.regions(id),
-  driver_id INTEGER NOT NULL REFERENCES public.drivers(id),
-  status TEXT NOT NULL,
-  total_diesel NUMERIC,
-  total_wage NUMERIC,
-  zaitri_fee NUMERIC,
-  admin_expenses NUMERIC,
-  due_amount NUMERIC,
-  damaged_value NUMERIC,
-  shortage_value NUMERIC,
-  road_expenses NUMERIC,
-  due_amount_after_discount NUMERIC,
-  other_amounts NUMERIC,
-  improvement_bonds NUMERIC,
-  evening_allowance NUMERIC,
-  total_due_amount NUMERIC,
-  tax_rate NUMERIC,
-  total_tax NUMERIC,
-  transfer_number TEXT,
-  transfer_date DATE,
-  modified_by TEXT,
-  modified_at TIMESTAMPTZ,
-  deductions_edited_by TEXT,
-  deductions_edited_at TIMESTAMPTZ,
-  created_by uuid REFERENCES auth.users(id),
-  has_missing_prices BOOLEAN DEFAULT false
-);
-
--- جدول المنتجات داخل الشحنة
-CREATE TABLE public.shipment_products (
-  id SERIAL PRIMARY KEY,
-  shipment_id uuid NOT NULL REFERENCES public.shipments(id) ON DELETE CASCADE,
-  product_id uuid NOT NULL REFERENCES public.products(id),
-  product_name TEXT NOT NULL, -- To preserve name at time of creation
-  carton_count INTEGER NOT NULL,
-  product_wage_price NUMERIC
-);
-
--- جدول الإشعارات
-CREATE TABLE public.notifications (
-  id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-  message TEXT NOT NULL,
-  "timestamp" TIMESTAMPTZ NOT NULL DEFAULT now(),
-  read BOOLEAN DEFAULT false,
-  category TEXT NOT NULL,
-  target_roles TEXT[],
-  target_user_ids uuid[]
-);
+### 1. Clone and Install
+```bash
+git clone <repository-url>
+cd shipment-tracking
+npm install
 ```
 
-### 3. أمان على مستوى الصف (Row Level Security)
+### 2. Environment Setup
+```bash
+cp .env.example .env
+# Edit .env with your Supabase credentials
+```
 
-لضمان أمان البيانات، يجب تفعيل RLS على جميع الجداول. إليك بعض الأمثلة الأساسية:
+### 3. Database Setup
+```bash
+# Apply database migrations
+supabase db push
 
--   **لجدول `users`:** اسمح للمستخدمين بقراءة بياناتهم فقط.
--   **لبقية الجداول:** اسمح لجميع المستخدمين المسجلين (authenticated) بقراءة جميع البيانات، وتقييد عمليات الكتابة (insert, update, delete) بناءً على دور المستخدم إذا لزم الأمر.
+# Or manually execute SQL files in supabase/migrations/
+```
+
+### 4. Development
+```bash
+npm run dev
+```
+
+### 5. Build for Production
+```bash
+npm run build
+```
+
+## 📱 Building APK
+
+### Automated APK Build
+```bash
+# Install Capacitor (if not already installed)
+npm install @capacitor/core @capacitor/cli @capacitor/android
+
+# Setup Android project
+npm run android:setup
+
+# Build APK
+npm run android:build
+```
+
+### Manual APK Build
+See `docs/guides/ANDROID_APK_GUIDE.md` for detailed instructions.
+
+## 🚀 Deployment
+
+### Web Deployment
+```bash
+# Build for production
+npm run build
+
+# Deploy dist/ folder to your web server
+```
+
+### Supabase Edge Functions
+```bash
+# Install Supabase CLI
+npm install -g supabase
+
+# Login and link project
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+
+# Deploy functions
+supabase functions deploy admin-change-user-password
+```
+
+See `docs/guides/DEPLOYMENT_GUIDE.md` for complete deployment guide.
+
+## 📖 Documentation
+
+### 📚 User Guides
+- `docs/guides/QUICK_BUILD_GUIDE.md` - Quick setup and build guide
+- `docs/guides/OFFLINE_MODE_IMPLEMENTATION.md` - Offline functionality details
+- `docs/guides/APK_BUILD_README.md` - APK building instructions
+
+### 🏗️ Development
+- `docs/guides/APK_BUILD_SUMMARY.md` - Build process summary
+- `docs/guides/DEPLOYMENT_GUIDE.md` - Deployment procedures
+
+### 📋 Archived Reports
+- `docs/archive/` - Completed feature reports and fix summaries
+
+## 🏛️ Project Structure
+
+```
+shipment-tracking/
+├── components/                 # React components
+│   ├── common/                # Shared components
+│   │   ├── ui/               # Basic UI components
+│   │   ├── forms/            # Form components
+│   │   ├── display/          # Display components
+│   │   └── components/       # Specialized components
+│   ├── features/             # Feature-specific components
+│   │   ├── auth/            # Authentication
+│   │   ├── sales/           # Sales/Fleet features
+│   │   ├── accountant/      # Accounting features
+│   │   └── admin/           # Admin features
+│   ├── layout/              # Layout components
+│   └── providers/           # Context providers
+├── providers/               # React contexts
+├── utils/                   # Utility functions
+├── hooks/                   # Custom React hooks
+├── supabase/               # Database schema & migrations
+├── docs/                   # Documentation
+├── public/                 # Static assets
+└── types.ts               # TypeScript definitions
+```
+
+## 🔧 Available Scripts
+
+```bash
+# Development
+npm run dev              # Start development server
+npm run build           # Build for production
+npm run preview         # Preview production build
+
+# Android APK
+npm run android:setup   # Setup Android project
+npm run android:sync    # Sync with Android project
+npm run android:open    # Open Android Studio
+npm run android:build   # Build APK
+
+# Code Quality
+npm run lint           # Run ESLint
+```
+
+## 🔐 Security Features
+
+- **Row Level Security (RLS)**: Database-level access control
+- **Authentication**: Supabase Auth integration
+- **Role-based Access**: Granular permissions per user role
+- **Data Sanitization**: Input validation and sanitization
+- **Secure API**: All API calls authenticated and authorized
+
+## 📊 Database Schema
+
+### Core Tables
+- `users` - User accounts and roles
+- `shipments` - Shipment records
+- `shipment_products` - Products within shipments
+- `drivers` - Driver information
+- `regions` - Geographic regions
+- `product_prices` - Pricing by region and product
+- `notifications` - System notifications
+
+### Key Relationships
+- Shipments → Drivers (many-to-one)
+- Shipments → Regions (many-to-one)
+- Shipments → Products (many-to-many via shipment_products)
+- Product Prices → Regions + Products (composite key)
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Build Fails**
+```bash
+# Clear node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**APK Build Issues**
+- Ensure Android Studio is installed
+- Check Java JDK version (11+ required)
+- Verify Capacitor configuration
+
+**Database Connection**
+- Verify Supabase credentials in `.env`
+- Check RLS policies are applied
+- Ensure user has correct role permissions
+
+**Offline Sync Issues**
+- Check service worker registration
+- Verify IndexedDB is not corrupted
+- Clear browser data and retry
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+## 📄 License
+
+This project is proprietary software. All rights reserved.
+
+## 📞 Support
+
+For support and questions:
+- Check the documentation in `docs/`
+- Review archived reports in `docs/archive/`
+- Contact the development team
 
 ---
-created with ❤️ by Faris and AI
+
+**Version**: 1.0.0
+**Last Updated**: November 2025
+**Node Version**: 18+
+**React Version**: 18.2.0
+**Supabase Version**: Latest
 ---
 
 ---
