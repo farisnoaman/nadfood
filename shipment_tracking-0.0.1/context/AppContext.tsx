@@ -716,10 +716,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         }
 
                         const { products, ...shipmentUpdates } = updates;
-                        const updateRow = shipmentToRow(shipmentUpdates);
-                        
-                        const { error } = await supabase.from('shipments').update(updateRow).eq('id', shipmentId);
-                        if (error) throw error;
+
+                        // Update the main shipment record
+                        if (Object.keys(shipmentUpdates).length > 0) {
+                            const updateRow = shipmentToRow(shipmentUpdates);
+                            const { error } = await supabase.from('shipments').update(updateRow).eq('id', shipmentId);
+                            if (error) throw error;
+                        }
+
+                        // Update products if provided
+                        if (products !== undefined) {
+                            // Delete existing products for this shipment
+                            const { error: deleteError } = await supabase
+                                .from('shipment_products')
+                                .delete()
+                                .eq('shipment_id', shipmentId);
+                            if (deleteError) throw deleteError;
+
+                            // Insert new products if any
+                            if (products.length > 0) {
+                                const shipmentProductsToInsert = products.map((p: ShipmentProduct) => ({
+                                    shipment_id: shipmentId,
+                                    product_id: p.productId,
+                                    product_name: p.productName,
+                                    carton_count: p.cartonCount,
+                                    product_wage_price: p.productWagePrice
+                                }));
+
+                                const { error: productsError } = await supabase
+                                    .from('shipment_products')
+                                    .insert(shipmentProductsToInsert);
+                                if (productsError) throw productsError;
+                            }
+                        }
                     }
 
                     successfullySyncedIndices.push(index);
@@ -1148,9 +1177,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updateShipment = useCallback(async (shipmentId: string, updates: Partial<Shipment>) => {
         if (!isOnline) {
             console.log('Offline: Queuing shipment update.');
-            
+
             // Optimistically update local state
-            const updatedShipments = shipments.map(s => 
+            const updatedShipments = shipments.map(s =>
                 s.id === shipmentId ? { ...s, ...updates } : s
             );
             setShipments(updatedShipments);
@@ -1160,10 +1189,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             await IndexedDB.addToMutationQueue({ type: 'updateShipment', payload: { shipmentId, updates } });
             return;
         }
+
         const { products, ...shipmentUpdates } = updates;
-        const updateRow = shipmentToRow(shipmentUpdates);
-        const { error } = await supabase.from('shipments').update(updateRow).eq('id', shipmentId);
-        if(error) throw error;
+
+        // Update the main shipment record
+        if (Object.keys(shipmentUpdates).length > 0) {
+            const updateRow = shipmentToRow(shipmentUpdates);
+            const { error } = await supabase.from('shipments').update(updateRow).eq('id', shipmentId);
+            if(error) throw error;
+        }
+
+        // Update products if provided
+        if (products !== undefined) {
+            // Delete existing products for this shipment
+            const { error: deleteError } = await supabase
+                .from('shipment_products')
+                .delete()
+                .eq('shipment_id', shipmentId);
+            if (deleteError) throw deleteError;
+
+            // Insert new products if any
+            if (products.length > 0) {
+                const shipmentProductsToInsert = products.map(p => ({
+                    shipment_id: shipmentId,
+                    product_id: p.productId,
+                    product_name: p.productName,
+                    carton_count: p.cartonCount,
+                    product_wage_price: p.productWagePrice
+                }));
+
+                const { error: productsError } = await supabase
+                    .from('shipment_products')
+                    .insert(shipmentProductsToInsert);
+                if (productsError) throw productsError;
+            }
+        }
+
         await fetchAllData();
     }, [fetchAllData, isOnline, shipments]);
     

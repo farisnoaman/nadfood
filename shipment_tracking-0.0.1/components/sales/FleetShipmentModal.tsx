@@ -77,6 +77,13 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
       ...updatedProducts[index],
       [field]: field === 'productId' || field === 'productName' ? String(value) : (value === '' ? 0 : Number(value))
     };
+
+    // Automatically update product name when product ID changes
+    if (field === 'productId') {
+      const selectedProduct = products.find((p: Product) => p.id === String(value));
+      updatedProducts[index].productName = selectedProduct?.name || '';
+    }
+
     setCurrentShipment(prev => ({ ...prev, products: updatedProducts }));
   };
 
