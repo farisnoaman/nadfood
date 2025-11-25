@@ -22,7 +22,8 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
     regions,
     drivers,
     productPrices,
-    addNotification
+    addNotification,
+    shipments
   } = useAppContext();
 
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });

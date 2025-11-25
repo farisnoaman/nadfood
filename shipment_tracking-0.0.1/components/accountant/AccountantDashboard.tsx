@@ -20,15 +20,26 @@ const AccountantDashboard: React.FC = () => {
   const [isSearchFilterVisible, setIsSearchFilterVisible] = useState(false);
   
   const baseShipments = useMemo(() => {
+    let filtered: Shipment[] = [];
+
     switch (activeTab) {
       case 'received':
-        return shipments.filter((s: Shipment) => 
-          s.status === ShipmentStatus.FROM_SALES || s.status === ShipmentStatus.DRAFT
-        );
+        // Only show shipments from fleet/sales (FROM_SALES status)
+        // Exclude DRAFT shipments which are work-in-progress by accountant
+        filtered = shipments.filter((s: Shipment) => s.status === ShipmentStatus.FROM_SALES);
+        console.log('AccountantDashboard - Received tab filtering:', {
+          totalShipments: shipments.length,
+          fromSalesShipments: shipments.filter(s => s.status === ShipmentStatus.FROM_SALES).length,
+          draftShipments: shipments.filter(s => s.status === ShipmentStatus.DRAFT).length,
+          filteredCount: filtered.length,
+          shipmentStatuses: shipments.map(s => ({ id: s.id, status: s.status, salesOrder: s.salesOrder }))
+        });
+        return filtered;
       case 'sent':
-        return shipments.filter((s: Shipment) => 
+        filtered = shipments.filter((s: Shipment) =>
           s.status === ShipmentStatus.SENT_TO_ADMIN || s.status === ShipmentStatus.FINAL || s.status === ShipmentStatus.FINAL_MODIFIED
         );
+        return filtered;
       case 'reports':
         return shipments;
       default:
