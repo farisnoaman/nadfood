@@ -116,8 +116,8 @@ const ReturnedShipmentsTab: React.FC<ReturnedShipmentsTabProps> = ({
                       <div className="flex items-center">
                         <IconsWithFallback.Truck className="h-5 w-5 text-secondary-500 ml-2 flex-shrink-0" />
                         <div>
-                          <p className="text-secondary-500 text-xs">رقم الشحنة</p>
-                          <p className="font-semibold">{shipment.id}</p>
+                          <p className="text-secondary-500 text-xs">رقم الأمر</p>
+                          <p className="font-semibold">{shipment.salesOrder || shipment.id}</p>
                         </div>
                       </div>
 
