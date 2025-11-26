@@ -3,7 +3,7 @@ import React, { createContext, useState, useEffect, useContext, useMemo, useCall
 import { User, Role, Product, Region, Driver, Shipment, ProductPrice, Notification, NotificationCategory, ShipmentProduct, ShipmentStatus } from '../types';
 import { supabase } from '../utils/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
-import { Database } from '../supabase/database.types';
+import { Database } from '../../supabase/database.types';
 import * as IndexedDB from '../utils/indexedDB';
 import { clearOfflineSession, getOfflineSession, shouldClearOfflineSessionOnLaunch } from '../utils/offlineAuth';
 
