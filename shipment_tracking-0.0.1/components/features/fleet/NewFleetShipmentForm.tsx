@@ -281,7 +281,7 @@ const NewFleetShipmentForm: React.FC = () => {
                     const productDetails = allProducts.find((p: Product) => p.id === product.productId);
                     if (region && productDetails) {
                         addNotification({
-                            message: `شحنة محظورة: مطلوب تحديد سعر للمنتج "${productDetails.name}" في منطقة "${region.name}". رقم الأمر: ${sanitizedSalesOrder}`,
+                            message: `طلب تسعير: مطلوب تحديد سعر للمنتج "${productDetails.name}" في منطقة "${region.name}". رقم الأمر: ${sanitizedSalesOrder}`,
                             category: NotificationCategory.PRICE_ALERT,
                             targetRoles: [Role.ADMIN]
                         }).catch(error => {
