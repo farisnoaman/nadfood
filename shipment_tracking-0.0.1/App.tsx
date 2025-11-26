@@ -5,7 +5,7 @@ import { ThemeProvider } from './providers/ThemeContext';
 import { AppProvider, useAppContext } from './providers/AppContext';
 import { Role } from './types';
 import Login from './components/features/auth/auth/Login';
-import SalesDashboard from './components/features/sales/sales/SalesDashboard';
+import FleetDashboard from './components/features/fleet/FleetDashboard';
 import AccountantDashboard from './components/features/accountant/accountant/AccountantDashboard';
 import AdminDashboard from './components/features/admin/admin/AdminDashboard';
 import Layout from './components/layout/Layout';
@@ -148,13 +148,13 @@ const AppRoutes: React.FC = () => {
                                             </div>
                                         ) : (
                                             <>
-                                                {currentUser.role === Role.SALES && <Navigate to="/sales" />}
+                                                {currentUser.role === Role.SALES && <Navigate to="/fleet" />}
                                                 {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
                                                 {currentUser.role === Role.ADMIN && <Navigate to="/admin" />}
                                             </>
                                         )
                                     } />
-                                    <Route path="/sales/*" element={<ProtectedRoute allowedRoles={[Role.SALES]}><SalesDashboard /></ProtectedRoute>} />
+                                    <Route path="/fleet/*" element={<ProtectedRoute allowedRoles={[Role.SALES]}><FleetDashboard /></ProtectedRoute>} />
                                     <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
                                     <Route path="/admin/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN]}><AdminDashboard /></ProtectedRoute>} />
                                 </Routes>

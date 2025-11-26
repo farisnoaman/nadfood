@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Shipment, ShipmentStatus, Product, Region, Driver, NotificationCategory, Role, ShipmentProduct } from '../../../../types';
-import { calculateInitialShipmentValues } from '../../../../utils/calculations';
-import Modal from '../../../common/ui/Modal';
-import Button from '../../../common/ui/Button';
-import Input from '../../../common/ui/Input';
-import SearchableSelect from '../../../common/forms/SearchableSelect';
-import { Icons } from '../../../Icons';
-import { useAppContext } from '../../../../providers/AppContext';
-import { checkDuplicateSalesOrder } from '../../../../utils/validation';
+import { Shipment, ShipmentStatus, Product, Region, Driver, NotificationCategory, Role, ShipmentProduct } from '../../../types';
+import { calculateInitialShipmentValues } from '../../../utils/calculations';
+import Modal from '../../common/ui/Modal';
+import Button from '../../common/ui/Button';
+import Input from '../../common/ui/Input';
+import SearchableSelect from '../../common/forms/SearchableSelect';
+import { Icons } from '../../Icons';
+import { useAppContext } from '../../../providers/AppContext';
+import { checkDuplicateSalesOrder } from '../../../utils/validation';
 
 interface FleetShipmentModalProps {
   shipment: Shipment;

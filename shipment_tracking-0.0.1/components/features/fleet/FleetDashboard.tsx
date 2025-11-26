@@ -1,15 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { Shipment, ShipmentStatus } from '../../../../types';
-import { useAppContext } from '../../../../providers/AppContext';
-import NewShipmentForm from './NewShipmentForm';
+import { Shipment, ShipmentStatus } from '../../../types';
+import { useAppContext } from '../../../providers/AppContext';
+import NewFleetShipmentForm from './NewFleetShipmentForm';
 import FleetShipmentModal from './FleetShipmentModal';
 import ReturnedShipmentsTab from './ReturnedShipmentsTab';
 
-import { IconsWithFallback } from '../../../Icons';
+import { IconsWithFallback } from '../../Icons';
 
 type Tab = 'create' | 'returned';
 
-const SalesDashboard: React.FC = () => {
+const FleetDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('create');
   const { shipments, drivers, regions, refreshAllData, isSyncing } = useAppContext();
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
@@ -144,7 +144,7 @@ const SalesDashboard: React.FC = () => {
       {/* Tab Content */}
       {activeTab === 'create' && (
         <div>
-          <NewShipmentForm />
+          <NewFleetShipmentForm />
         </div>
       )}
 
@@ -172,4 +172,4 @@ const SalesDashboard: React.FC = () => {
   );
 };
 
-export default SalesDashboard;
+export default FleetDashboard;
