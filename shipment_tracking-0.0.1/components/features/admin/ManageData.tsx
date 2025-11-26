@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
-import Card from '../../../common/display/Card';
-import Button from '../../../common/ui/Button';
-import { Icons } from '../../../Icons';
+import Card from '../../common/display/Card';
+import Button from '../../common/ui/Button';
+import { Icons } from '../../Icons';
 import ProductManager from './manage-data/ProductManager';
 import DriverManager from './manage-data/DriverManager';
 import RegionManager from './manage-data/RegionManager';
 import PriceManager from './manage-data/PriceManager';
-import SearchableSelect from '../../../common/forms/SearchableSelect';
+import SearchableSelect from '../../common/forms/SearchableSelect';
 
 type DataType = 'products' | 'drivers' | 'regions' | 'prices';
 

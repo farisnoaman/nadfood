@@ -3,11 +3,11 @@ import React, { useState, useMemo } from 'react';
 import AdminShipmentList from './AdminShipmentList';
 import ManageData from './ManageData';
 import ManageUsers from './ManageUsers';
-import { Icons } from '../../../Icons';
-import { Shipment, ShipmentStatus } from '../../../../types';
+import { Icons } from '../../Icons';
+import { Shipment, ShipmentStatus } from '../../../types';
 import AdminSettings from './AdminSettings';
 import AdminReports from './AdminReports';
-import { useAppContext } from '../../../../providers/AppContext';
+import { useAppContext } from '../../../providers/AppContext';
 
 type Tab = 'reports' | 'received' | 'all_shipments' | 'data_management' | 'user_management' | 'settings';
 

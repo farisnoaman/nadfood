@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Region } from '../../../../../types';
-import Button from '../../../../common/ui/Button';
-import Input from '../../../../common/ui/Input';
-import Modal from '../../../../common/ui/Modal';
-import { Icons } from '../../../../Icons';
-import { useAppContext } from '../../../../../providers/AppContext';
+import { Region } from '../../../../types';
+import Button from '../../../common/ui/Button';
+import Input from '../../../common/ui/Input';
+import Modal from '../../../common/ui/Modal';
+import { Icons } from '../../../Icons';
+import { useAppContext } from '../../../../providers/AppContext';
 
 const RegionManager: React.FC = () => {
     const { regions, addRegion, updateRegion, deleteRegion, isOnline } = useAppContext();

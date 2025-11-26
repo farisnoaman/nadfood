@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { Shipment, ShipmentStatus, Driver, Region } from '../../../../types';
-import Badge from '../../../common/display/Badge';
-import Button from '../../../common/ui/Button';
-import { Icons } from '../../../Icons';
+import { Shipment, ShipmentStatus, Driver, Region } from '../../../types';
+import Badge from '../../common/display/Badge';
+import Button from '../../common/ui/Button';
+import { Icons } from '../../Icons';
 import AdminShipmentModal from './AdminShipmentModal';
-import Input from '../../../common/ui/Input';
-import Card from '../../../common/display/Card';
-import { calculateAdminValues } from '../../../../utils/calculations';
-import ShipmentListItem from '../../../common/display/ShipmentListItem';
-import { useAppContext } from '../../../../providers/AppContext';
-import { useShipmentFilter } from '../../../../hooks/useShipmentFilter';
-import SearchableSelect from '../../../common/forms/SearchableSelect';
+import Input from '../../common/ui/Input';
+import Card from '../../common/display/Card';
+import ArabicDatePicker from '../../common/ui/ArabicDatePicker';
+import { calculateAdminValues } from '../../../utils/calculations';
+import ShipmentListItem from '../../common/display/ShipmentListItem';
+import { useAppContext } from '../../../providers/AppContext';
+import { useShipmentFilter } from '../../../hooks/useShipmentFilter';
+import SearchableSelect from '../../common/forms/SearchableSelect';
 
 interface AdminShipmentListProps {
   shipments: Shipment[];
@@ -184,8 +185,8 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
             {isDateFilterVisible && (
                 <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-secondary-200 dark:border-secondary-700">
                     <div className="grid grid-cols-1 gap-2 sm:gap-4 sm:grid-cols-3 items-end">
-                        <Input label="من تاريخ" type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="text-sm" />
-                        <Input label="إلى تاريخ" type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="text-sm" />
+                        <ArabicDatePicker label="من تاريخ" value={fromDate} onChange={setFromDate} className="text-sm" />
+                        <ArabicDatePicker label="إلى تاريخ" value={toDate} onChange={setToDate} className="text-sm" />
                         <Button variant="ghost" size="sm" onClick={clearDateFilters} className="w-full sm:w-auto text-xs sm:text-sm">
                             <Icons.X className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                             <span className="hidden sm:inline">مسح التواريخ</span>

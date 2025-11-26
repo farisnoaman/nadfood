@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { Shipment, ShipmentStatus, Region } from '../../../../types';
+import { Shipment, ShipmentStatus, Region } from '../../../types';
 import ShipmentList from './ShipmentList';
-import { Icons } from '../../../Icons';
-import Card from '../../../common/display/Card';
-import Input from '../../../common/ui/Input';
-import Button from '../../../common/ui/Button';
-import { useAppContext } from '../../../../providers/AppContext';
-import { useShipmentFilter } from '../../../../hooks/useShipmentFilter';
-import SearchableSelect from '../../../common/forms/SearchableSelect';
+import { Icons } from '../../Icons';
+import Card from '../../common/display/Card';
+import Input from '../../common/ui/Input';
+import Button from '../../common/ui/Button';
+import ArabicDatePicker from '../../common/ui/ArabicDatePicker';
+import { useAppContext } from '../../../providers/AppContext';
+import { useShipmentFilter } from '../../../hooks/useShipmentFilter';
+import SearchableSelect from '../../common/forms/SearchableSelect';
 
 type Tab = 'received' | 'sent' | 'reports';
 type SortOption = 'newest' | 'oldest' | 'highest_due' | 'lowest_due';
@@ -143,8 +144,8 @@ const AccountantDashboard: React.FC = () => {
         {isDateFilterVisible && (
             <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-secondary-200 dark:border-secondary-700">
                 <div className="grid grid-cols-1 gap-2 sm:gap-4 sm:grid-cols-3 items-end">
-                    <Input label="من تاريخ" type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="text-sm" />
-                    <Input label="إلى تاريخ" type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="text-sm" />
+                    <ArabicDatePicker label="من تاريخ" value={fromDate} onChange={setFromDate} className="text-sm" />
+                    <ArabicDatePicker label="إلى تاريخ" value={toDate} onChange={setToDate} className="text-sm" />
                     <Button variant="ghost" size="sm" onClick={clearDateFilters} className="w-full sm:w-auto text-xs sm:text-sm">
                         <Icons.X className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                         <span className="hidden sm:inline">مسح التواريخ</span>

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Shipment } from '../../../../types';
-import Badge from '../../../common/display/Badge';
-import Button from '../../../common/ui/Button';
-import { Icons } from '../../../Icons';
+import { Shipment } from '../../../types';
+import Badge from '../../common/display/Badge';
+import Button from '../../common/ui/Button';
+import { Icons } from '../../Icons';
 import AccountantShipmentModal from './AccountantShipmentModal';
-import ShipmentListItem from '../../../common/display/ShipmentListItem';
-import { useAppContext } from '../../../../providers/AppContext';
+import ShipmentListItem from '../../common/display/ShipmentListItem';
+import { useAppContext } from '../../../providers/AppContext';
 
 interface ShipmentListProps {
   shipments: Shipment[];

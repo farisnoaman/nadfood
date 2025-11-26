@@ -1,12 +1,13 @@
 
 import React, { useState, useMemo } from 'react';
-import { Shipment, ShipmentStatus } from '../../../../types';
-import Card from '../../../common/display/Card';
-import Button from '../../../common/ui/Button';
-import Input from '../../../common/ui/Input';
-import { Icons } from '../../../Icons';
-import { useAppContext } from '../../../../providers/AppContext';
-import SearchableSelect from '../../../common/forms/SearchableSelect';
+import { Shipment, ShipmentStatus } from '../../../types';
+import Card from '../../common/display/Card';
+import Button from '../../common/ui/Button';
+import Input from '../../common/ui/Input';
+import ArabicDatePicker from '../../common/ui/ArabicDatePicker';
+import { Icons } from '../../Icons';
+import { useAppContext } from '../../../providers/AppContext';
+import SearchableSelect from '../../common/forms/SearchableSelect';
 
 type ReportType = 'driver' | 'region';
 
@@ -266,8 +267,8 @@ const AdminReports: React.FC = () => {
                 {isDateFilterVisible && (
                     <div className="mt-4 pt-4 border-t border-secondary-200 dark:border-secondary-700">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                            <Input label="من تاريخ" type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} />
-                            <Input label="إلى تاريخ" type="date" value={toDate} onChange={e => setToDate(e.target.value)} />
+                            <ArabicDatePicker label="من تاريخ" value={fromDate} onChange={setFromDate} />
+                            <ArabicDatePicker label="إلى تاريخ" value={toDate} onChange={setToDate} />
                             <Button variant="ghost" onClick={clearDateFilters} className="w-full sm:w-auto">
                                 <Icons.X className="ml-2 h-4 w-4" />
                                 مسح التواريخ

@@ -6,6 +6,7 @@ import Button from '../../common/ui/Button';
 import Card from '../../common/display/Card';
 import Input from '../../common/ui/Input';
 import Modal from '../../common/ui/Modal';
+import ArabicDatePicker from '../../common/ui/ArabicDatePicker';
 import { Icons } from '../../Icons';
 import SearchableSelect from '../../common/forms/SearchableSelect';
 import { useAppContext } from '../../../providers/AppContext';
@@ -235,8 +236,6 @@ const NewFleetShipmentForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
     setSubmitting(true);
 
     // Sanitize sales order input
@@ -270,8 +269,29 @@ const NewFleetShipmentForm: React.FC = () => {
         }
     });
 
-    // If any prices are missing or zero, show confirmation modal
+    // If any prices are missing or zero, send notifications and show confirmation modal
     if (productsWithMissingPrice.length > 0) {
+        // Send notifications to admins about missing prices for blocked shipment
+        // Use setTimeout to make it non-blocking and avoid React render issues
+        setTimeout(() => {
+            finalProducts.forEach(product => {
+                const priceExists = productPrices.some((pp: ProductPrice) => pp.regionId === regionId && pp.productId === product.productId);
+                if (!priceExists) {
+                    const region = regions.find((r: Region) => r.id === regionId);
+                    const productDetails = allProducts.find((p: Product) => p.id === product.productId);
+                    if (region && productDetails) {
+                        addNotification({
+                            message: `شحنة محظورة: مطلوب تحديد سعر للمنتج "${productDetails.name}" في منطقة "${region.name}". رقم الأمر: ${sanitizedSalesOrder}`,
+                            category: NotificationCategory.PRICE_ALERT,
+                            targetRoles: [Role.ADMIN]
+                        }).catch(error => {
+                            console.error('Failed to send price alert notification:', error);
+                        });
+                    }
+                }
+            });
+        }, 100); // Small delay to ensure modal renders first
+
         setMissingPriceProducts(productsWithMissingPrice);
         setShowMissingPriceModal(true);
         setSubmitting(false);
@@ -283,23 +303,7 @@ const NewFleetShipmentForm: React.FC = () => {
 
   const proceedWithSubmission = async (sanitizedSalesOrder: string, finalProducts: ShipmentProduct[]) => {
     setSubmitting(true);
-    const notificationPromises: Promise<void>[] = [];
-    
-    // Send price alerts for missing prices
-    finalProducts.forEach(product => {
-        const priceExists = productPrices.some((pp: ProductPrice) => pp.regionId === regionId && pp.productId === product.productId);
-        if (!priceExists) {
-            const region = regions.find((r: Region) => r.id === regionId);
-            const productDetails = allProducts.find((p: Product) => p.id === product.productId);
-            if(region && productDetails) {
-                notificationPromises.push(addNotification({
-                    message: `تنبيه: مطلوب تحديد سعر للمنتج "${productDetails.name}" في منطقة "${region.name}".`,
-                    category: NotificationCategory.PRICE_ALERT,
-                    targetRoles: [Role.ADMIN]
-                }));
-            }
-        }
-    });
+    const notificationPromises: Promise<any>[] = [];
 
     try {
         const newShipmentBase: Omit<Shipment, 'id' | 'entryTimestamp' | 'status'> = {
@@ -354,7 +358,7 @@ const NewFleetShipmentForm: React.FC = () => {
           {success && <div className="p-3 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 rounded-md">{success}</div>}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input label="تاريخ الأمر" type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} required />
+              <ArabicDatePicker label="تاريخ الأمر" value={orderDate} onChange={setOrderDate} required />
               <Input 
                 label="رقم الامر" 
                 type="text" 

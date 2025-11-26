@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Product } from '../../../../../types';
-import Button from '../../../../common/ui/Button';
-import Input from '../../../../common/ui/Input';
-import Modal from '../../../../common/ui/Modal';
-import { Icons } from '../../../../Icons';
-import { useAppContext } from '../../../../../providers/AppContext';
+import { Product } from '../../../../types';
+import Button from '../../../common/ui/Button';
+import Input from '../../../common/ui/Input';
+import Modal from '../../../common/ui/Modal';
+import { Icons } from '../../../Icons';
+import { useAppContext } from '../../../../providers/AppContext';
 
 const ProductManager: React.FC = () => {
   const { products, addProduct, updateProduct, isOnline } = useAppContext();

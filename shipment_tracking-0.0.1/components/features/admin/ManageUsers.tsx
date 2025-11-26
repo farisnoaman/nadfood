@@ -1,15 +1,15 @@
 
 import React, { useState, useMemo } from 'react';
-import { User, Role } from '../../../../types';
-import { sanitizeUsername, sanitizeEmail } from '../../../../utils/sanitization';
-import Card from '../../../common/display/Card';
-import Button from '../../../common/ui/Button';
-import Input from '../../../common/ui/Input';
-import { Icons } from '../../../Icons';
-import Modal from '../../../common/ui/Modal';
-import { useAppContext } from '../../../../providers/AppContext';
-import SearchableSelect from '../../../common/forms/SearchableSelect';
-import { supabase } from '../../../../utils/supabaseClient';
+import { User, Role } from '../../../types';
+import { sanitizeUsername, sanitizeEmail } from '../../../utils/sanitization';
+import Card from '../../common/display/Card';
+import Button from '../../common/ui/Button';
+import Input from '../../common/ui/Input';
+import { Icons } from '../../Icons';
+import Modal from '../../common/ui/Modal';
+import { useAppContext } from '../../../providers/AppContext';
+import SearchableSelect from '../../common/forms/SearchableSelect';
+import { supabase } from '../../../utils/supabaseClient';
 
 const ManageUsers: React.FC = () => {
   const { users, updateUser, currentUser } = useAppContext();

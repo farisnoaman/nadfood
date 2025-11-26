@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Shipment, ShipmentStatus, Role, NotificationCategory, Driver, Region } from '../../../../types';
-import Modal from '../../../common/ui/Modal';
-import Button from '../../../common/ui/Button';
-import Input from '../../../common/ui/Input';
-import { Icons } from '../../../Icons';
-import { printShipmentDetails } from '../../../../utils/print';
-import { useAppContext } from '../../../../providers/AppContext';
-import FieldValue from '../../../common/components/FieldValue';
-import ProductDetails from '../../../common/components/ProductDetails';
-import ShipmentStepper from '../../../common/components/ShipmentStepper';
+import { Shipment, ShipmentStatus, Role, NotificationCategory, Driver, Region } from '../../../types';
+import Modal from '../../common/ui/Modal';
+import Button from '../../common/ui/Button';
+import Input from '../../common/ui/Input';
+import ArabicDatePicker from '../../common/ui/ArabicDatePicker';
+import { Icons } from '../../Icons';
+import { printShipmentDetails } from '../../../utils/print';
+import { useAppContext } from '../../../providers/AppContext';
+import FieldValue from '../../common/components/FieldValue';
+import ProductDetails from '../../common/components/ProductDetails';
+import ShipmentStepper from '../../common/components/ShipmentStepper';
 
 // --- Helper Functions and Sub-components ---
 
@@ -92,11 +93,10 @@ const TransferSection: React.FC<{ shipment: Shipment; onValueChange: (field: key
                 onChange={e => onValueChange('transferNumber', e.target.value)} 
                 required
             />
-            <Input 
-                label="تاريخ الحوالة" 
-                type="date" 
-                value={shipment.transferDate || ''} 
-                onChange={e => onValueChange('transferDate', e.target.value)} 
+            <ArabicDatePicker
+                label="تاريخ الحوالة"
+                value={shipment.transferDate || ''}
+                onChange={(value) => onValueChange('transferDate', value)}
             />
         </div>
     </div>

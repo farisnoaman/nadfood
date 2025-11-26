@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import Card from '../../../common/display/Card';
-import Input from '../../../common/ui/Input';
-import { Icons } from '../../../Icons';
-import Button from '../../../common/ui/Button';
-import { useAppContext } from '../../../../providers/AppContext';
-import FieldValue from '../../../common/components/FieldValue';
+import Card from '../../common/display/Card';
+import Input from '../../common/ui/Input';
+import { Icons } from '../../Icons';
+import Button from '../../common/ui/Button';
+import { useAppContext } from '../../../providers/AppContext';
+import FieldValue from '../../common/components/FieldValue';
 
 const AdminSettings: React.FC = () => {
   const { 

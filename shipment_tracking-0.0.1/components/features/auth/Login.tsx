@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import Button from '../../../common/ui/Button';
-import Input from '../../../common/ui/Input';
-import Card from '../../../common/display/Card';
-import { Icons } from '../../../Icons';
-import TimeWidget from '../../../common/display/TimeWidget';
-import InstallPrompt from '../../../common/components/InstallPrompt';
-import { useAppContext } from '../../../../providers/AppContext';
-import { supabase } from '../../../../utils/supabaseClient';
+import Button from '../../common/ui/Button';
+import Input from '../../common/ui/Input';
+import Card from '../../common/display/Card';
+import { Icons } from '../../Icons';
+import TimeWidget from '../../common/display/TimeWidget';
+import InstallPrompt from '../../common/components/InstallPrompt';
+import { useAppContext } from '../../../providers/AppContext';
+import { supabase } from '../../../utils/supabaseClient';
 import {
   storeOfflineCredentials,
-} from '../../../../utils/offlineAuth';
-import { useOfflineAuth } from '../../../../hooks/useOfflineAuth';
+} from '../../../utils/offlineAuth';
+import { useOfflineAuth } from '../../../hooks/useOfflineAuth';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
