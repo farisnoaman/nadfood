@@ -3,5 +3,8 @@
   "devCommand": "cd shipment_tracking-0.0.1 && npm run dev",
   "installCommand": "cd shipment_tracking-0.0.1 && npm install",
   "outputDirectory": "shipment_tracking-0.0.1/dist",
-  "framework": "vite"
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
