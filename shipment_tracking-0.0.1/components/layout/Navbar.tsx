@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../../providers/ThemeContext';
 import { Icons } from '../Icons';
 import Button from '../common/ui/Button';
-import { Notification } from '../../types';
+import { Notification, Role } from '../../types';
 import NotificationPanel from './NotificationPanel';
 import { useAppContext } from '../../providers/AppContext';
 
@@ -15,6 +15,15 @@ const Navbar: React.FC = () => {
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+
+  const getRoleDisplayName = (role: Role): string => {
+    switch (role) {
+      case Role.ADMIN:
+        return 'المدير';
+      default:
+        return role;
+    }
   };
 
   const unreadCount = notifications.filter((n: Notification) => {
@@ -71,7 +80,7 @@ const Navbar: React.FC = () => {
 
                 <div className="text-right">
                   <div className="text-sm font-medium text-secondary-800 dark:text-secondary-100">{currentUser.username}</div>
-                  <div className="text-xs text-secondary-500 dark:text-secondary-400">{currentUser.role}</div>
+                  <div className="text-xs text-secondary-500 dark:text-secondary-400">{getRoleDisplayName(currentUser.role)}</div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleLogout} className="mr-2 text-red-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Logout">
                   <Icons.LogOut className="h-5 w-5" />
