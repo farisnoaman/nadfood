@@ -17,12 +17,22 @@ const statusColors: Record<ShipmentStatus, string> = {
     [ShipmentStatus.FINAL_MODIFIED]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
 };
 
+const getStatusDisplayText = (status: ShipmentStatus): string => {
+  switch (status) {
+    case ShipmentStatus.SENT_TO_ADMIN:
+      return 'مرسلة للمدير';
+    default:
+      return status;
+  }
+};
+
 const Badge: React.FC<BadgeProps> = ({ status, className }) => {
   const colorClass = statusColors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-  
+  const displayText = getStatusDisplayText(status);
+
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass} ${className}`}>
-      {status}
+      {displayText}
     </span>
   );
 };

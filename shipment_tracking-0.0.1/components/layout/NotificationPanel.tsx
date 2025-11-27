@@ -106,7 +106,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen }) => {
                 !notification.read ? 'bg-primary-50 dark:bg-primary-900/30' : ''
               }`}
             >
-              <p className="text-sm">{notification.message}</p>
+              <p className="text-sm" dangerouslySetInnerHTML={{ __html: notification.message }}></p>
               <p className="text-xs text-secondary-500 mt-1">
                 {new Date(notification.timestamp).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
               </p>
