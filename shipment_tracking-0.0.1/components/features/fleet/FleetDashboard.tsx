@@ -72,18 +72,12 @@ const FleetDashboard: React.FC = () => {
     setSelectedShipment(null);
   };
 
-  const TabButton: React.FC<{ tabId: Tab; label: string; icon: React.ElementType; badge?: number }> = ({ 
-    tabId, 
-    label, 
-    icon: Icon, 
-    badge 
+  const TabButton: React.FC<{ tabId: Tab; label: string; icon?: React.ElementType; badge?: number }> = ({
+    tabId,
+    label,
+    icon: Icon,
+    badge
   }) => {
-    // Comprehensive icon validation
-    if (!Icon || typeof Icon !== 'function') {
-      console.warn('Invalid icon component for tab:', tabId, Icon);
-      return null;
-    }
-    
     const handleClick = () => {
       try {
         setActiveTab(tabId);
@@ -91,7 +85,7 @@ const FleetDashboard: React.FC = () => {
         console.error('Error clicking tab:', error);
       }
     };
-    
+
     return (
       <button
         onClick={handleClick}
@@ -101,7 +95,7 @@ const FleetDashboard: React.FC = () => {
             : 'text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'
         }`}
       >
-        <Icon className="ml-2 h-5 w-5" />
+        {Icon && typeof Icon === 'function' && <Icon className="ml-2 h-5 w-5" />}
         {label}
         {badge !== undefined && badge > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
