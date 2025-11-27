@@ -150,13 +150,13 @@ const AppRoutes: React.FC = () => {
                                             <>
                                                 {currentUser.role === Role.SALES && <Navigate to="/fleet" />}
                                                 {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
-                                                {currentUser.role === Role.ADMIN && <Navigate to="/admin" />}
+                                                {currentUser.role === Role.ADMIN && <Navigate to="/manager" />}
                                             </>
                                         )
                                     } />
                                     <Route path="/fleet/*" element={<ProtectedRoute allowedRoles={[Role.SALES]}><FleetDashboard /></ProtectedRoute>} />
                                     <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
-                                    <Route path="/admin/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN]}><AdminDashboard /></ProtectedRoute>} />
+                                    <Route path="/manager/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN]}><AdminDashboard /></ProtectedRoute>} />
                                 </Routes>
                                 {/* Sync Status Indicator - shown when logged in */}
                                 <SyncStatusIndicator />
