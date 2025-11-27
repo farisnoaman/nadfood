@@ -5,6 +5,9 @@
   "outputDirectory": "shipment_tracking-0.0.1/dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/((?!.*\\..*).*)",
+      "destination": "/index.html"
+    }
   ]
 }
