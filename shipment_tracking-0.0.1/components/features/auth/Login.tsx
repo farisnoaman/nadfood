@@ -4,7 +4,7 @@ import Input from '../../common/ui/Input';
 import Card from '../../common/display/Card';
 import { Icons } from '../../Icons';
 import TimeWidget from '../../common/display/TimeWidget';
-import InstallPrompt from '../../common/components/InstallPrompt';
+
 import { useAppContext } from '../../../providers/AppContext';
 import { supabase } from '../../../utils/supabaseClient';
 import {
@@ -131,7 +131,6 @@ const Login: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-secondary-100 dark:bg-secondary-900">
       {isTimeWidgetVisible && <TimeWidget />}
-      <InstallPrompt />
       <div className="flex-grow flex items-center justify-center">
         <div className="w-full max-w-md px-4">
           <div className="flex justify-center mb-6">

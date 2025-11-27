@@ -100,6 +100,10 @@ export const initDB = (): Promise<IDBDatabase> => {
  * Get all records from a store
  */
 export const getAllFromStore = async <T>(storeName: string, timeoutMs: number = 5000): Promise<T[]> => {
+  // Use longer timeout for mutation queue operations
+  if (storeName === STORES.MUTATION_QUEUE) {
+    timeoutMs = 10000;
+  }
   try {
     const db = await initDB();
     return new Promise((resolve, reject) => {
