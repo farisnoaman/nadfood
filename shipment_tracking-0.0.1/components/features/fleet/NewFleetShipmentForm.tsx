@@ -159,8 +159,8 @@ const ProductInputRow: React.FC<{
             placeholder="أدخل العدد"
           />
           {product.productId && price === null && (
-            <div className="absolute top-0 end-0 pt-1 pe-2 text-yellow-500" title="لا يوجد سعر محدد لهذا المنتج في المنطقة المختارة. سيتم إعلام المدير.">
-              <Icons.AlertTriangle className="h-5 w-5" />
+            <div className="absolute top-0 end-4 pt-0 pe-2 text-yellow-500" title="لا يوجد سعر محدد لهذا المنتج في المنطقة المختارة. سيتم إعلام المدير.">
+              <Icons.AlertTriangle className="h-6 w-6" />
             </div>
           )}
         </div>
@@ -177,14 +177,14 @@ const ProductInputRow: React.FC<{
       </div>
       <Button
         type="button"
-        variant="ghost"
+        variant="destructive"
         size="sm"
         onClick={() => onRemove(index)}
         disabled={!isRemovable}
-        className="absolute top-2 left-2 !p-1.5 h-auto text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 rounded-full transition-colors"
+        className="absolute top-0 end-1 !p-1.5 h-auto text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 rounded-full transition-colors"
         aria-label="إزالة المنتج"
       >
-        <Icons.X className="h-6 w-6 stroke-[2.5]" />
+        <Icons.Trash2 className="h-4 w-4 stroke-[2.5]" />
       </Button>
     </div>
   );
