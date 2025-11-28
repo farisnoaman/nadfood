@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User, Role } from '../../../types';
 import { sanitizeUsername, sanitizeEmail } from '../../../utils/sanitization';
 import Card from '../../common/display/Card';
@@ -32,8 +32,17 @@ const ManageUsers: React.FC = () => {
   const [newUserRole, setNewUserRole] = useState<Role>(Role.SALES);
   const [addUserError, setAddUserError] = useState('');
   
-  // State for activation/deactivation modal
-  const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
+   // State for activation/deactivation modal
+   const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
+
+   // State for edit user modal
+   const [userToEdit, setUserToEdit] = useState<User | null>(null);
+   const [editUsername, setEditUsername] = useState('');
+   const [editUserRole, setEditUserRole] = useState<Role>(Role.SALES);
+   const [editUserMessage, setEditUserMessage] = useState('');
+
+   // State for delete user modal
+   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const sortedUsers = useMemo(() => {
     const filtered = users.filter((u: User) => u.id !== currentUser?.id);
@@ -177,13 +186,104 @@ const ManageUsers: React.FC = () => {
     setIsSubmitting(false);
   };
   
-  const confirmToggleUserStatus = async () => {
-    if (!userToToggleStatus) return;
-    setIsSubmitting(true);
-    await updateUser(userToToggleStatus.id, { isActive: !(userToToggleStatus.isActive ?? true) });
-    setUserToToggleStatus(null);
-    setIsSubmitting(false);
-  };
+   const confirmToggleUserStatus = async () => {
+     if (!userToToggleStatus) return;
+     setIsSubmitting(true);
+     await updateUser(userToToggleStatus.id, { isActive: !(userToToggleStatus.isActive ?? true) });
+     setUserToToggleStatus(null);
+     setIsSubmitting(false);
+   };
+
+   const handleEditUser = async () => {
+     if (!userToEdit || !editUsername.trim()) {
+       setEditUserMessage("الرجاء إدخال اسم المستخدم.");
+       return;
+     }
+
+     setIsSubmitting(true);
+     setEditUserMessage('');
+
+     try {
+       // Call the Edge Function to update user
+       const { data, error } = await supabase.functions.invoke('admin-update-user', {
+         body: {
+           userId: userToEdit.id,
+           username: editUsername.trim(),
+           role: editUserRole
+         }
+       });
+
+       if (error) {
+         console.error('Edit user error:', error);
+         setEditUserMessage(`خطأ: ${error.message || 'فشل تعديل المستخدم'}`);
+         setIsSubmitting(false);
+         return;
+       }
+
+       if (data?.error) {
+         console.error('Edit user error:', data.error);
+         setEditUserMessage(`خطأ: ${data.error}`);
+         setIsSubmitting(false);
+         return;
+       }
+
+       // Success
+       setEditUserMessage(`تم تعديل ${editUsername} بنجاح`);
+       setEditUsername('');
+       setUserToEdit(null);
+
+       // Close modal after 2 seconds
+       setTimeout(() => {
+         setEditUserMessage('');
+       }, 2000);
+
+     } catch (err) {
+       console.error('Unexpected error:', err);
+       setEditUserMessage('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
+     } finally {
+       setIsSubmitting(false);
+     }
+   };
+
+   useEffect(() => {
+     if (userToEdit) {
+       setEditUsername(userToEdit.username);
+       setEditUserRole(userToEdit.role);
+     }
+   }, [userToEdit]);
+
+   const confirmDeleteUser = async () => {
+     if (!userToDelete) return;
+     setIsSubmitting(true);
+
+     try {
+       // Call the Edge Function to delete user
+       const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+         body: { userId: userToDelete.id }
+       });
+
+       if (error) {
+         console.error('Delete user error:', error);
+         // Handle error - perhaps show a message
+         setIsSubmitting(false);
+         return;
+       }
+
+       if (data?.error) {
+         console.error('Delete user error:', data.error);
+         setIsSubmitting(false);
+         return;
+       }
+
+       // Success - the context will refetch data automatically
+       setUserToDelete(null);
+
+     } catch (err) {
+       console.error('Unexpected error:', err);
+     } finally {
+       setIsSubmitting(false);
+     }
+   };
   
   return (
     <>
@@ -228,18 +328,25 @@ const ManageUsers: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center space-x-1 rtl:space-x-reverse mt-2 sm:mt-0 self-end sm:self-center">
-                  <Button size="sm" variant="ghost" onClick={() => setUserToToggleStatus(user)} title={user.isActive ?? true ? 'إلغاء التفعيل' : 'تفعيل'}>
-                      {user.isActive ?? true
-                          ? <Icons.CircleX className="h-5 w-5 text-red-500" />
-                          : <Icons.CircleCheck className="h-5 w-5 text-green-500" />
-                      }
-                  </Button>
-                  <Button size="sm" onClick={() => setSelectedUser(user)}>
-                      <Icons.KeyRound className="ml-2 h-4 w-4" />
-                      تغيير كلمة السر
-                  </Button>
-              </div>
+               <div className="flex items-center space-x-1 rtl:space-x-reverse mt-2 sm:mt-0 self-end sm:self-center">
+                   <Button size="sm" variant="ghost" onClick={() => setUserToToggleStatus(user)} title={user.isActive ?? true ? 'إلغاء التفعيل' : 'تفعيل'}>
+                       {user.isActive ?? true
+                           ? <Icons.CircleX className="h-5 w-5 text-red-500" />
+                           : <Icons.CircleCheck className="h-5 w-5 text-green-500" />
+                       }
+                   </Button>
+                   <Button size="sm" onClick={() => setUserToEdit(user)}>
+                       <Icons.Edit className="ml-2 h-4 w-4" />
+                       تعديل
+                   </Button>
+                   <Button size="sm" onClick={() => setSelectedUser(user)}>
+                       <Icons.KeyRound className="ml-2 h-4 w-4" />
+                       تغيير كلمة السر
+                   </Button>
+                   <Button size="sm" variant="ghost" onClick={() => setUserToDelete(user)} title="حذف">
+                       <Icons.Trash2 className="h-5 w-5 text-red-500" />
+                   </Button>
+               </div>
             </div>
           ))}
           {sortedUsers.length === 0 && (
@@ -310,26 +417,74 @@ const ManageUsers: React.FC = () => {
           </div>
         </Modal>
       </Card>
-      <Modal isOpen={!!userToToggleStatus} onClose={() => setUserToToggleStatus(null)} title="تأكيد تغيير الحالة">
-          <div className="text-center">
-              <Icons.AlertTriangle className="mx-auto h-12 w-12 text-yellow-500" />
-              <p className="mt-4">
-                  هل أنت متأكد من رغبتك في 
-                  {userToToggleStatus?.isActive ?? true ? ' إلغاء تفعيل ' : ' تفعيل '}
-                  المستخدم 
-                  <span className="font-bold"> {userToToggleStatus?.username}</span>؟
-              </p>
-              <p className="text-sm text-secondary-500">
-                  {userToToggleStatus?.isActive ?? true
-                      ? 'لن يتمكن المستخدم من تسجيل الدخول بعد إلغاء التفعيل.'
-                      : 'سيتمكن المستخدم من تسجيل الدخول بعد التفعيل.'}
-              </p>
-              <div className="mt-6 flex justify-center gap-4">
-                  <Button variant="secondary" onClick={() => setUserToToggleStatus(null)}>إلغاء</Button>
-                  <Button variant="primary" onClick={confirmToggleUserStatus} disabled={isSubmitting}>{isSubmitting ? 'جاري التغيير...' : 'نعم، تأكيد'}</Button>
-              </div>
-          </div>
-      </Modal>
+        <Modal isOpen={!!userToToggleStatus} onClose={() => setUserToToggleStatus(null)} title="تأكيد تغيير الحالة">
+           <div className="text-center">
+               <Icons.AlertTriangle className="mx-auto h-12 w-12 text-yellow-500" />
+               <p className="mt-4">
+                   هل أنت متأكد من رغبتك في
+                   {userToToggleStatus?.isActive ?? true ? ' إلغاء تفعيل ' : ' تفعيل '}
+                   المستخدم
+                   <span className="font-bold"> {userToToggleStatus?.username}</span>؟
+               </p>
+               <p className="text-sm text-secondary-500">
+                   {userToToggleStatus?.isActive ?? true
+                       ? 'لن يتمكن المستخدم من تسجيل الدخول بعد إلغاء التفعيل.'
+                       : 'سيتمكن المستخدم من تسجيل الدخول بعد التفعيل.'}
+               </p>
+               <div className="mt-6 flex justify-center gap-4">
+                   <Button variant="secondary" onClick={() => setUserToToggleStatus(null)}>إلغاء</Button>
+                   <Button variant="primary" onClick={confirmToggleUserStatus} disabled={isSubmitting}>{isSubmitting ? 'جاري التغيير...' : 'نعم، تأكيد'}</Button>
+               </div>
+           </div>
+       </Modal>
+
+       {userToEdit && (
+         <Modal isOpen={!!userToEdit} onClose={() => setUserToEdit(null)} title={`تعديل ${userToEdit.username}`}>
+           <div className="space-y-4">
+             {editUserMessage && (
+               <p className={`text-center ${editUserMessage.includes('خطأ') ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                 {editUserMessage}
+               </p>
+             )}
+             <Input
+               label="اسم المستخدم"
+               type="text"
+               value={editUsername}
+               onChange={(e) => setEditUsername(e.target.value)}
+               placeholder="اسم المستخدم الجديد"
+               disabled={isSubmitting}
+               required
+             />
+             <SearchableSelect
+               label="الدور"
+               options={Object.values(Role).map(role => ({ value: role, label: role }))}
+               value={editUserRole}
+               onChange={(val) => setEditUserRole(val as Role)}
+             />
+             <div className="flex justify-end gap-3">
+                 <Button variant="secondary" onClick={() => setUserToEdit(null)} disabled={isSubmitting}>إلغاء</Button>
+                 <Button onClick={handleEditUser} disabled={isSubmitting}>{isSubmitting ? 'جاري الحفظ...' : 'حفظ التغييرات'}</Button>
+             </div>
+           </div>
+         </Modal>
+       )}
+
+       <Modal isOpen={!!userToDelete} onClose={() => setUserToDelete(null)} title="تأكيد حذف المستخدم">
+         <div className="text-center">
+             <Icons.AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
+             <p className="mt-4">
+                 هل أنت متأكد من رغبتك في حذف المستخدم
+                 <span className="font-bold"> {userToDelete?.username}</span>؟
+             </p>
+             <p className="text-sm text-secondary-500">
+                 هذا الإجراء لا يمكن التراجع عنه. سيتم حذف المستخدم نهائياً من النظام.
+             </p>
+             <div className="mt-6 flex justify-center gap-4">
+                 <Button variant="secondary" onClick={() => setUserToDelete(null)}>إلغاء</Button>
+                 <Button variant="destructive" onClick={confirmDeleteUser} disabled={isSubmitting}>{isSubmitting ? 'جاري الحذف...' : 'نعم، حذف'}</Button>
+             </div>
+         </div>
+     </Modal>
     </>
   );
 };

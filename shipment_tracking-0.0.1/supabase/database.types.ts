@@ -60,24 +60,6 @@ export interface Database {
         }
         Relationships: []
       }
-      products: {
-        Row: {
-          id: string
-          name: string
-          is_active: boolean | null
-        }
-        Insert: {
-          id: string
-          name: string
-          is_active?: boolean | null
-        }
-        Update: {
-          id?: string
-          name?: string
-          is_active?: boolean | null
-        }
-        Relationships: []
-      }
       product_prices: {
         Row: {
           id: string
@@ -112,6 +94,24 @@ export interface Database {
           }
         ]
       }
+      products: {
+        Row: {
+          id: string
+          name: string
+          is_active: boolean | null
+        }
+        Insert: {
+          id: string
+          name: string
+          is_active?: boolean | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          is_active?: boolean | null
+        }
+        Relationships: []
+      }
       regions: {
         Row: {
           id: string
@@ -119,6 +119,7 @@ export interface Database {
           diesel_liter_price: number
           diesel_liters: number
           zaitri_fee: number
+          road_expenses: number
         }
         Insert: {
           id: string
@@ -126,6 +127,7 @@ export interface Database {
           diesel_liter_price: number
           diesel_liters: number
           zaitri_fee: number
+          road_expenses?: number
         }
         Update: {
           id?: string
@@ -133,33 +135,34 @@ export interface Database {
           diesel_liter_price?: number
           diesel_liters?: number
           zaitri_fee?: number
+          road_expenses?: number
         }
         Relationships: []
       }
       shipment_products: {
         Row: {
-          id: number
+          id: string
           shipment_id: string
           product_id: string
-          product_name: string
-          carton_count: number
-          product_wage_price: number | null
+          quantity: number
+          unit_price: number
+          total_price: number
         }
         Insert: {
-          id?: number
+          id: string
           shipment_id: string
           product_id: string
-          product_name: string
-          carton_count: number
-          product_wage_price?: number | null
+          quantity: number
+          unit_price: number
+          total_price: number
         }
         Update: {
-          id?: number
+          id?: string
           shipment_id?: string
           product_id?: string
-          product_name?: string
-          carton_count?: number
-          product_wage_price?: number | null
+          quantity?: number
+          unit_price?: number
+          total_price?: number
         }
         Relationships: [
           {
@@ -185,63 +188,59 @@ export interface Database {
           region_id: string
           driver_id: number
           status: string
-          total_diesel: number | null
-          total_wage: number | null
-          zaitri_fee: number | null
-          admin_expenses: number | null
-          due_amount: number | null
-          damaged_value: number | null
-          shortage_value: number | null
-          road_expenses: number | null
-          due_amount_after_discount: number | null
-          other_amounts: number | null
-          improvement_bonds: number | null
-          evening_allowance: number | null
-          total_due_amount: number | null
-          tax_rate: number | null
-          total_tax: number | null
+          total_diesel: number
+          total_wage: number
+          zaitri_fee: number
+          admin_expenses: number
+          due_amount: number
+          damaged_value: number
+          shortage_value: number
+          road_expenses: number
+          due_amount_after_discount: number
+          other_amounts: number
+          improvement_bonds: number
+          evening_allowance: number
+          total_due_amount: number
+          tax_rate: number
+          total_tax: number
           transfer_number: string | null
           transfer_date: string | null
           modified_by: string | null
           modified_at: string | null
           deductions_edited_by: string | null
           deductions_edited_at: string | null
-          created_by: string | null
-          created_at: string | null
-          has_missing_prices: boolean
+          has_missing_prices: boolean | null
         }
         Insert: {
-          id?: string
+          id: string
           sales_order: string
           order_date: string
           entry_timestamp: string
           region_id: string
           driver_id: number
           status: string
-          total_diesel?: number | null
-          total_wage?: number | null
-          zaitri_fee?: number | null
-          admin_expenses?: number | null
-          due_amount?: number | null
-          damaged_value?: number | null
-          shortage_value?: number | null
-          road_expenses?: number | null
-          due_amount_after_discount?: number | null
-          other_amounts?: number | null
-          improvement_bonds?: number | null
-          evening_allowance?: number | null
-          total_due_amount?: number | null
-          tax_rate?: number | null
-          total_tax?: number | null
+          total_diesel: number
+          total_wage: number
+          zaitri_fee: number
+          admin_expenses: number
+          due_amount: number
+          damaged_value: number
+          shortage_value: number
+          road_expenses: number
+          due_amount_after_discount: number
+          other_amounts: number
+          improvement_bonds: number
+          evening_allowance: number
+          total_due_amount: number
+          tax_rate: number
+          total_tax: number
           transfer_number?: string | null
           transfer_date?: string | null
           modified_by?: string | null
           modified_at?: string | null
           deductions_edited_by?: string | null
           deductions_edited_at?: string | null
-          created_by?: string | null
-          created_at?: string | null
-          has_missing_prices?: boolean
+          has_missing_prices?: boolean | null
         }
         Update: {
           id?: string
@@ -251,32 +250,43 @@ export interface Database {
           region_id?: string
           driver_id?: number
           status?: string
-          total_diesel?: number | null
-          total_wage?: number | null
-          zaitri_fee?: number | null
-          admin_expenses?: number | null
-          due_amount?: number | null
-          damaged_value?: number | null
-          shortage_value?: number | null
-          road_expenses?: number | null
-          due_amount_after_discount?: number | null
-          other_amounts?: number | null
-          improvement_bonds?: number | null
-          evening_allowance?: number | null
-          total_due_amount?: number | null
-          tax_rate?: number | null
-          total_tax?: number | null
+          total_diesel?: number
+          total_wage?: number
+          zaitri_fee?: number
+          admin_expenses?: number
+          due_amount?: number
+          damaged_value?: number
+          shortage_value?: number
+          road_expenses?: number
+          due_amount_after_discount?: number
+          other_amounts?: number
+          improvement_bonds?: number
+          evening_allowance?: number
+          total_due_amount?: number
+          tax_rate?: number
+          total_tax?: number
           transfer_number?: string | null
           transfer_date?: string | null
           modified_by?: string | null
           modified_at?: string | null
           deductions_edited_by?: string | null
           deductions_edited_at?: string | null
-          created_by?: string | null
-          created_at?: string | null
-          has_missing_prices?: boolean
+          has_missing_prices?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shipments_driver_id_fkey"
+            columns: ["driver_id"]
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipments_region_id_fkey"
+            columns: ["region_id"]
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       users: {
         Row: {
