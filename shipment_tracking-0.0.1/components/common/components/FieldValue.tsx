@@ -7,7 +7,14 @@ import React from 'react';
 const FieldValue: React.FC<{ label: string; value: string | number | undefined; currency?: string; className?: string }> = ({ label, value, currency = "ر.ي", className }) => (
   <div className={`flex justify-between py-1 text-sm ${className}`}>
     <span className="font-semibold text-secondary-600 dark:text-secondary-400">{label}:</span>
-    <span className="text-secondary-800 dark:text-secondary-200">{value !== undefined && value !== '' ? `${Number(value).toLocaleString('en-US')} ${currency}` : '-'}</span>
+    <span className="text-secondary-800 dark:text-secondary-200">
+      {value !== undefined && value !== '' 
+        ? (isNaN(Number(value)) || currency === "" 
+            ? value 
+            : `${Number(value).toLocaleString('en-US')} ${currency}`)
+        : '-'
+      }
+    </span>
   </div>
 );
 
