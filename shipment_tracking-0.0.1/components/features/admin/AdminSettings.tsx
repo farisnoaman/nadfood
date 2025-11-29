@@ -94,7 +94,7 @@ const AdminSettings: React.FC = () => {
         <div className="flex justify-between items-center mb-4">
           <h4 className="text-lg font-semibold">إعدادات التطبيق والتقارير</h4>
           {!isEditing && (
-            <Button onClick={handleEditClick} size="sm" variant="ghost">
+            <Button onClick={handleEditClick} size="sm" variant="secondary">
               <Icons.Edit className="ml-2 h-4 w-4" />
               تعديل
             </Button>
