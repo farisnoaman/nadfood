@@ -363,7 +363,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
 
         try {
-            const [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes] = await Promise.all([
+            const [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes, settingsRes] = await Promise.all([
                 supabase.from('users').select('*').abortSignal(controller.signal),
                 supabase.from('products').select('*').abortSignal(controller.signal),
                 supabase.from('drivers').select('*').abortSignal(controller.signal),
@@ -372,11 +372,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 supabase.from('shipment_products').select('*').abortSignal(controller.signal),
                 supabase.from('product_prices').select('*').abortSignal(controller.signal),
                 supabase.from('notifications').select('*').order('timestamp', { ascending: false }).abortSignal(controller.signal),
+                supabase.from('app_settings').select('*').abortSignal(controller.signal),
             ]);
 
             clearTimeout(timeoutId);
 
-            const responses = [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes];
+            const responses = [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes, settingsRes];
             for (const res of responses) { if (res.error) throw res.error; }
 
             const newUsers = usersRes.data!.map(userFromRow);
@@ -398,6 +399,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setRegions(newRegions); await IndexedDB.saveAllToStore(IndexedDB.STORES.REGIONS, newRegions);
             setProductPrices(newPrices); await IndexedDB.saveAllToStore(IndexedDB.STORES.PRODUCT_PRICES, newPrices);
             setNotifications(newNotifications); await IndexedDB.saveAllToStore(IndexedDB.STORES.NOTIFICATIONS, newNotifications);
+
+            // Process and update settings
+            const settingsData = settingsRes.data!;
+            const settingsMap = settingsData.reduce((acc, setting) => {
+                acc[setting.setting_key] = setting.setting_value;
+                return acc;
+            }, {} as Record<string, string>);
+
+            setAccountantPrintAccess(settingsMap['accountantPrintAccess'] === 'true');
+            setIsPrintHeaderEnabled(settingsMap['isPrintHeaderEnabled'] === 'true');
+            setAppName(settingsMap['appName'] || 'تتبع الشحنات');
+            setCompanyName(settingsMap['companyName'] || 'اسم الشركة');
+            setCompanyAddress(settingsMap['companyAddress'] || 'عنوان الشركة');
+            setCompanyPhone(settingsMap['companyPhone'] || 'رقم الهاتف');
+            setCompanyLogo(settingsMap['companyLogo'] || '');
+            setIsTimeWidgetVisible(settingsMap['isTimeWidgetVisible'] !== 'false'); // Default to true
+
+            // Also save settings to IndexedDB for offline access
+            await Promise.all([
+                IndexedDB.setSetting('accountantPrintAccess', settingsMap['accountantPrintAccess'] === 'true'),
+                IndexedDB.setSetting('isPrintHeaderEnabled', settingsMap['isPrintHeaderEnabled'] === 'true'),
+                IndexedDB.setSetting('appName', settingsMap['appName'] || 'تتبع الشحنات'),
+                IndexedDB.setSetting('companyName', settingsMap['companyName'] || 'اسم الشركة'),
+                IndexedDB.setSetting('companyAddress', settingsMap['companyAddress'] || 'عنوان الشركة'),
+                IndexedDB.setSetting('companyPhone', settingsMap['companyPhone'] || 'رقم الهاتف'),
+                IndexedDB.setSetting('companyLogo', settingsMap['companyLogo'] || ''),
+                IndexedDB.setSetting('isTimeWidgetVisible', settingsMap['isTimeWidgetVisible'] !== 'false')
+            ]);
 
             // Retrieve true pending shipments from the mutation queue, not the general shipments cache
             // This ensures that once a shipment is synced and removed from the queue, it's replaced by the server version.

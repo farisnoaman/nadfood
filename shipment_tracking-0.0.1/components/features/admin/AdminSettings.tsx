@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Card from '../../common/display/Card';
 import Input from '../../common/ui/Input';
 import { Icons } from '../../Icons';
 import Button from '../../common/ui/Button';
 import { useAppContext } from '../../../providers/AppContext';
 import FieldValue from '../../common/components/FieldValue';
+import { supabase } from '../../../utils/supabaseClient';
+import { runSettingsMigrationIfNeeded } from '../../../utils/settingsMigration';
 
 const AdminSettings: React.FC = () => {
-  const { 
+  const {
     accountantPrintAccess, setAccountantPrintAccess,
     isPrintHeaderEnabled, setIsPrintHeaderEnabled,
     appName, setAppName,
@@ -17,6 +19,12 @@ const AdminSettings: React.FC = () => {
     companyLogo, setCompanyLogo,
     isTimeWidgetVisible, setIsTimeWidgetVisible
   } = useAppContext();
+
+  // State for database sync and pending changes
+  const [dbSettings, setDbSettings] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // State for edit mode and temporary form data
   const [isEditing, setIsEditing] = useState(false);
@@ -40,50 +48,271 @@ const AdminSettings: React.FC = () => {
     }
   }, [companyName, companyAddress, companyPhone, companyLogo, appName, isEditing]);
 
+  // Fetch current database settings
+  const fetchDbSettings = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('setting_key, setting_value');
+
+      if (error) throw error;
+
+      const settingsMap = data.reduce((acc, setting) => {
+        acc[setting.setting_key] = setting.setting_value;
+        return acc;
+      }, {} as Record<string, string>);
+
+      setDbSettings(settingsMap);
+      setLastSync(new Date());
+      return settingsMap;
+    } catch (error) {
+      console.error('Error fetching database settings:', error);
+      alert('فشل في تحميل إعدادات قاعدة البيانات');
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Check if local state differs from database
+  const hasChanges = useCallback(() => {
+    const localSettings = {
+      accountantPrintAccess: accountantPrintAccess.toString(),
+      isPrintHeaderEnabled: isPrintHeaderEnabled.toString(),
+      appName,
+      companyName,
+      companyAddress,
+      companyPhone,
+      companyLogo,
+      isTimeWidgetVisible: isTimeWidgetVisible.toString()
+    };
+
+    return Object.entries(localSettings).some(([key, value]) => {
+      return dbSettings[key] !== value;
+    });
+  }, [accountantPrintAccess, isPrintHeaderEnabled, appName, companyName, companyAddress, companyPhone, companyLogo, isTimeWidgetVisible, dbSettings]);
+
+  // Run settings migration and initial fetch on component mount
+  useEffect(() => {
+    runSettingsMigrationIfNeeded().then(() => {
+      fetchDbSettings();
+    });
+  }, [fetchDbSettings]);
+
+  // Update hasUnsavedChanges when local state changes
+  useEffect(() => {
+    setHasUnsavedChanges(hasChanges());
+  }, [hasChanges]);
+
+  // Subscribe to real-time changes in app_settings
+  useEffect(() => {
+    const channel = supabase
+      .channel('app_settings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'app_settings'
+        },
+        (payload) => {
+          console.log('Settings changed:', payload);
+          // Refresh database state when changes occur
+          fetchDbSettings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchDbSettings]);
+
   const handleEditClick = () => setIsEditing(true);
   const handleCancelClick = () => {
     setTempDetails({ name: companyName, address: companyAddress, phone: companyPhone, logo: companyLogo, appName: appName });
     setIsEditing(false);
   };
-  const handleSaveClick = () => {
-    setAppName(tempDetails.appName);
-    setCompanyName(tempDetails.name);
-    setCompanyAddress(tempDetails.address);
-    setCompanyPhone(tempDetails.phone);
-    setCompanyLogo(tempDetails.logo);
-    setIsEditing(false);
+  const handleSaveClick = async () => {
+    try {
+      // Update local state
+      setAppName(tempDetails.appName);
+      setCompanyName(tempDetails.name);
+      setCompanyAddress(tempDetails.address);
+      setCompanyPhone(tempDetails.phone);
+      setCompanyLogo(tempDetails.logo);
+
+      // Save to database
+      const settingsToUpdate = [
+        { setting_key: 'appName', setting_value: tempDetails.appName },
+        { setting_key: 'companyName', setting_value: tempDetails.name },
+        { setting_key: 'companyAddress', setting_value: tempDetails.address },
+        { setting_key: 'companyPhone', setting_value: tempDetails.phone },
+        { setting_key: 'companyLogo', setting_value: tempDetails.logo }
+      ];
+
+      for (const setting of settingsToUpdate) {
+        const { error } = await supabase
+          .from('app_settings')
+          .upsert(setting, { onConflict: 'setting_key' });
+
+        if (error) {
+          console.error('Error saving setting:', setting.setting_key, error);
+          throw error;
+        }
+      }
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('حدث خطأ في حفظ الإعدادات. يرجى المحاولة مرة أخرى.');
+    }
   };
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTempDetails(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const ToggleSetting: React.FC<{ label: string, isChecked: boolean, onToggle: (checked: boolean) => void, id: string }> = ({ label, isChecked, onToggle, id }) => (
-    <label htmlFor={id} className="flex items-center justify-between cursor-pointer p-2 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
-      <span className="text-secondary-800 dark:text-secondary-200">{label}</span>
-      <input
-        type="checkbox"
-        id={id}
-        checked={isChecked}
-        onChange={(e) => onToggle(e.target.checked)}
-        className="h-5 w-5 rounded text-primary-600 focus:ring-primary-500 border-secondary-300 dark:border-secondary-600 bg-secondary-100 dark:bg-secondary-900 focus:ring-offset-0"
-      />
-    </label>
-  );
+  // Unified save function for all settings
+  const handleSaveAll = async () => {
+    try {
+      setIsLoading(true);
+
+      const settingsToSave = [
+        { setting_key: 'accountantPrintAccess', setting_value: accountantPrintAccess.toString() },
+        { setting_key: 'isPrintHeaderEnabled', setting_value: isPrintHeaderEnabled.toString() },
+        { setting_key: 'isTimeWidgetVisible', setting_value: isTimeWidgetVisible.toString() },
+        { setting_key: 'appName', setting_value: tempDetails.appName },
+        { setting_key: 'companyName', setting_value: tempDetails.name },
+        { setting_key: 'companyAddress', setting_value: tempDetails.address },
+        { setting_key: 'companyPhone', setting_value: tempDetails.phone },
+        { setting_key: 'companyLogo', setting_value: tempDetails.logo }
+      ];
+
+      // Batch save all settings
+      for (const setting of settingsToSave) {
+        const { error } = await supabase
+          .from('app_settings')
+          .upsert(setting, { onConflict: 'setting_key' });
+
+        if (error) throw error;
+      }
+
+      // Update local state
+      setAppName(tempDetails.appName);
+      setCompanyName(tempDetails.name);
+      setCompanyAddress(tempDetails.address);
+      setCompanyPhone(tempDetails.phone);
+      setCompanyLogo(tempDetails.logo);
+      setIsEditing(false);
+
+      // Refresh database state
+      await fetchDbSettings();
+
+      alert('تم حفظ جميع الإعدادات بنجاح!');
+    } catch (error) {
+      console.error('Error saving all settings:', error);
+      alert('حدث خطأ في حفظ الإعدادات. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const ToggleSetting: React.FC<{ label: string, isChecked: boolean, onToggle: (checked: boolean) => void, id: string }> = ({ label, isChecked, onToggle, id }) => {
+    const isSynced = dbSettings[id] === isChecked.toString();
+
+    return (
+      <label htmlFor={id} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between cursor-pointer p-2 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-700/50 gap-2 ${
+        !isSynced ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' : ''
+      }`}>
+        <span className="text-secondary-800 dark:text-secondary-200 text-sm sm:text-base">{label}</span>
+        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+          {!isSynced && (
+            <span className="text-xs text-yellow-600 dark:text-yellow-400 flex-shrink-0">
+              <span className="hidden sm:inline">غير محفوظ</span>
+              <span className="sm:hidden">✏️</span>
+            </span>
+          )}
+          <input
+            type="checkbox"
+            id={id}
+            checked={isChecked}
+            onChange={(e) => onToggle(e.target.checked)}
+            className="h-5 w-5 rounded text-primary-600 focus:ring-primary-500 border-secondary-300 dark:border-secondary-600 bg-secondary-100 dark:bg-secondary-900 focus:ring-offset-0 flex-shrink-0"
+          />
+        </div>
+      </label>
+    );
+  };
 
   return (
     <div className="space-y-6">
+      {/* Sync Status Header */}
+      <Card>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <h3 className="text-base sm:text-lg font-semibold">حالة المزامنة</h3>
+            {isLoading && <Icons.RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 animate-spin text-blue-500" />}
+            {lastSync && (
+              <span className="text-xs sm:text-sm text-secondary-500 hidden sm:inline">
+                آخر تحديث: {lastSync.toLocaleTimeString('ar-EG')}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={fetchDbSettings}
+              disabled={isLoading}
+              className="w-full sm:w-auto"
+            >
+              <Icons.RefreshCw className={`ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">تحديث من قاعدة البيانات</span>
+              <span className="sm:hidden">تحديث</span>
+            </Button>
+            {hasUnsavedChanges && (
+              <Button
+                onClick={handleSaveAll}
+                disabled={isLoading}
+                className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+              >
+                <Icons.Save className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">حفظ جميع التغييرات</span>
+                <span className="sm:hidden">حفظ</span>
+              </Button>
+            )}
+          </div>
+        </div>
+        {lastSync && (
+          <div className="sm:hidden mt-2">
+            <span className="text-xs text-secondary-500">
+              آخر تحديث: {lastSync.toLocaleTimeString('ar-EG')}
+            </span>
+          </div>
+        )}
+        {hasUnsavedChanges && (
+          <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+            <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200">
+              ⚠️ <span className="hidden sm:inline">لديك تغييرات غير محفوظة. اضغط على "حفظ جميع التغييرات" لحفظها في قاعدة البيانات.</span>
+              <span className="sm:hidden">تغييرات غير محفوظة - اضغط حفظ لحفظها</span>
+            </p>
+          </div>
+        )}
+      </Card>
+
       <Card title="صلاحيات المستخدمين">
         <ToggleSetting
-          id="print-access"
+          id="accountantPrintAccess"
           label="السماح للمحاسب بطباعة تقارير الشحنات النهائية"
           isChecked={accountantPrintAccess}
           onToggle={setAccountantPrintAccess}
         />
       </Card>
-      
+
       <Card title="إعدادات الواجهة">
           <ToggleSetting
-            id="time-widget-toggle"
+            id="isTimeWidgetVisible"
             label="عرض أداة الوقت والتاريخ"
             isChecked={isTimeWidgetVisible}
             onToggle={setIsTimeWidgetVisible}
@@ -91,19 +320,20 @@ const AdminSettings: React.FC = () => {
       </Card>
 
       <Card>
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="text-lg font-semibold">إعدادات التطبيق والتقارير</h4>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+          <h4 className="text-base sm:text-lg font-semibold">إعدادات التطبيق والتقارير</h4>
           {!isEditing && (
-            <Button onClick={handleEditClick} size="sm" variant="secondary">
-              <Icons.Edit className="ml-2 h-4 w-4" />
-              تعديل
+            <Button onClick={handleEditClick} size="sm" variant="secondary" className="w-full sm:w-auto">
+              <Icons.Edit className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">تعديل</span>
+              <span className="sm:hidden">✏️ تعديل</span>
             </Button>
           )}
         </div>
-        
+
         <div className="space-y-4">
           <ToggleSetting
-            id="header-toggle"
+            id="isPrintHeaderEnabled"
             label="تفعيل رأس التقرير المخصص (الاسم والشعار)"
             isChecked={isPrintHeaderEnabled}
             onToggle={setIsPrintHeaderEnabled}
@@ -129,9 +359,16 @@ const AdminSettings: React.FC = () => {
                     {tempDetails.logo && <Button variant="secondary" size="sm" onClick={() => setTempDetails(p => ({...p, logo: ''}))}>إزالة الشعار</Button>}
                   </div>
                 </div>
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button variant="secondary" onClick={handleCancelClick}>إلغاء</Button>
-                  <Button onClick={handleSaveClick}>حفظ التغييرات</Button>
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+                  <Button variant="secondary" onClick={handleCancelClick} className="w-full sm:w-auto order-2 sm:order-1">
+                    <span className="hidden sm:inline">إلغاء</span>
+                    <span className="sm:hidden">❌ إلغاء</span>
+                  </Button>
+                  <Button onClick={() => { handleSaveAll(); setIsEditing(false); }} className="w-full sm:w-auto order-1 sm:order-2">
+                    <Icons.Save className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">حفظ التغييرات</span>
+                    <span className="sm:hidden">💾 حفظ</span>
+                  </Button>
                 </div>
               </div>
             ) : (

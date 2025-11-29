@@ -6,325 +6,390 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_key: string
+          setting_value: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_key: string
+          setting_value?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_key?: string
+          setting_value?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       drivers: {
         Row: {
           id: number
+          is_active: boolean | null
           name: string
           plate_number: string
-          is_active: boolean | null
         }
         Insert: {
           id?: number
+          is_active?: boolean | null
           name: string
           plate_number: string
-          is_active?: boolean | null
         }
         Update: {
           id?: number
+          is_active?: boolean | null
           name?: string
           plate_number?: string
-          is_active?: boolean | null
         }
         Relationships: []
       }
       notifications: {
         Row: {
+          category: string
           id: string
           message: string
-          timestamp: string
           read: boolean | null
-          category: string
           target_roles: string[] | null
           target_user_ids: string[] | null
+          timestamp: string
         }
         Insert: {
-          id?: string
-          message: string
-          timestamp: string
-          read?: boolean | null
           category: string
+          id: string
+          message: string
+          read?: boolean | null
           target_roles?: string[] | null
           target_user_ids?: string[] | null
+          timestamp: string
         }
         Update: {
+          category?: string
           id?: string
           message?: string
-          timestamp?: string
           read?: boolean | null
-          category?: string
           target_roles?: string[] | null
           target_user_ids?: string[] | null
+          timestamp?: string
         }
         Relationships: []
       }
       product_prices: {
         Row: {
           id: string
-          region_id: string
-          product_id: string
           price: number
+          product_id: string
+          region_id: string
         }
         Insert: {
           id: string
-          region_id: string
-          product_id: string
           price: number
+          product_id: string
+          region_id: string
         }
         Update: {
           id?: string
-          region_id?: string
-          product_id?: string
           price?: number
+          product_id?: string
+          region_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "product_prices_product_id_fkey"
-            columns: ["product_id"]
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_prices_region_id_fkey"
-            columns: ["region_id"]
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
       products: {
         Row: {
           id: string
-          name: string
           is_active: boolean | null
+          name: string
         }
         Insert: {
           id: string
-          name: string
           is_active?: boolean | null
+          name: string
         }
         Update: {
           id?: string
-          name?: string
           is_active?: boolean | null
+          name?: string
         }
         Relationships: []
       }
       regions: {
         Row: {
+          diesel_liter_price: number | null
+          diesel_liters: number | null
           id: string
           name: string
-          diesel_liter_price: number
-          diesel_liters: number
-          zaitri_fee: number
           road_expenses: number
+          zaitri_fee: number | null
         }
         Insert: {
+          diesel_liter_price?: number | null
+          diesel_liters?: number | null
           id: string
           name: string
-          diesel_liter_price: number
-          diesel_liters: number
-          zaitri_fee: number
           road_expenses?: number
+          zaitri_fee?: number | null
         }
         Update: {
+          diesel_liter_price?: number | null
+          diesel_liters?: number | null
           id?: string
           name?: string
-          diesel_liter_price?: number
-          diesel_liters?: number
-          zaitri_fee?: number
           road_expenses?: number
+          zaitri_fee?: number | null
         }
         Relationships: []
       }
       shipment_products: {
         Row: {
-          id: string
-          shipment_id: string
+          carton_count: number
+          id: number
           product_id: string
-          quantity: number
-          unit_price: number
-          total_price: number
+          product_name: string
+          product_wage_price: number | null
+          shipment_id: string
         }
         Insert: {
-          id: string
-          shipment_id: string
+          carton_count: number
+          id?: number
           product_id: string
-          quantity: number
-          unit_price: number
-          total_price: number
+          product_name: string
+          product_wage_price?: number | null
+          shipment_id: string
         }
         Update: {
-          id?: string
-          shipment_id?: string
+          carton_count?: number
+          id?: number
           product_id?: string
-          quantity?: number
-          unit_price?: number
-          total_price?: number
+          product_name?: string
+          product_wage_price?: number | null
+          shipment_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "shipment_products_product_id_fkey"
-            columns: ["product_id"]
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shipment_products_shipment_id_fkey"
-            columns: ["shipment_id"]
-            referencedRelation: "shipments"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
       shipments: {
         Row: {
-          id: string
-          sales_order: string
-          order_date: string
-          entry_timestamp: string
-          region_id: string
-          driver_id: number
-          status: string
-          total_diesel: number
-          total_wage: number
-          zaitri_fee: number
-          admin_expenses: number
-          due_amount: number
-          damaged_value: number
-          shortage_value: number
-          road_expenses: number
-          due_amount_after_discount: number
-          other_amounts: number
-          improvement_bonds: number
-          evening_allowance: number
-          total_due_amount: number
-          tax_rate: number
-          total_tax: number
-          transfer_number: string | null
-          transfer_date: string | null
-          modified_by: string | null
-          modified_at: string | null
-          deductions_edited_by: string | null
+          admin_expenses: number | null
+          created_at: string | null
+          created_by: string | null
+          damaged_value: number | null
           deductions_edited_at: string | null
-          has_missing_prices: boolean | null
+          deductions_edited_by: string | null
+          driver_id: number
+          due_amount: number | null
+          due_amount_after_discount: number | null
+          entry_timestamp: string
+          evening_allowance: number | null
+          has_missing_prices: boolean
+          id: string
+          improvement_bonds: number | null
+          modified_at: string | null
+          modified_by: string | null
+          order_date: string
+          other_amounts: number | null
+          region_id: string
+          road_expenses: number | null
+          sales_order: string
+          shortage_value: number | null
+          status: string
+          tax_rate: number | null
+          total_diesel: number | null
+          total_due_amount: number | null
+          total_tax: number | null
+          total_wage: number | null
+          transfer_date: string | null
+          transfer_number: string | null
+          zaitri_fee: number | null
         }
         Insert: {
-          id: string
-          sales_order: string
-          order_date: string
-          entry_timestamp: string
-          region_id: string
-          driver_id: number
-          status: string
-          total_diesel: number
-          total_wage: number
-          zaitri_fee: number
-          admin_expenses: number
-          due_amount: number
-          damaged_value: number
-          shortage_value: number
-          road_expenses: number
-          due_amount_after_discount: number
-          other_amounts: number
-          improvement_bonds: number
-          evening_allowance: number
-          total_due_amount: number
-          tax_rate: number
-          total_tax: number
-          transfer_number?: string | null
-          transfer_date?: string | null
-          modified_by?: string | null
-          modified_at?: string | null
-          deductions_edited_by?: string | null
+          admin_expenses?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          damaged_value?: number | null
           deductions_edited_at?: string | null
-          has_missing_prices?: boolean | null
+          deductions_edited_by?: string | null
+          driver_id: number
+          due_amount?: number | null
+          due_amount_after_discount?: number | null
+          entry_timestamp: string
+          evening_allowance?: number | null
+          has_missing_prices?: boolean
+          id: string
+          improvement_bonds?: number | null
+          modified_at?: string | null
+          modified_by?: string | null
+          order_date: string
+          other_amounts?: number | null
+          region_id: string
+          road_expenses?: number | null
+          sales_order: string
+          shortage_value?: number | null
+          status: string
+          tax_rate?: number | null
+          total_diesel?: number | null
+          total_due_amount?: number | null
+          total_tax?: number | null
+          total_wage?: number | null
+          transfer_date?: string | null
+          transfer_number?: string | null
+          zaitri_fee?: number | null
         }
         Update: {
-          id?: string
-          sales_order?: string
-          order_date?: string
-          entry_timestamp?: string
-          region_id?: string
-          driver_id?: number
-          status?: string
-          total_diesel?: number
-          total_wage?: number
-          zaitri_fee?: number
-          admin_expenses?: number
-          due_amount?: number
-          damaged_value?: number
-          shortage_value?: number
-          road_expenses?: number
-          due_amount_after_discount?: number
-          other_amounts?: number
-          improvement_bonds?: number
-          evening_allowance?: number
-          total_due_amount?: number
-          tax_rate?: number
-          total_tax?: number
-          transfer_number?: string | null
-          transfer_date?: string | null
-          modified_by?: string | null
-          modified_at?: string | null
-          deductions_edited_by?: string | null
+          admin_expenses?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          damaged_value?: number | null
           deductions_edited_at?: string | null
-          has_missing_prices?: boolean | null
+          deductions_edited_by?: string | null
+          driver_id?: number
+          due_amount?: number | null
+          due_amount_after_discount?: number | null
+          entry_timestamp?: string
+          evening_allowance?: number | null
+          has_missing_prices?: boolean
+          id?: string
+          improvement_bonds?: number | null
+          modified_at?: string | null
+          modified_by?: string | null
+          order_date?: string
+          other_amounts?: number | null
+          region_id?: string
+          road_expenses?: number | null
+          sales_order?: string
+          shortage_value?: number | null
+          status?: string
+          tax_rate?: number | null
+          total_diesel?: number | null
+          total_due_amount?: number | null
+          total_tax?: number | null
+          total_wage?: number | null
+          transfer_date?: string | null
+          transfer_number?: string | null
+          zaitri_fee?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "shipments_driver_id_fkey"
-            columns: ["driver_id"]
-            referencedRelation: "drivers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shipments_region_id_fkey"
-            columns: ["region_id"]
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
+      }
+      sync_log: {
+        Row: {
+          conflict_resolved: boolean | null
+          created_at: string | null
+          data: Json | null
+          device_id: string | null
+          id: string
+          operation: string
+          record_id: string
+          sync_timestamp: string | null
+          synced: boolean | null
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          conflict_resolved?: boolean | null
+          created_at?: string | null
+          data?: Json | null
+          device_id?: string | null
+          id?: string
+          operation: string
+          record_id: string
+          sync_timestamp?: string | null
+          synced?: boolean | null
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          conflict_resolved?: boolean | null
+          created_at?: string | null
+          data?: Json | null
+          device_id?: string | null
+          id?: string
+          operation?: string
+          record_id?: string
+          sync_timestamp?: string | null
+          synced?: boolean | null
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       users: {
         Row: {
-          id: string
-          username: string
-          role: string
-          is_active: boolean | null
           created_at: string | null
+          id: string
+          is_active: boolean | null
+          role: string
+          username: string
         }
         Insert: {
-          id: string
-          username: string
-          role: string
-          is_active?: boolean | null
           created_at?: string | null
+          id: string
+          is_active?: boolean | null
+          role: string
+          username: string
         }
         Update: {
-          id?: string
-          username?: string
-          role?: string
-          is_active?: boolean | null
           created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          role?: string
+          username?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "users_id_fkey"
-            columns: ["id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      debug_current_user: {
+        Args: never
+        Returns: {
+          email: string
+          role: string
+          user_id: string
+        }[]
+      }
+      debug_user_info: {
+        Args: never
+        Returns: {
+          auth_uid: string
+          function_role: string
+          profile_role: string
+          user_id: string
+        }[]
+      }
+      diagnose_auth: { Args: never; Returns: Json }
+      get_authenticated_user_id: { Args: never; Returns: string }
+      get_my_role: { Args: never; Returns: string }
+      get_user_role: { Args: never; Returns: string }
+      test_accountant_update_shipment: {
+        Args: { new_status: string; shipment_id_param: string }
+        Returns: Json
+      }
+      test_basic_data_access: { Args: never; Returns: Json }
+      test_shipment_policy: {
+        Args: { shipment_id: string }
+        Returns: {
+          can_select: boolean
+          can_update: boolean
+          user_id: string
+          user_role: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -334,3 +399,126 @@ export interface Database {
     }
   }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

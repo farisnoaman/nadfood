@@ -265,26 +265,28 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
             onValueChange={handleValueChange}
         />
 
-        <div className="flex flex-wrap justify-between items-center gap-3 pt-6 border-t dark:border-secondary-600">
-            <div>
-                 {isFinal && (
-                    <Button variant="secondary" onClick={handlePrint}>
+        <div className="pt-6 border-t dark:border-secondary-600">
+            <div className="grid grid-cols-2 gap-3">
+                {isFinal && (
+                    <Button variant="secondary" onClick={handlePrint} className="w-full">
                         <Icons.Printer className="ml-2 h-4 w-4" />
                         طباعة
                     </Button>
                 )}
+                {!isFinal && <div></div>} {/* Empty space when print button is hidden */}
+
+                <Button variant="secondary" onClick={onClose} disabled={isSubmitting} className="w-full">
+                    إغلاق
+                </Button>
+
+                <Button variant="secondary" onClick={handleSaveAsDraft} disabled={isSubmitting} className="w-full">
+                    {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Save className="ml-2 h-4 w-4" /> حفظ كمسودة </>}
+                </Button>
+
+                <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting} className="w-full">
+                    {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'إغلاق نهائي'} </>}
+                </Button>
             </div>
-              <div className="flex flex-wrap justify-end gap-3">
-                  <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
-                      إغلاق
-                  </Button>
-                  <Button variant="outline" onClick={handleSaveAsDraft} disabled={isSubmitting}>
-                      {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Save className="ml-2 h-4 w-4" /> حفظ كمسودة </>}
-                  </Button>
-                  <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting}>
-                      {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'إغلاق نهائي'} </>}
-                  </Button>
-              </div>
         </div>
       </div>
     </Modal>

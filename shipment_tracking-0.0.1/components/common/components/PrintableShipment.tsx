@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shipment } from '../../types';
+import { Shipment } from '../../../types';
 
 interface PrintableShipmentProps {
   shipment: Shipment;
@@ -27,105 +27,83 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
   isPrintHeaderEnabled,
 }) => {
   return (
-    <div className="print-container" style={{ fontFamily: 'Arial, sans-serif', direction: 'rtl', padding: '20px' }}>
+    <div className="print-container" style={{ fontFamily: 'Arial, sans-serif', direction: 'rtl', padding: '15px', backgroundColor: '#f9f9f9' }}>
       {isPrintHeaderEnabled && (
-        <div style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '2px solid #000', paddingBottom: '10px' }}>
+        <header style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '3px solid #007bff', paddingBottom: '8px', background: '#e3f2fd', borderRadius: '8px', padding: '10px' }}>
           {companyLogo && (
-            <img
-              src={companyLogo}
-              alt={companyName}
-              style={{ maxHeight: '60px', marginBottom: '10px' }}
-            />
+            <img src={companyLogo} alt={companyName} style={{ maxHeight: '50px', marginBottom: '8px' }} />
           )}
-          <h1 style={{ margin: '5px 0', fontSize: '24px', fontWeight: 'bold' }}>{companyName}</h1>
-          <p style={{ margin: '2px 0', fontSize: '14px' }}>{companyAddress}</p>
-          <p style={{ margin: '2px 0', fontSize: '14px' }}>{companyPhone}</p>
-        </div>
+          <h1 style={{ margin: '3px 0', fontSize: '18px', fontWeight: 'bold', color: '#007bff' }}>{companyName}</h1>
+          <p style={{ margin: '2px 0', fontSize: '12px', color: '#555' }}>{companyAddress}</p>
+          <p style={{ margin: '2px 0', fontSize: '12px', color: '#555' }}>{companyPhone}</p>
+        </header>
       )}
 
-      <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0' }}>إيصال شحنة</h2>
-        <p style={{ fontSize: '14px', color: '#666', margin: '5px 0' }}>
-          تاريخ الطباعة: {printTimestamp}
-        </p>
-        <p style={{ fontSize: '14px', color: '#666', margin: '5px 0' }}>
-          تم الطباعة بواسطة: {printedBy}
-        </p>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-        <div>
-          <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
-            معلومات الشحنة
-          </h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+        <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px', border: '1px solid #e9ecef' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #007bff', paddingBottom: '3px', color: '#007bff' }}>معلومات الشحنة</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
             <tbody>
               <tr>
-                <td style={{ padding: '5px 0', fontWeight: 'bold', width: '40%' }}>رقم الأمر:</td>
-                <td style={{ padding: '5px 0' }}>{shipment.salesOrder}</td>
+                <td style={{ padding: '4px 0', fontWeight: 'bold' }}>رقم الأمر:</td>
+                <td style={{ padding: '4px 0' }}>{shipment.salesOrder}</td>
               </tr>
-              <tr style={{ backgroundColor: '#f9f9f9' }}>
-                <td style={{ padding: '5px 0', fontWeight: 'bold' }}>تاريخ الأمر:</td>
-                <td style={{ padding: '5px 0' }}>{new Date(shipment.orderDate).toLocaleDateString('ar-EG')}</td>
+              <tr style={{ backgroundColor: '#f1f3f4' }}>
+                <td style={{ padding: '4px 0', fontWeight: 'bold' }}>تاريخ الأمر:</td>
+                <td style={{ padding: '4px 0' }}>{new Date(shipment.orderDate).toLocaleDateString('ar-EG')}</td>
               </tr>
               <tr>
-                <td style={{ padding: '5px 0', fontWeight: 'bold' }}>تاريخ الإدخال:</td>
-                <td style={{ padding: '5px 0' }}>{new Date(shipment.entryTimestamp).toLocaleDateString('ar-EG')}</td>
+                <td style={{ padding: '4px 0', fontWeight: 'bold' }}>تاريخ الإدخال:</td>
+                <td style={{ padding: '4px 0' }}>{new Date(shipment.entryTimestamp).toLocaleDateString('ar-EG')}</td>
               </tr>
-              <tr style={{ backgroundColor: '#f9f9f9' }}>
-                <td style={{ padding: '5px 0', fontWeight: 'bold' }}>الحالة:</td>
-                <td style={{ padding: '5px 0' }}>{shipment.status}</td>
+              <tr style={{ backgroundColor: '#f1f3f4' }}>
+                <td style={{ padding: '4px 0', fontWeight: 'bold' }}>الحالة:</td>
+                <td style={{ padding: '4px 0' }}>{shipment.status}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div>
-          <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
-            معلومات السائق والمنطقة
-          </h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px', border: '1px solid #e9ecef' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #007bff', paddingBottom: '3px', color: '#007bff' }}>معلومات السائق والمنطقة</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
             <tbody>
               <tr>
-                <td style={{ padding: '5px 0', fontWeight: 'bold', width: '40%' }}>اسم السائق:</td>
-                <td style={{ padding: '5px 0' }}>{driverName}</td>
+                <td style={{ padding: '4px 0', fontWeight: 'bold' }}>اسم السائق:</td>
+                <td style={{ padding: '4px 0' }}>{driverName}</td>
               </tr>
-              <tr style={{ backgroundColor: '#f9f9f9' }}>
-                <td style={{ padding: '5px 0', fontWeight: 'bold' }}>رقم اللوحة:</td>
-                <td style={{ padding: '5px 0' }}>{plateNumber}</td>
+              <tr style={{ backgroundColor: '#f1f3f4' }}>
+                <td style={{ padding: '4px 0', fontWeight: 'bold' }}>رقم اللوحة:</td>
+                <td style={{ padding: '4px 0' }}>{plateNumber}</td>
               </tr>
               <tr>
-                <td style={{ padding: '5px 0', fontWeight: 'bold' }}>المنطقة:</td>
-                <td style={{ padding: '5px 0' }}>{shipment.regionId}</td>
+                <td style={{ padding: '4px 0', fontWeight: 'bold' }}>المنطقة:</td>
+                <td style={{ padding: '4px 0' }}>{shipment.regionId}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
-          تفاصيل المنتجات
-        </h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #ccc' }}>
+      <div style={{ marginBottom: '15px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #007bff', paddingBottom: '3px', color: '#007bff' }}>تفاصيل المنتجات</h3>
+        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #ddd', fontSize: '11px', background: '#f8f9fa' }}>
           <thead>
-            <tr style={{ backgroundColor: '#f0f0f0' }}>
-              <th style={{ padding: '8px', textAlign: 'right', border: '1px solid #ccc', fontWeight: 'bold' }}>المنتج</th>
-              <th style={{ padding: '8px', textAlign: 'center', border: '1px solid #ccc', fontWeight: 'bold' }}>الكمية</th>
-              <th style={{ padding: '8px', textAlign: 'center', border: '1px solid #ccc', fontWeight: 'bold' }}>السعر</th>
-              <th style={{ padding: '8px', textAlign: 'center', border: '1px solid #ccc', fontWeight: 'bold' }}>الإجمالي</th>
+            <tr style={{ background: '#007bff', color: 'white' }}>
+              <th style={{ padding: '6px', textAlign: 'right', border: '1px solid #ddd', fontWeight: 'bold' }}>المنتج</th>
+              <th style={{ padding: '6px', textAlign: 'center', border: '1px solid #ddd', fontWeight: 'bold' }}>الكمية</th>
+              <th style={{ padding: '6px', textAlign: 'center', border: '1px solid #ddd', fontWeight: 'bold' }}>السعر</th>
             </tr>
           </thead>
           <tbody>
             {shipment.products.map((product, index) => (
-              <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#fff' : '#f9f9f9' }}>
-                <td style={{ padding: '8px', textAlign: 'right', border: '1px solid #ccc' }}>{product.productName}</td>
-                <td style={{ padding: '8px', textAlign: 'center', border: '1px solid #ccc' }}>{product.cartonCount}</td>
-                <td style={{ padding: '8px', textAlign: 'center', border: '1px solid #ccc' }}>
+              <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f1f3f4' }}>
+                <td style={{ padding: '6px', textAlign: 'right', border: '1px solid #ddd' }}>{product.productName}</td>
+                <td style={{ padding: '6px', textAlign: 'center', border: '1px solid #ddd' }}>{product.cartonCount}</td>
+                <td style={{ padding: '6px', textAlign: 'center', border: '1px solid #ddd' }}>
                   {product.productWagePrice ? `${product.productWagePrice.toLocaleString()} ر.ي` : 'غير محدد'}
-                </td>
-                <td style={{ padding: '8px', textAlign: 'center', border: '1px solid #ccc' }}>
-                  {product.productWagePrice ? `${(product.productWagePrice * product.cartonCount).toLocaleString()} ر.ي` : 'غير محدد'}
                 </td>
               </tr>
             ))}
@@ -133,118 +111,115 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
         </table>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
-          ملخص التكاليف
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-          <div style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>إجمالي الأجر:</div>
-            <div style={{ fontSize: '18px', color: '#2d5a2d' }}>
-              {shipment.totalWage?.toLocaleString() || 0} ر.ي
+      <div style={{ marginBottom: '15px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #007bff', paddingBottom: '3px', color: '#007bff' }}>ملخص التكاليف</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '6px' }}>
+          {Object.entries({
+            'إجمالي الأجر': shipment.totalWage,
+            'إجمالي الديزل': shipment.totalDiesel,
+            'رسوم زعيتري': shipment.zaitriFee,
+            'مصروفات إدارية': shipment.adminExpenses,
+            'خرج الطريق': shipment.roadExpenses,
+          }).map(([label, value]) => (
+            <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#e8f5e8', textAlign: 'center' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '2px', fontSize: '11px' }}>{label}:</div>
+              <div style={{ fontSize: '12px', color: '#2d5a2d', fontWeight: 'bold' }}>{(value ?? 0).toLocaleString()} ر.ي</div>
             </div>
-          </div>
-          <div style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>إجمالي الديزل:</div>
-            <div style={{ fontSize: '18px', color: '#2d5a2d' }}>
-              {shipment.totalDiesel?.toLocaleString() || 0} ر.ي
-            </div>
-          </div>
-          <div style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>رسوم زعيتري:</div>
-            <div style={{ fontSize: '18px', color: '#2d5a2d' }}>
-              {shipment.zaitriFee?.toLocaleString() || 0} ر.ي
-            </div>
-          </div>
-          <div style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>مصروفات إدارية:</div>
-            <div style={{ fontSize: '18px', color: '#2d5a2d' }}>
-              {shipment.adminExpenses?.toLocaleString() || 0} ر.ي
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
-          ملخص الدفع
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
-          <div style={{ padding: '15px', border: '2px solid #2d5a2d', borderRadius: '5px', backgroundColor: '#f0f8f0' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '16px' }}>المبلغ المستحق:</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2d5a2d' }}>
-              {shipment.dueAmount?.toLocaleString() || 0} ر.ي
-            </div>
-          </div>
-          {shipment.dueAmountAfterDiscount && (
-            <div style={{ padding: '15px', border: '2px solid #1976d2', borderRadius: '5px', backgroundColor: '#e3f2fd' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '16px' }}>بعد الخصم:</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1976d2' }}>
-                {shipment.dueAmountAfterDiscount.toLocaleString()} ر.ي
-              </div>
-            </div>
-          )}
-          {shipment.totalDueAmount && (
-            <div style={{ padding: '15px', border: '2px solid #d32f2f', borderRadius: '5px', backgroundColor: '#ffebee' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '16px' }}>المبلغ النهائي:</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#d32f2f' }}>
-                {shipment.totalDueAmount.toLocaleString()} ر.ي
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {shipment.damagedValue || shipment.shortageValue || shipment.otherAmounts || shipment.improvementBonds || shipment.eveningAllowance || shipment.taxRate ? (
-        <div style={{ marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
-            التعديلات والخصومات
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-            {shipment.damagedValue && (
-              <div style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '3px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#d32f2f' }}>قيمة التالف:</div>
-                <div style={{ fontSize: '14px', color: '#d32f2f' }}>{shipment.damagedValue.toLocaleString()} ر.ي</div>
-              </div>
-            )}
-            {shipment.shortageValue && (
-              <div style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '3px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#d32f2f' }}>قيمة النقص:</div>
-                <div style={{ fontSize: '14px', color: '#d32f2f' }}>{shipment.shortageValue.toLocaleString()} ر.ي</div>
-              </div>
-            )}
-            {shipment.otherAmounts && (
-              <div style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '3px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#f57c00' }}>مبالغ أخرى:</div>
-                <div style={{ fontSize: '14px', color: '#f57c00' }}>{shipment.otherAmounts.toLocaleString()} ر.ي</div>
-              </div>
-            )}
-            {shipment.improvementBonds && (
-              <div style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '3px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#2e7d32' }}>سندات تحسين:</div>
-                <div style={{ fontSize: '14px', color: '#2e7d32' }}>{shipment.improvementBonds.toLocaleString()} ر.ي</div>
-              </div>
-            )}
-            {shipment.eveningAllowance && (
-              <div style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '3px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#2e7d32' }}>بدل مسائي:</div>
-                <div style={{ fontSize: '14px', color: '#2e7d32' }}>{shipment.eveningAllowance.toLocaleString()} ر.ي</div>
-              </div>
-            )}
-            {shipment.taxRate && (
-              <div style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '3px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1976d2' }}>معدل الضريبة:</div>
-                <div style={{ fontSize: '14px', color: '#1976d2' }}>{shipment.taxRate}%</div>
-              </div>
-            )}
+
+      {shipment.damagedValue || shipment.shortageValue || shipment.otherAmounts ? (
+        <div style={{ marginBottom: '15px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #d32f2f', paddingBottom: '3px', color: '#d32f2f' }}>الخصومات</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '6px' }}>
+            {Object.entries({
+              'قيمة التالف': shipment.damagedValue,
+              'قيمة النقص': shipment.shortageValue,
+              'مبالغ أخرى': shipment.otherAmounts,
+            }).map(([label, value]) => (
+              value !== undefined && value !== null && (
+                <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#ffebee', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#d32f2f' }}>{label}:</div>
+                  <div style={{ fontSize: '12px', color: '#d32f2f', fontWeight: 'bold' }}>{value.toLocaleString()} ر.ي</div>
+                </div>
+              )
+            ))}
           </div>
         </div>
       ) : null}
 
-      <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '2px solid #000', textAlign: 'center', fontSize: '12px', color: '#666' }}>
-        <p>تم إصدار هذا الإيصال بواسطة نظام إدارة الشحنات</p>
-        <p>تاريخ الإصدار: {new Date().toLocaleString('ar-EG')}</p>
+      {shipment.improvementBonds || shipment.eveningAllowance || shipment.taxRate ? (
+        <div style={{ marginBottom: '15px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #2e7d32', paddingBottom: '3px', color: '#2e7d32' }}>الإضافات</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '6px' }}>
+            {Object.entries({
+              'سندات تحسين': shipment.improvementBonds,
+              'بدل مسائي': shipment.eveningAllowance,
+              'معدل الضريبة': shipment.taxRate ? `${shipment.taxRate}%` : null,
+            }).map(([label, value]) => (
+              value !== undefined && value !== null && (
+                <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#e8f5e8', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#2e7d32' }}>{label}:</div>
+                  <div style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold' }}>{typeof value === 'string' ? value : value.toLocaleString()} ر.ي</div>
+                </div>
+              )
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div style={{ marginBottom: '15px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #007bff', paddingBottom: '3px', color: '#007bff' }}>ملخص الدفع</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
+          {Object.entries({
+            'المبلغ المستحق': shipment.dueAmount,
+            'بعد الخصم': shipment.dueAmountAfterDiscount,
+            'المبلغ النهائي': shipment.totalDueAmount,
+          }).map(([label, value]) => (
+            value !== undefined && (
+              <div key={label} style={{
+                padding: '10px',
+                border: label === 'المبلغ النهائي' ? '3px solid #d69e2e' : '2px solid #1976d2',
+                borderRadius: '6px',
+                background: label === 'المبلغ النهائي' ? '#fef5e7' : '#e3f2fd',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>{label}:</div>
+                <div style={{
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  color: label === 'المبلغ النهائي' ? '#d69e2e' : '#1976d2'
+                }}>{(value ?? 0).toLocaleString()} ر.ي</div>
+              </div>
+            )
+          ))}
+        </div>
+        {(shipment.transferNumber || shipment.transferDate) && (
+          <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#f7fafc', border: '1px solid #e2e8f0', borderRadius: '4px', display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {shipment.transferNumber && (
+              <div style={{ textAlign: 'center', fontSize: '12px', color: '#718096' }}>
+                <div style={{ fontWeight: 'bold' }}>رقم الحوالة:</div>
+                <div>{shipment.transferNumber}</div>
+              </div>
+            )}
+            {shipment.transferDate && (
+              <div style={{ textAlign: 'center', fontSize: '12px', color: '#718096' }}>
+                <div style={{ fontWeight: 'bold' }}>تاريخ الحوالة:</div>
+                <div>{new Date(shipment.transferDate).toLocaleDateString('ar-EG')}</div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+       <footer style={{ marginTop: '20px', paddingTop: '10px', borderTop: '2px solid #007bff', textAlign: 'center', fontSize: '10px', color: '#666', background: '#f9f9f9', padding: '8px', borderRadius: '4px' }}>
+         <p>تم إصدار هذا الإيصال بواسطة نظام إدارة الشحنات</p>
+         <p>طُبع بواسطة: {printedBy}</p>
+         <p>تاريخ الطباعة: {printTimestamp}</p>
+       </footer>
     </div>
   );
 };
