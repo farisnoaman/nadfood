@@ -6,6 +6,7 @@ import { Icons } from '../../Icons';
 import AccountantShipmentModal from './AccountantShipmentModal';
 import ShipmentListItem from '../../common/display/ShipmentListItem';
 import { useAppContext } from '../../../providers/AppContext';
+import { formatDateForDisplay } from '../../../utils/dateFormatter';
 
 interface ShipmentListProps {
   shipments: Shipment[];
@@ -59,12 +60,15 @@ const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, viewType, view }
                                   </p>
                               </div>
                           </div>
-                          <div className="flex justify-end">
-                              <Button size="sm" onClick={() => setSelectedShipment(shipment)} disabled={shipment.isPendingSync} className="text-xs px-3 py-1">
-                                  <Icons.Edit className="ml-1 h-3 w-3" />
-                                  {actionLabel}
-                              </Button>
-                          </div>
+                           <div className="flex justify-between items-center mt-2">
+                               <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                                   <span>أخر تعديل: {formatDateForDisplay(shipment.modifiedAt || shipment.createdAt)}</span>
+                               </div>
+                               <Button size="sm" onClick={() => setSelectedShipment(shipment)} disabled={shipment.isPendingSync} className="text-xs px-3 py-1">
+                                   <Icons.Edit className="ml-1 h-3 w-3" />
+                                   {actionLabel}
+                               </Button>
+                           </div>
                       </div>
                   ))}
               </div>

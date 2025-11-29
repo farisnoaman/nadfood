@@ -4,6 +4,7 @@ import Card from '../../common/display/Card';
 import Badge from '../../common/display/Badge';
 import Button from '../../common/ui/Button';
 import { IconsWithFallback } from '../../Icons';
+import { formatDateForDisplay } from '../../../utils/dateFormatter';
 
 
 
@@ -131,18 +132,21 @@ const ReturnedShipmentsTab: React.FC<ReturnedShipmentsTabProps> = ({
                        </div>
                     </div>
 
-                     <div className="flex justify-end pt-2 sm:pt-3 border-t border-secondary-200 dark:border-secondary-700">
-                       <Button
-                         onClick={() => handleEditClick(shipment)}
-                         variant="primary"
-                         size="sm"
-                         className="bg-blue-600 hover:bg-blue-700 text-white text-sm"
-                       >
-                         <IconsWithFallback.Edit className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
-                         <span className="hidden xs:inline">تعديل</span>
-                         <span className="xs:hidden">✏️</span>
-                       </Button>
-                     </div>
+                      <div className="flex justify-between items-center pt-2 sm:pt-3 border-t border-secondary-200 dark:border-secondary-700">
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                          <span>أخر تعديل: {formatDateForDisplay(shipment.modifiedAt || shipment.createdAt)}</span>
+                        </div>
+                        <Button
+                          onClick={() => handleEditClick(shipment)}
+                          variant="primary"
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                        >
+                          <IconsWithFallback.Edit className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden xs:inline">تعديل</span>
+                          <span className="xs:hidden">✏️</span>
+                        </Button>
+                      </div>
                   </div>
                 </div>
               );

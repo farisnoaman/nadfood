@@ -12,6 +12,7 @@ import ShipmentListItem from '../../common/display/ShipmentListItem';
 import { useAppContext } from '../../../providers/AppContext';
 import { useShipmentFilter } from '../../../hooks/useShipmentFilter';
 import SearchableSelect from '../../common/forms/SearchableSelect';
+import { formatDateForDisplay } from '../../../utils/dateFormatter';
 
 interface AdminShipmentListProps {
   shipments: Shipment[];
@@ -244,12 +245,15 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex justify-end">
-                                            <Button size="sm" onClick={() => setSelectedShipment(shipment)} className="text-xs px-3 py-1">
-                                                <Icons.Edit className="ml-1 h-3 w-3" />
-                                                عرض وتعديل
-                                            </Button>
-                                        </div>
+                                         <div className="flex justify-between items-center mt-2">
+                                             <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                                                 <span>أخر تعديل: {formatDateForDisplay(shipment.modifiedAt || shipment.createdAt)}</span>
+                                             </div>
+                                             <Button size="sm" onClick={() => setSelectedShipment(shipment)} className="text-xs px-3 py-1">
+                                                 <Icons.Edit className="ml-1 h-3 w-3" />
+                                                 عرض وتعديل
+                                             </Button>
+                                         </div>
                                     </div>
                                 );
                             })}
