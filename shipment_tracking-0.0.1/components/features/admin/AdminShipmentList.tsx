@@ -16,7 +16,7 @@ import { formatDateForDisplay } from '../../../utils/dateFormatter';
 
 interface AdminShipmentListProps {
   shipments: Shipment[];
-  defaultStatusFilter?: string;
+  defaultStatusFilter?: string | ShipmentStatus[];
 }
 
 const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaultStatusFilter }) => {
@@ -25,6 +25,8 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
   const [view, setView] = useState<'grid' | 'list'>(window.innerWidth < 768 ? 'list' : 'grid');
   const [isDateFilterVisible, setIsDateFilterVisible] = useState(false);
   const [isSearchFilterVisible, setIsSearchFilterVisible] = useState(false);
+
+  const initialFilter = defaultStatusFilter === 'draft' ? ShipmentStatus.DRAFT : defaultStatusFilter === 'all' ? 'all' : Array.isArray(defaultStatusFilter) ? defaultStatusFilter : 'all';
 
   const {
     processedShipments: filteredShipments,
@@ -37,7 +39,7 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
   } = useShipmentFilter({
     baseShipments: shipments,
     drivers,
-    initialStatusFilter: defaultStatusFilter === 'draft' ? ShipmentStatus.DRAFT : 'all'
+    initialStatusFilter: initialFilter
   });
 
 
@@ -110,13 +112,11 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
     document.body.removeChild(link);
   };
   
-   const uniqueStatuses = [...new Set(shipments.map(s => s.status))];
-
    const statusOptions = [
      { value: 'all', label: 'كل الحالات' },
-     ...uniqueStatuses.map(status => ({
+     ...Object.values(ShipmentStatus).map(status => ({
          value: status,
-         label: status,
+         label: status === ShipmentStatus.SENT_TO_ADMIN ? 'مرسلة للمدير' : status,
      })),
    ];
   
@@ -164,13 +164,13 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
                             />
                         </div>
                         <div className="flex-grow min-w-0">
-                            <SearchableSelect
-                                label="الحالة"
-                                options={statusOptions}
-                                value={statusFilter}
-                                onChange={val => setStatusFilter(val as ShipmentStatus | 'all')}
-                                className="text-sm"
-                            />
+                             <SearchableSelect
+                                 label="الحالة"
+                                 options={statusOptions}
+                                 value={Array.isArray(statusFilter) ? 'all' : statusFilter}
+                                 onChange={val => setStatusFilter(val as ShipmentStatus | 'all')}
+                                 className="text-sm"
+                             />
                         </div>
                         <div className="flex-grow min-w-0">
                             <SearchableSelect

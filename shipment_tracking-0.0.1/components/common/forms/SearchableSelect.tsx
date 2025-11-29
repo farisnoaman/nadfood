@@ -14,9 +14,10 @@ interface SearchableSelectProps {
   label?: string;
   id?: string;
   disabled?: boolean;
+  className?: string;
 }
 
-const SearchableSelect: React.FC<SearchableSelectProps> = ({ options, value, onChange, placeholder, label, id, disabled = false }) => {
+const SearchableSelect: React.FC<SearchableSelectProps> = ({ options, value, onChange, placeholder, label, id, disabled = false, className = '' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -61,7 +62,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({ options, value, onC
   };
 
   return (
-    <div className="w-full" ref={wrapperRef}>
+    <div className={`w-full ${className}`} ref={wrapperRef}>
       {label && <label htmlFor={id} className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">{label}</label>}
       <div className="relative">
         <input

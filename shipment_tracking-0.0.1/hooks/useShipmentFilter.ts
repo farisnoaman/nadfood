@@ -6,13 +6,13 @@ interface UseShipmentFilterProps {
   baseShipments: Shipment[];
   drivers: Driver[];
   initialSortOption?: 'newest' | 'oldest' | 'highest_due' | 'lowest_due';
-  initialStatusFilter?: ShipmentStatus | 'all';
+  initialStatusFilter?: ShipmentStatus | 'all' | ShipmentStatus[];
 }
 
 export const useShipmentFilter = ({ baseShipments, drivers, initialSortOption = 'newest', initialStatusFilter = 'all' }: UseShipmentFilterProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [regionFilter, setRegionFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<ShipmentStatus | 'all'>(initialStatusFilter);
+  const [statusFilter, setStatusFilter] = useState<ShipmentStatus | 'all' | ShipmentStatus[]>(initialStatusFilter || 'all');
   const [sortOption, setSortOption] = useState(initialSortOption);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -30,7 +30,7 @@ export const useShipmentFilter = ({ baseShipments, drivers, initialSortOption = 
         getDriverName(shipment.driverId).toLowerCase().includes(lowerSearchTerm);
 
       const matchesRegion = regionFilter === 'all' || shipment.regionId === regionFilter;
-      const matchesStatus = statusFilter === 'all' || shipment.status === statusFilter;
+       const matchesStatus = statusFilter === 'all' || (Array.isArray(statusFilter) ? statusFilter.includes(shipment.status) : shipment.status === statusFilter);
       
       // Fix M-05: Improved date filtering with proper timezone handling
       const matchesDate = isDateBetween(
