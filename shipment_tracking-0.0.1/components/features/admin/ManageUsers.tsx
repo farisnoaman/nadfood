@@ -330,12 +330,12 @@ const ManageUsers: React.FC = () => {
               </div>
                {/* Mobile: Grid layout for action buttons */}
                <div className="grid grid-cols-2 gap-2 mt-3 sm:hidden">
-                   <Button size="sm" variant="ghost" onClick={() => setUserToToggleStatus(user)} title={user.isActive ?? true ? 'إلغاء التفعيل' : 'تفعيل'} className="justify-center">
-                       {user.isActive ?? true
-                           ? <><Icons.CircleX className="h-4 w-4 text-red-500" /><span className="mr-1 text-xs">إلغاء</span></>
-                           : <><Icons.CircleCheck className="h-4 w-4 text-green-500" /><span className="mr-1 text-xs">تفعيل</span></>
-                       }
-                   </Button>
+                    <Button size="sm" variant="ghost-red" onClick={() => setUserToToggleStatus(user)} title={user.isActive ?? true ? 'إلغاء التفعيل' : 'تفعيل'} className="justify-center">
+{user.isActive ?? true
+                            ? <><Icons.CircleX className="h-4 w-4" /><span className="mr-1 text-xs">تعطيل</span></>
+                            : <><Icons.CircleCheck className="h-4 w-4 text-green-500" /><span className="mr-1 text-xs">تفعيل</span></>
+                        }
+                    </Button>
                    <Button size="sm" onClick={() => setUserToEdit(user)} className="justify-center">
                        <Icons.Edit className="ml-1 h-3 w-3" />
                        <span className="text-xs">تعديل</span>
@@ -344,20 +344,20 @@ const ManageUsers: React.FC = () => {
                        <Icons.KeyRound className="ml-1 h-3 w-3" />
                        <span className="text-xs">كلمة السر</span>
                    </Button>
-                   <Button size="sm" variant="ghost" onClick={() => setUserToDelete(user)} title="حذف" className="justify-center">
-                       <Icons.Trash2 className="h-4 w-4 text-red-500" />
-                       <span className="mr-1 text-xs">حذف</span>
-                   </Button>
+                    <Button size="sm" variant="ghost-red" onClick={() => setUserToDelete(user)} title="حذف" className="justify-center">
+                        <Icons.Trash2 className="h-4 w-4" />
+                        <span className="mr-1 text-xs">حذف</span>
+                    </Button>
                </div>
                
                {/* Desktop: Horizontal layout for action buttons */}
                <div className="hidden sm:flex items-center space-x-1 rtl:space-x-reverse mt-2 sm:mt-0 self-end sm:self-center">
-                   <Button size="sm" variant="ghost" onClick={() => setUserToToggleStatus(user)} title={user.isActive ?? true ? 'إلغاء التفعيل' : 'تفعيل'}>
-                       {user.isActive ?? true
-                           ? <Icons.CircleX className="h-5 w-5 text-red-500" />
-                           : <Icons.CircleCheck className="h-5 w-5 text-green-500" />
-                       }
-                   </Button>
+                    <Button size="sm" variant="ghost-red" onClick={() => setUserToToggleStatus(user)} title={user.isActive ?? true ? 'تعطيل' : 'تفعيل'}>
+                        {user.isActive ?? true
+                            ? <Icons.CircleX className="h-5 w-5" />
+                            : <Icons.CircleCheck className="h-5 w-5" />
+                        }
+                    </Button>
                    <Button size="sm" onClick={() => setUserToEdit(user)}>
                        <Icons.Edit className="ml-2 h-4 w-4" />
                        تعديل
@@ -366,9 +366,9 @@ const ManageUsers: React.FC = () => {
                        <Icons.KeyRound className="ml-2 h-4 w-4" />
                        تغيير كلمة السر
                    </Button>
-                   <Button size="sm" variant="ghost" onClick={() => setUserToDelete(user)} title="حذف">
-                       <Icons.Trash2 className="h-5 w-5 text-red-500" />
-                   </Button>
+                    <Button size="sm" variant="ghost-red" onClick={() => setUserToDelete(user)} title="حذف">
+                        <Icons.Trash2 className="h-5 w-5" />
+                    </Button>
                </div>
             </div>
           ))}
@@ -395,7 +395,7 @@ const ManageUsers: React.FC = () => {
               />
               <p className="text-xs text-secondary-500">يجب أن تكون كلمة المرور 6 أحرف على الأقل</p>
               <div className="flex justify-end gap-3">
-                  <Button variant="secondary" onClick={() => setSelectedUser(null)} disabled={isSubmitting}>إلغاء</Button>
+                  <Button variant="ghost-red" onClick={() => setSelectedUser(null)} disabled={isSubmitting}>إلغاء</Button>
                   <Button onClick={handlePasswordChange} disabled={isSubmitting}>{isSubmitting ? 'جاري الحفظ...' : 'حفظ التغييرات'}</Button>
               </div>
             </div>
@@ -434,7 +434,7 @@ const ManageUsers: React.FC = () => {
               onChange={(val) => setNewUserRole(val as Role)}
             />
             <div className="flex justify-end gap-3 pt-4">
-              <Button variant="secondary" onClick={handleCloseAddModal}>إلغاء</Button>
+              <Button variant="ghost-red" onClick={handleCloseAddModal}>إلغاء</Button>
               <Button onClick={handleAddNewUser} disabled={isSubmitting}>{isSubmitting ? 'جاري الإضافة...' : 'إضافة المستخدم'}</Button>
             </div>
           </div>
@@ -455,7 +455,7 @@ const ManageUsers: React.FC = () => {
                        : 'سيتمكن المستخدم من تسجيل الدخول بعد التفعيل.'}
                </p>
                <div className="mt-6 flex justify-center gap-4">
-                   <Button variant="secondary" onClick={() => setUserToToggleStatus(null)}>إلغاء</Button>
+                    <Button variant="ghost-red" onClick={() => setUserToToggleStatus(null)}>إلغاء</Button>
                    <Button variant="primary" onClick={confirmToggleUserStatus} disabled={isSubmitting}>{isSubmitting ? 'جاري التغيير...' : 'نعم، تأكيد'}</Button>
                </div>
            </div>
@@ -485,7 +485,7 @@ const ManageUsers: React.FC = () => {
                onChange={(val) => setEditUserRole(val as Role)}
              />
              <div className="flex justify-end gap-3">
-                 <Button variant="secondary" onClick={() => setUserToEdit(null)} disabled={isSubmitting}>إلغاء</Button>
+                  <Button variant="ghost-red" onClick={() => setUserToEdit(null)} disabled={isSubmitting}>إلغاء</Button>
                  <Button onClick={handleEditUser} disabled={isSubmitting}>{isSubmitting ? 'جاري الحفظ...' : 'حفظ التغييرات'}</Button>
              </div>
            </div>
@@ -503,7 +503,7 @@ const ManageUsers: React.FC = () => {
                  هذا الإجراء لا يمكن التراجع عنه. سيتم حذف المستخدم نهائياً من النظام.
              </p>
              <div className="mt-6 flex justify-center gap-4">
-                 <Button variant="secondary" onClick={() => setUserToDelete(null)}>إلغاء</Button>
+                  <Button variant="ghost-red" onClick={() => setUserToDelete(null)}>إلغاء</Button>
                  <Button variant="destructive" onClick={confirmDeleteUser} disabled={isSubmitting}>{isSubmitting ? 'جاري الحذف...' : 'نعم، حذف'}</Button>
              </div>
          </div>
