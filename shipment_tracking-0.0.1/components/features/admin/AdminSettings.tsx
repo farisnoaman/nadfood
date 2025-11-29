@@ -5,7 +5,7 @@ import { Icons } from '../../Icons';
 import Button from '../../common/ui/Button';
 import { useAppContext } from '../../../providers/AppContext';
 import FieldValue from '../../common/components/FieldValue';
-import { supabase } from '../../../utils/supabaseClient';
+import SupabaseService from '../../../utils/supabaseService';
 import { runSettingsMigrationIfNeeded } from '../../../utils/settingsMigration';
 
 const AdminSettings: React.FC = () => {
@@ -17,7 +17,8 @@ const AdminSettings: React.FC = () => {
     companyAddress, setCompanyAddress,
     companyPhone, setCompanyPhone,
     companyLogo, setCompanyLogo,
-    isTimeWidgetVisible, setIsTimeWidgetVisible
+    isTimeWidgetVisible, setIsTimeWidgetVisible,
+    currentUser
   } = useAppContext();
 
   // State for database sync and pending changes
@@ -25,6 +26,7 @@ const AdminSettings: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [syncNotifications, setSyncNotifications] = useState<string[]>([]);
 
   // State for edit mode and temporary form data
   const [isEditing, setIsEditing] = useState(false);
@@ -49,31 +51,48 @@ const AdminSettings: React.FC = () => {
   }, [companyName, companyAddress, companyPhone, companyLogo, appName, isEditing]);
 
   // Fetch current database settings
-  const fetchDbSettings = useCallback(async () => {
+  const fetchDbSettings = useCallback(async (showError = true) => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('app_settings')
-        .select('setting_key, setting_value');
+      console.log('Fetching settings for user:', currentUser);
 
-      if (error) throw error;
+      const data = await SupabaseService.getSettings();
+      console.log('Settings data received:', data);
 
       const settingsMap = data.reduce((acc, setting) => {
-        acc[setting.setting_key] = setting.setting_value;
+        acc[setting.setting_key] = setting.setting_value || '';
         return acc;
       }, {} as Record<string, string>);
 
+      console.log('Settings data received:', data);
+      console.log('Settings map created:', settingsMap);
+
+      // If no settings found, this might indicate migration wasn't applied
+      if (data.length === 0) {
+        console.warn('No settings found in database. Migration may not have been applied.');
+      }
       setDbSettings(settingsMap);
       setLastSync(new Date());
       return settingsMap;
     } catch (error) {
       console.error('Error fetching database settings:', error);
-      alert('فشل في تحميل إعدادات قاعدة البيانات');
-      return null;
+      console.error('Current user:', currentUser);
+      console.error('User role:', currentUser?.role);
+
+      if (showError) {
+        if (error.message?.includes('permission') || error.message?.includes('policy')) {
+          alert('ليس لديك صلاحية للوصول إلى إعدادات النظام. يجب أن تكون مديراً للوصول إلى هذه الصفحة.');
+        } else {
+          alert('فشل في تحميل إعدادات قاعدة البيانات. يرجى التحقق من الاتصال بالإنترنت.');
+        }
+      }
+      // Return empty settings as fallback
+      setDbSettings({});
+      return {};
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentUser]);
 
   // Check if local state differs from database
   const hasChanges = useCallback(() => {
@@ -93,21 +112,68 @@ const AdminSettings: React.FC = () => {
     });
   }, [accountantPrintAccess, isPrintHeaderEnabled, appName, companyName, companyAddress, companyPhone, companyLogo, isTimeWidgetVisible, dbSettings]);
 
+  // Update AppContext state when database changes are received
+  const updateAppContextFromDatabase = useCallback(async () => {
+    try {
+      const data = await SupabaseService.getSettings();
+      const settingsMap = data.reduce((acc, setting) => {
+        acc[setting.setting_key] = setting.setting_value || '';
+        return acc;
+      }, {} as Record<string, string>);
+
+      // Update all AppContext setters to match database state
+      setAccountantPrintAccess(settingsMap['accountantPrintAccess'] === 'true');
+      setIsPrintHeaderEnabled(settingsMap['isPrintHeaderEnabled'] === 'true');
+      setAppName(settingsMap['appName'] || 'تتبع الشحنات');
+      setCompanyName(settingsMap['companyName'] || 'اسم الشركة');
+      setCompanyAddress(settingsMap['companyAddress'] || 'عنوان الشركة');
+      setCompanyPhone(settingsMap['companyPhone'] || 'رقم الهاتف');
+      setCompanyLogo(settingsMap['companyLogo'] || '');
+      setIsTimeWidgetVisible(settingsMap['isTimeWidgetVisible'] !== 'false');
+
+      console.log('AppContext updated from database changes');
+    } catch (error) {
+      console.error('Failed to update AppContext from database:', error);
+    }
+  }, [setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible]);
+
+  // Show notification when settings are updated by another admin
+  const showSyncNotification = useCallback((message: string) => {
+    setSyncNotifications(prev => [...prev, message]);
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      setSyncNotifications(prev => prev.slice(1));
+    }, 5000);
+  }, []);
+
   // Run settings migration and initial fetch on component mount
   useEffect(() => {
-    runSettingsMigrationIfNeeded().then(() => {
-      fetchDbSettings();
-    });
-  }, [fetchDbSettings]);
+    console.log('AdminSettings: Component mounted, starting initialization');
 
-  // Update hasUnsavedChanges when local state changes
-  useEffect(() => {
-    setHasUnsavedChanges(hasChanges());
-  }, [hasChanges]);
+    runSettingsMigrationIfNeeded()
+      .then(() => {
+        console.log('AdminSettings: Migration completed, fetching settings');
+        return fetchDbSettings(false);
+      })
+      .then(() => {
+        console.log('AdminSettings: Settings fetched, syncing AppContext');
+        // After loading dbSettings, sync AppContext with database state
+        return updateAppContextFromDatabase();
+      })
+      .then(() => {
+        console.log('AdminSettings: Initialization completed successfully');
+      })
+      .catch((error) => {
+        console.error('AdminSettings: Initialization failed:', error);
+        // Error will be caught by ErrorBoundary
+        throw error;
+      });
+  }, [updateAppContextFromDatabase]);
 
   // Subscribe to real-time changes in app_settings
   useEffect(() => {
-    const channel = supabase
+    const client = SupabaseService.getClient();
+    const channel = client
       .channel('app_settings_changes')
       .on(
         'postgres_changes',
@@ -117,17 +183,21 @@ const AdminSettings: React.FC = () => {
           table: 'app_settings'
         },
         (payload) => {
-          console.log('Settings changed:', payload);
-          // Refresh database state when changes occur
+          console.log('Settings changed by another admin:', payload);
+          // Refresh database state
           fetchDbSettings();
+          // Update AppContext state to match database
+          updateAppContextFromDatabase();
+          // Notify user about the change
+          showSyncNotification('تم تحديث الإعدادات بواسطة مدير آخر');
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      client.removeChannel(channel);
     };
-  }, [fetchDbSettings]);
+  }, [fetchDbSettings, updateAppContextFromDatabase]);
 
   const handleEditClick = () => setIsEditing(true);
   const handleCancelClick = () => {
@@ -221,6 +291,21 @@ const AdminSettings: React.FC = () => {
   const ToggleSetting: React.FC<{ label: string, isChecked: boolean, onToggle: (checked: boolean) => void, id: string }> = ({ label, isChecked, onToggle, id }) => {
     const isSynced = dbSettings[id] === isChecked.toString();
 
+    const handleToggle = async (checked: boolean) => {
+      try {
+        // Update local state first
+        onToggle(checked);
+
+        // Save to database
+        await SupabaseService.saveSetting(id, checked.toString());
+      } catch (error) {
+        console.error('Error saving toggle setting:', id, error);
+        // Revert local state on error
+        onToggle(!checked);
+        alert('حدث خطأ في حفظ الإعداد. يرجى المحاولة مرة أخرى.');
+      }
+    };
+
     return (
       <label htmlFor={id} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between cursor-pointer p-2 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-700/50 gap-2 ${
         !isSynced ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' : ''
@@ -237,13 +322,63 @@ const AdminSettings: React.FC = () => {
             type="checkbox"
             id={id}
             checked={isChecked}
-            onChange={(e) => onToggle(e.target.checked)}
+            onChange={(e) => handleToggle(e.target.checked)}
             className="h-5 w-5 rounded text-primary-600 focus:ring-primary-500 border-secondary-300 dark:border-secondary-600 bg-secondary-100 dark:bg-secondary-900 focus:ring-offset-0 flex-shrink-0"
           />
         </div>
       </label>
     );
   };
+
+  // Debug logging
+  console.log('AdminSettings: Current user:', currentUser);
+  console.log('AdminSettings: User role:', currentUser?.role);
+  console.log('AdminSettings: Is admin check:', currentUser?.role === 'ادمن');
+
+  // Check if user is admin
+  if (!currentUser) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Icons.User className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-yellow-800 dark:text-yellow-200 mb-2">
+            يرجى تسجيل الدخول
+          </h2>
+          <p className="text-yellow-600 dark:text-yellow-300">
+            يجب تسجيل الدخول للوصول إلى إعدادات النظام.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentUser.role !== 'ادمن') {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Icons.Shield className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-red-800 dark:text-red-200 mb-2">
+            غير مصرح لك بالوصول
+          </h2>
+          <p className="text-red-600 dark:text-red-300">
+            يجب أن تكون مديراً للوصول إلى إعدادات النظام. دورك الحالي: {currentUser.role}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while fetching initial settings
+  if (isLoading && Object.keys(dbSettings).length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent mb-4" />
+          <p className="text-secondary-600 dark:text-secondary-400">جاري تحميل الإعدادات...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -297,6 +432,18 @@ const AdminSettings: React.FC = () => {
               ⚠️ <span className="hidden sm:inline">لديك تغييرات غير محفوظة. اضغط على "حفظ جميع التغييرات" لحفظها في قاعدة البيانات.</span>
               <span className="sm:hidden">تغييرات غير محفوظة - اضغط حفظ لحفظها</span>
             </p>
+          </div>
+        )}
+
+        {/* Sync notifications */}
+        {syncNotifications.length > 0 && (
+          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+            <div className="flex items-center gap-2">
+              <Icons.Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-200">
+                {syncNotifications[0]}
+              </p>
+            </div>
           </div>
         )}
       </Card>

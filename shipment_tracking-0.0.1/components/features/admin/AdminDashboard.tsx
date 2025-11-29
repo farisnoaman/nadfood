@@ -8,6 +8,7 @@ import { Shipment, ShipmentStatus } from '../../../types';
 import AdminSettings from './AdminSettings';
 import AdminReports from './AdminReports';
 import { useAppContext } from '../../../providers/AppContext';
+import ErrorBoundary from '../../common/ui/ErrorBoundary';
 
 type Tab = 'reports' | 'received' | 'all_shipments' | 'data_management' | 'user_management' | 'settings';
 
@@ -73,7 +74,11 @@ const AdminDashboard: React.FC = () => {
                  {activeTab === 'all_shipments' && <AdminShipmentList shipments={shipments} defaultStatusFilter={[ShipmentStatus.DRAFT, ShipmentStatus.FINAL, ShipmentStatus.FINAL_MODIFIED]} />}
                 {activeTab === 'data_management' && <ManageData />}
                 {activeTab === 'user_management' && <ManageUsers />}
-                {activeTab === 'settings' && <AdminSettings />}
+                {activeTab === 'settings' && (
+                  <ErrorBoundary>
+                    <AdminSettings />
+                  </ErrorBoundary>
+                )}
             </div>
         </div>
     );

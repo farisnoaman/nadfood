@@ -1,16 +1,19 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './providers/ThemeContext';
 import { AppProvider, useAppContext } from './providers/AppContext';
 import { Role } from './types';
-import Login from './components/features/auth/Login';
-import FleetDashboard from './components/features/fleet/FleetDashboard';
-import AccountantDashboard from './components/features/accountant/AccountantDashboard';
-import AdminDashboard from './components/features/admin/AdminDashboard';
 import Layout from './components/layout/Layout';
 import SyncStatusIndicator from './components/common/display/SyncStatusIndicator';
 import { Icons } from './components/Icons';
+import { PageLoading } from './components/common/ui/LoadingComponents';
+
+// Lazy load heavy components
+const Login = lazy(() => import('./components/features/auth/Login'));
+const FleetDashboard = lazy(() => import('./components/features/fleet/FleetDashboard'));
+const AccountantDashboard = lazy(() => import('./components/features/accountant/AccountantDashboard'));
+const AdminDashboard = lazy(() => import('./components/features/admin/AdminDashboard'));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[] }> = ({ children, allowedRoles }) => {
     const { currentUser } = useAppContext();
@@ -130,40 +133,44 @@ const AppRoutes: React.FC = () => {
     return (
         <div className={`min-h-screen bg-secondary-100 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-200 transition-colors duration-300`}>
             <HashRouter>
-                <Routes>
-                    <Route path="/login" element={!currentUser ? <Login /> : <Navigate to="/" />} />
-                    <Route path="/*" element={
-                        currentUser ? (
-                            <Layout>
-                                <Routes>
-                                    <Route path="/" element={
-                                        !isProfileLoaded ? (
-                                            <div className="flex items-center justify-center min-h-screen bg-secondary-100 dark:bg-secondary-900">
-                                                <div className="flex flex-col items-center">
-                                                    <Icons.Truck className="h-16 w-16 text-primary-600 animate-pulse" />
-                                                    <p className="mt-4 text-lg font-semibold text-secondary-700 dark:text-secondary-300">
-                                                        جاري تحميل الملف الشخصي...
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {currentUser.role === Role.SALES && <Navigate to="/fleet" />}
-                                                {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
-                                                {currentUser.role === Role.ADMIN && <Navigate to="/manager" />}
-                                            </>
-                                        )
-                                    } />
-                                    <Route path="/fleet/*" element={<ProtectedRoute allowedRoles={[Role.SALES]}><FleetDashboard /></ProtectedRoute>} />
-                                    <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
-                                    <Route path="/manager/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN]}><AdminDashboard /></ProtectedRoute>} />
-                                </Routes>
-                                {/* Sync Status Indicator - shown when logged in */}
-                                <SyncStatusIndicator />
-                            </Layout>
-                        ) : <Login />
-                    } />
-                </Routes>
+                <Suspense fallback={<PageLoading title="جاري تحميل التطبيق..." />}>
+                    <Routes>
+                        <Route path="/login" element={!currentUser ? <Login /> : <Navigate to="/" />} />
+                        <Route path="/*" element={
+                            currentUser ? (
+                                <Layout>
+                                    <Suspense fallback={<PageLoading title="جاري تحميل الصفحة..." />}>
+                                        <Routes>
+                                            <Route path="/" element={
+                                                !isProfileLoaded ? (
+                                                    <div className="flex items-center justify-center min-h-screen bg-secondary-100 dark:bg-secondary-900">
+                                                        <div className="flex flex-col items-center">
+                                                            <Icons.Truck className="h-16 w-16 text-primary-600 animate-pulse" />
+                                                            <p className="mt-4 text-lg font-semibold text-secondary-700 dark:text-secondary-300">
+                                                                جاري تحميل الملف الشخصي...
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {currentUser.role === Role.SALES && <Navigate to="/fleet" />}
+                                                        {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
+                                                        {currentUser.role === Role.ADMIN && <Navigate to="/manager" />}
+                                                    </>
+                                                )
+                                            } />
+                                            <Route path="/fleet/*" element={<ProtectedRoute allowedRoles={[Role.SALES]}><FleetDashboard /></ProtectedRoute>} />
+                                            <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
+                                            <Route path="/manager/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN]}><AdminDashboard /></ProtectedRoute>} />
+                                        </Routes>
+                                    </Suspense>
+                                    {/* Sync Status Indicator - shown when logged in */}
+                                    <SyncStatusIndicator />
+                                </Layout>
+                            ) : <Login />
+                        } />
+                    </Routes>
+                </Suspense>
             </HashRouter>
         </div>
     );
