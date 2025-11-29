@@ -83,7 +83,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({ options, value, onC
             <Icons.ChevronDown className={`h-5 w-5 text-secondary-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
         </div>
         {isOpen && !disabled && (
-          <div className="absolute z-10 mt-1 w-full rounded-md bg-white dark:bg-secondary-700 shadow-lg border dark:border-secondary-600 max-h-60 overflow-auto">
+          <div className="absolute z-50 mt-1 w-full rounded-md bg-white dark:bg-secondary-700 shadow-lg border dark:border-secondary-600 max-h-48 sm:max-h-60 overflow-auto">
             <ul className="py-1">
               {filteredOptions.length > 0 ? (
                 filteredOptions.map(option => (

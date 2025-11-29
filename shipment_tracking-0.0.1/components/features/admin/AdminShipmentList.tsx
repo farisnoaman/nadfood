@@ -109,13 +109,15 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
     document.body.removeChild(link);
   };
   
-  const statusOptions = [
-    { value: 'all', label: 'كل الحالات' },
-    ...Object.values(ShipmentStatus).map(status => ({
-        value: status,
-        label: status,
-    })),
-  ];
+   const uniqueStatuses = [...new Set(shipments.map(s => s.status))];
+
+   const statusOptions = [
+     { value: 'all', label: 'كل الحالات' },
+     ...uniqueStatuses.map(status => ({
+         value: status,
+         label: status,
+     })),
+   ];
   
   const regionOptions = [
     { value: 'all', label: 'كل المناطق' },

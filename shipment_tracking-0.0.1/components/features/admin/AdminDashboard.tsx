@@ -70,7 +70,7 @@ const AdminDashboard: React.FC = () => {
             <div>
                 {activeTab === 'reports' && <AdminReports />}
                 {activeTab === 'received' && <AdminShipmentList shipments={receivedShipments} />}
-                {activeTab === 'all_shipments' && <AdminShipmentList shipments={draftAndFinalShipments} defaultStatusFilter="draft" />}
+                 {activeTab === 'all_shipments' && <AdminShipmentList shipments={draftAndFinalShipments} defaultStatusFilter="all" />}
                 {activeTab === 'data_management' && <ManageData />}
                 {activeTab === 'user_management' && <ManageUsers />}
                 {activeTab === 'settings' && <AdminSettings />}
