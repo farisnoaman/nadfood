@@ -328,7 +328,30 @@ const ManageUsers: React.FC = () => {
                   </span>
                 </div>
               </div>
-               <div className="flex items-center space-x-1 rtl:space-x-reverse mt-2 sm:mt-0 self-end sm:self-center">
+               {/* Mobile: Grid layout for action buttons */}
+               <div className="grid grid-cols-2 gap-2 mt-3 sm:hidden">
+                   <Button size="sm" variant="ghost" onClick={() => setUserToToggleStatus(user)} title={user.isActive ?? true ? 'إلغاء التفعيل' : 'تفعيل'} className="justify-center">
+                       {user.isActive ?? true
+                           ? <><Icons.CircleX className="h-4 w-4 text-red-500" /><span className="mr-1 text-xs">إلغاء</span></>
+                           : <><Icons.CircleCheck className="h-4 w-4 text-green-500" /><span className="mr-1 text-xs">تفعيل</span></>
+                       }
+                   </Button>
+                   <Button size="sm" onClick={() => setUserToEdit(user)} className="justify-center">
+                       <Icons.Edit className="ml-1 h-3 w-3" />
+                       <span className="text-xs">تعديل</span>
+                   </Button>
+                   <Button size="sm" onClick={() => setSelectedUser(user)} className="justify-center">
+                       <Icons.KeyRound className="ml-1 h-3 w-3" />
+                       <span className="text-xs">كلمة السر</span>
+                   </Button>
+                   <Button size="sm" variant="ghost" onClick={() => setUserToDelete(user)} title="حذف" className="justify-center">
+                       <Icons.Trash2 className="h-4 w-4 text-red-500" />
+                       <span className="mr-1 text-xs">حذف</span>
+                   </Button>
+               </div>
+               
+               {/* Desktop: Horizontal layout for action buttons */}
+               <div className="hidden sm:flex items-center space-x-1 rtl:space-x-reverse mt-2 sm:mt-0 self-end sm:self-center">
                    <Button size="sm" variant="ghost" onClick={() => setUserToToggleStatus(user)} title={user.isActive ?? true ? 'إلغاء التفعيل' : 'تفعيل'}>
                        {user.isActive ?? true
                            ? <Icons.CircleX className="h-5 w-5 text-red-500" />
