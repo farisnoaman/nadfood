@@ -219,8 +219,8 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
                         {/* Mobile List View */}
                         <div className="md:hidden">
                             {filteredShipments.map((shipment) => {
-                                return (
-                                    <div key={shipment.id} className="bg-white dark:bg-secondary-800 rounded-lg shadow p-3 mb-2">
+                                 return (
+                                     <div key={shipment.id} className="bg-gradient-to-br from-white via-blue-50 to-indigo-100 dark:from-secondary-800 dark:via-secondary-750 dark:to-secondary-700 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 p-3 mb-2 border border-gray-200 dark:border-secondary-600">
                                         <div className="flex justify-between items-start mb-2">
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between mb-1">
@@ -289,9 +289,9 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredShipments.map((shipment) => {
                             const finalAmount = shipment.totalDueAmount ?? calculateAdminValues(shipment).totalDueAmount ?? 0;
-                            return (
-                                <div key={shipment.id} className="bg-white dark:bg-secondary-800 shadow rounded-lg overflow-hidden flex flex-col">
-                                    <div className="px-4 py-3 bg-secondary-50 dark:bg-secondary-800/50 flex justify-between items-center border-b border-secondary-200 dark:border-secondary-700">
+                             return (
+                                 <div key={shipment.id} className="bg-gradient-to-br from-white via-blue-50 to-indigo-100 dark:from-secondary-800 dark:via-secondary-750 dark:to-secondary-700 shadow-lg hover:shadow-xl transition-all duration-300 rounded-lg overflow-hidden flex flex-col border border-gray-200 dark:border-secondary-600">
+                                     <div className="px-4 py-3 bg-gradient-to-r from-secondary-50 to-blue-50 dark:from-secondary-800/50 dark:to-secondary-700/50 flex justify-between items-center border-b border-secondary-200 dark:border-secondary-700">
                                         <h3 className="font-bold text-lg text-primary-600 dark:text-primary-400">{shipment.salesOrder}</h3>
                                         <Badge status={shipment.status} />
                                     </div>
@@ -334,7 +334,7 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
                                         </div>
                                     </div>
                         
-                                    <div className="px-4 py-3 bg-secondary-50 dark:bg-secondary-800/50 flex justify-between items-center border-t border-secondary-200 dark:border-secondary-700 mt-auto">
+                                     <div className="px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-100 dark:from-secondary-800/50 dark:to-secondary-700/50 flex justify-between items-center border-t border-secondary-200 dark:border-secondary-700 mt-auto">
                                         <div>
                                         <p className="text-xs text-secondary-500">إجمالي المبلغ المستحق النهائي</p>
                                         <p className="font-bold text-lg text-purple-600">

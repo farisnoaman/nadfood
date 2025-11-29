@@ -18,7 +18,7 @@ interface ShipmentListItemProps {
 const ShipmentListItem: React.FC<ShipmentListItemProps> = ({ shipment, onSelect, getRegionName, getDriverName, actionLabel, finalAmount }) => {
   const isPending = shipment.isPendingSync;
   return (
-    <div className={`grid grid-cols-6 gap-4 items-center p-3 bg-white dark:bg-secondary-800 shadow-sm hover:shadow-md transition-all border border-transparent hover:border-primary-500/20 rounded-lg text-sm ${isPending ? 'opacity-60' : ''}`}>
+    <div className={`grid grid-cols-6 gap-4 items-center p-3 bg-gradient-to-r from-white to-gray-50 dark:from-secondary-800 dark:to-secondary-700 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-secondary-600 hover:border-primary-500/30 rounded-lg text-sm ${isPending ? 'opacity-60' : ''}`}>
       <div className="font-semibold text-primary-600 dark:text-primary-400 truncate col-span-2 sm:col-span-1 flex items-center">
         {isPending && <Icons.AlertTriangle className="h-4 w-4 text-yellow-500 mr-2 flex-shrink-0" title="معلق للمزامنة" />}
         {shipment.salesOrder}
