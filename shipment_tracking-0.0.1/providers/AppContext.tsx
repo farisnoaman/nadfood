@@ -851,7 +851,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, [syncOfflineMutations, fetchAllData]);
 
     // Real-time subscription for shipments data
+    // Only establish connection when user is authenticated and online to prevent API key exposure
     useEffect(() => {
+        // Check if realtime is enabled via environment variable
+        const enableRealtime = import.meta.env.VITE_ENABLE_REALTIME !== 'false';
+
+        // Prevent realtime connections during login attempts, when offline, or when disabled
+        if (!enableRealtime || !currentUser || !isOnline) {
+            return;
+        }
+
+        logger.debug('Establishing realtime subscription for authenticated user');
         const shipmentsChannel = supabase
             .channel('shipments-changes')
             .on(
@@ -864,7 +874,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 async (payload) => {
                     logger.debug('Shipments change detected:', payload);
                     logger.debug('Current user role:', currentUser?.role);
-                    
+
                     // When shipments data changes, refetch all data to ensure consistency
                     if (isOnline) {
                         await fetchAllData();
@@ -873,16 +883,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             )
             .subscribe((status) => {
                 logger.debug('Shipments subscription status:', status);
-                logger.debug('Current user:', currentUser);
+                logger.debug('Current user role:', currentUser?.role);
                 logger.debug('Current shipments count:', shipments.length);
             });
 
-        // Cleanup subscription on component unmount
+        // Cleanup subscription on component unmount or when conditions change
         return () => {
             logger.info('Cleaning up shipments subscription');
             shipmentsChannel.unsubscribe();
         };
-    }, [fetchAllData, isOnline, currentUser, shipments.length]);
+    }, [fetchAllData, isOnline, currentUser]);
 
     const clearData = useCallback(() => {
         setUsers([]);

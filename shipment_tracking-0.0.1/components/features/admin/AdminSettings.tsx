@@ -171,8 +171,17 @@ const AdminSettings: React.FC = () => {
       });
   }, [updateAppContextFromDatabase]);
 
-  // Subscribe to real-time changes in app_settings
+  // Subscribe to real-time changes in app_settings (admin users only)
   useEffect(() => {
+    // Check if realtime is enabled via environment variable
+    const enableRealtime = import.meta.env.VITE_ENABLE_REALTIME !== 'false';
+
+    // Only establish realtime connection for admin users to prevent unnecessary API key exposure
+    if (!enableRealtime || !currentUser || currentUser.role !== 'ادمن') {
+      return;
+    }
+
+    logger.debug('Establishing realtime subscription for admin settings');
     const client = SupabaseService.getClient();
     const channel = client
       .channel('app_settings_changes')
@@ -196,6 +205,7 @@ const AdminSettings: React.FC = () => {
       .subscribe();
 
     return () => {
+      logger.debug('Cleaning up admin settings realtime subscription');
       client.removeChannel(channel);
     };
   }, [fetchDbSettings, updateAppContextFromDatabase]);
