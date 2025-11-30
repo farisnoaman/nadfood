@@ -7,6 +7,7 @@ import { useAppContext } from '../../../providers/AppContext';
 import FieldValue from '../../common/components/FieldValue';
 import SupabaseService from '../../../utils/supabaseService';
 import { runSettingsMigrationIfNeeded } from '../../../utils/settingsMigration';
+import logger from '../../../utils/logger';
 
 const AdminSettings: React.FC = () => {
   const {
@@ -54,18 +55,18 @@ const AdminSettings: React.FC = () => {
   const fetchDbSettings = useCallback(async (showError = true) => {
     try {
       setIsLoading(true);
-      console.log('Fetching settings for user:', currentUser);
+      logger.debug('Fetching settings for user');
 
       const data = await SupabaseService.getSettings();
-      console.log('Settings data received:', data);
+      logger.debug('Settings data received');
 
       const settingsMap = data.reduce((acc, setting) => {
         acc[setting.setting_key] = setting.setting_value || '';
         return acc;
       }, {} as Record<string, string>);
 
-      console.log('Settings data received:', data);
-      console.log('Settings map created:', settingsMap);
+      logger.debug('Settings data received');
+      logger.debug('Settings map created');
 
       // If no settings found, this might indicate migration wasn't applied
       if (data.length === 0) {
@@ -131,7 +132,7 @@ const AdminSettings: React.FC = () => {
       setCompanyLogo(settingsMap['companyLogo'] || '');
       setIsTimeWidgetVisible(settingsMap['isTimeWidgetVisible'] !== 'false');
 
-      console.log('AppContext updated from database changes');
+      logger.info('AppContext updated from database changes');
     } catch (error) {
       console.error('Failed to update AppContext from database:', error);
     }
@@ -148,20 +149,20 @@ const AdminSettings: React.FC = () => {
 
   // Run settings migration and initial fetch on component mount
   useEffect(() => {
-    console.log('AdminSettings: Component mounted, starting initialization');
+    logger.info('AdminSettings: Component mounted, starting initialization');
 
     runSettingsMigrationIfNeeded()
       .then(() => {
-        console.log('AdminSettings: Migration completed, fetching settings');
+        logger.info('AdminSettings: Migration completed, fetching settings');
         return fetchDbSettings(false);
       })
       .then(() => {
-        console.log('AdminSettings: Settings fetched, syncing AppContext');
+        logger.info('AdminSettings: Settings fetched, syncing AppContext');
         // After loading dbSettings, sync AppContext with database state
         return updateAppContextFromDatabase();
       })
       .then(() => {
-        console.log('AdminSettings: Initialization completed successfully');
+        logger.info('AdminSettings: Initialization completed successfully');
       })
       .catch((error) => {
         console.error('AdminSettings: Initialization failed:', error);
@@ -183,7 +184,7 @@ const AdminSettings: React.FC = () => {
           table: 'app_settings'
         },
         (payload) => {
-          console.log('Settings changed by another admin:', payload);
+          logger.info('Settings changed by another admin');
           // Refresh database state
           fetchDbSettings();
           // Update AppContext state to match database
@@ -331,9 +332,8 @@ const AdminSettings: React.FC = () => {
   };
 
   // Debug logging
-  console.log('AdminSettings: Current user:', currentUser);
-  console.log('AdminSettings: User role:', currentUser?.role);
-  console.log('AdminSettings: Is admin check:', currentUser?.role === 'ادمن');
+    logger.debug('AdminSettings: Current user role:', currentUser?.role);
+    logger.debug('AdminSettings: Is admin check:', currentUser?.role === 'ادمن');
 
   // Check if user is admin
   if (!currentUser) {

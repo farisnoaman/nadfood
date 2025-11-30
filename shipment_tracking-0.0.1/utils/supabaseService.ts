@@ -5,6 +5,7 @@
 
 import { createClient, SupabaseClient as SupabaseClientType } from '@supabase/supabase-js';
 import type { Database } from '../../supabase/database.types';
+import logger from './logger';
 
 class SupabaseService {
   private static instance: SupabaseClientType<Database> | null = null;
@@ -47,7 +48,7 @@ class SupabaseService {
   static async getSettings() {
     const client = this.getClient();
 
-    console.log('SupabaseService: Attempting to fetch settings');
+    logger.debug('SupabaseService: Attempting to fetch settings');
 
     // First test basic database connection
     const isConnected = await this.testConnection();
@@ -57,7 +58,7 @@ class SupabaseService {
 
     // Check if app_settings table exists
     try {
-      console.log('SupabaseService: Checking if app_settings table exists');
+      logger.debug('SupabaseService: Checking if app_settings table exists');
       const { error: tableError } = await client
         .from('app_settings')
         .select('setting_key')
@@ -67,13 +68,13 @@ class SupabaseService {
         console.error('SupabaseService: app_settings table does not exist or access denied:', tableError);
         throw new Error(`Settings table not accessible: ${tableError.message}`);
       }
-      console.log('SupabaseService: app_settings table is accessible');
+      logger.debug('SupabaseService: app_settings table is accessible');
     } catch (tableCheckError) {
       console.error('SupabaseService: Table check failed:', tableCheckError);
       throw tableCheckError;
     }
 
-    console.log('SupabaseService: Fetching all settings');
+    logger.debug('SupabaseService: Fetching all settings');
     const { data, error } = await client
       .from('app_settings')
       .select('*')
@@ -84,7 +85,7 @@ class SupabaseService {
       throw error;
     }
 
-    console.log('SupabaseService: Settings fetched successfully:', data?.length || 0, 'records');
+    logger.debug('SupabaseService: Settings fetched successfully:', data?.length || 0, 'records');
     return data || [];
   }
 

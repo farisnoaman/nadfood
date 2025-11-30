@@ -12,6 +12,8 @@ import {
   createErrorResponse,
   createSuccessResponse,
   validatePassword,
+  validateUUID,
+  checkRateLimit,
   logExecution
 } from '../_shared.ts';
 
@@ -35,6 +37,13 @@ Deno.serve(async (req) => {
 
     const { user, supabaseClient } = authResult;
 
+    // Check rate limit
+    const rateLimit = checkRateLimit(user.id);
+    if (!rateLimit.allowed) {
+      logExecution(functionName, `Rate limit exceeded for user: ${user.id}`);
+      return createErrorResponse('تم تجاوز حد الطلبات. يرجى المحاولة لاحقاً.', 429);
+    }
+
     // Verify admin role
     const roleResult = await verifyAdminRole(user.id, supabaseClient);
     if (roleResult.error) {
@@ -50,6 +59,13 @@ Deno.serve(async (req) => {
     if (!userId || !newPassword) {
       logExecution(functionName, 'Missing required parameters');
       return createErrorResponse('Missing userId or newPassword', 400);
+    }
+
+    // Validate userId format
+    const uuidValidation = validateUUID(userId);
+    if (uuidValidation.error) {
+      logExecution(functionName, `UUID validation failed: ${uuidValidation.error}`);
+      return createErrorResponse(uuidValidation.error, 400);
     }
 
     // Validate password

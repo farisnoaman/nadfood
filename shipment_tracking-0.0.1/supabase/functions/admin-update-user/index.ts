@@ -11,6 +11,10 @@ import {
   handleCors,
   createErrorResponse,
   createSuccessResponse,
+  validateUUID,
+  validateUsername,
+  validateRole,
+  checkRateLimit,
   logExecution
 } from '../_shared.ts';
 
@@ -34,6 +38,13 @@ Deno.serve(async (req) => {
 
     const { user, supabaseClient } = authResult;
 
+    // Check rate limit
+    const rateLimit = checkRateLimit(user.id);
+    if (!rateLimit.allowed) {
+      logExecution(functionName, `Rate limit exceeded for user: ${user.id}`);
+      return createErrorResponse('تم تجاوز حد الطلبات. يرجى المحاولة لاحقاً.', 429);
+    }
+
     // Verify admin role
     const roleResult = await verifyAdminRole(user.id, supabaseClient);
     if (roleResult.error) {
@@ -51,16 +62,27 @@ Deno.serve(async (req) => {
       return createErrorResponse('معرف المستخدم مطلوب', 400);
     }
 
+    // Validate userId format
+    const uuidValidation = validateUUID(userId);
+    if (uuidValidation.error) {
+      logExecution(functionName, `UUID validation failed: ${uuidValidation.error}`);
+      return createErrorResponse(uuidValidation.error, 400);
+    }
+
     // Prepare updates object
     const updates: any = {};
-    if (username !== undefined && username.trim()) {
+    if (username !== undefined) {
+      const usernameValidation = validateUsername(username);
+      if (usernameValidation.error) {
+        logExecution(functionName, `Username validation failed: ${usernameValidation.error}`);
+        return createErrorResponse(usernameValidation.error, 400);
+      }
       updates.username = username.trim();
     }
     if (role !== undefined) {
-      // Validate role is one of the allowed values
-      const allowedRoles = ['مسؤول الحركة', 'محاسب', 'ادمن'];
-      if (!allowedRoles.includes(role)) {
-        logExecution(functionName, `Invalid role provided: ${role}`);
+      const roleValidation = validateRole(role);
+      if (roleValidation.error) {
+        logExecution(functionName, `Role validation failed: ${roleValidation.error}`);
         return createErrorResponse('الدور المحدد غير صحيح', 400);
       }
       updates.role = role;

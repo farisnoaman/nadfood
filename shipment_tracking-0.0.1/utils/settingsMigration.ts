@@ -5,10 +5,11 @@
 
 import { supabase } from '../utils/supabaseClient';
 import * as IndexedDB from '../utils/indexedDB';
+import logger from './logger';
 
 export const migrateSettingsToDatabase = async () => {
   try {
-    console.log('Starting settings migration from IndexedDB to database...');
+    logger.info('Starting settings migration from IndexedDB to database...');
 
     // Get current settings from IndexedDB
     const [
@@ -55,7 +56,7 @@ export const migrateSettingsToDatabase = async () => {
       }
     }
 
-    console.log('Settings migration completed successfully!');
+    logger.info('Settings migration completed successfully!');
     return true;
 
   } catch (error) {
@@ -75,10 +76,10 @@ export const runSettingsMigrationIfNeeded = async () => {
       if (success) {
         // Mark migration as completed
         await IndexedDB.setSetting('settingsMigrationCompleted', true);
-        console.log('Settings migration marked as completed');
+        logger.info('Settings migration marked as completed');
       }
     } else {
-      console.log('Settings migration already completed');
+      logger.info('Settings migration already completed');
     }
   } catch (error) {
     console.error('Error checking/running settings migration:', error);

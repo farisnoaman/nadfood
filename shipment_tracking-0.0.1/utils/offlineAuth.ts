@@ -4,6 +4,7 @@
  */
 
 import { initDB, getFromStore, saveToStore, deleteFromStore, STORES, getMetadata, setMetadata } from './indexedDB';
+import logger from './logger';
 
 // Store name for auth data
 const AUTH_STORE = STORES.SETTINGS;
@@ -99,7 +100,7 @@ export const storeOfflineCredentials = async (
     // Record last online login
     await setMetadata(AUTH_KEYS.LAST_ONLINE_LOGIN, new Date().toISOString());
     
-    console.log('Offline credentials stored successfully');
+    logger.info('Offline credentials stored successfully');
   } catch (error) {
     console.error('Error storing offline credentials:', error);
     throw error;
@@ -119,13 +120,13 @@ export const validateOfflineCredentials = async (
     const credentials = await getFromStore<OfflineCredentials>(AUTH_STORE, AUTH_KEYS.CREDENTIALS);
     
     if (!credentials) {
-      console.log('No offline credentials found');
+      logger.info('No offline credentials found');
       return { valid: false };
     }
     
     // Check if email matches (case insensitive)
     if (credentials.email !== email.toLowerCase()) {
-      console.log('Email mismatch:', { stored: credentials.email, provided: email.toLowerCase() });
+      logger.debug('Email mismatch detected');
       return { valid: false };
     }
     
@@ -133,7 +134,7 @@ export const validateOfflineCredentials = async (
     const passwordHash = await hashPassword(password, email.toLowerCase());
     
     if (credentials.passwordHash !== passwordHash) {
-      console.log('Password hash mismatch');
+      logger.debug('Password hash mismatch');
       return { valid: false };
     }
     
@@ -144,7 +145,7 @@ export const validateOfflineCredentials = async (
     // Get cached user profile
     const userProfile = await getFromStore<CachedUserProfile>(AUTH_STORE, AUTH_KEYS.USER_PROFILE);
     
-    console.log('Offline credentials validated successfully', { userId: credentials.userId });
+    logger.info('Offline credentials validated successfully');
     
     return {
       valid: true,
@@ -178,7 +179,7 @@ export const createOfflineSession = async (userId: string, email: string): Promi
     };
     
     await saveToStore(AUTH_STORE, session);
-    console.log('Offline session created successfully', { userId, email, expiresAt: expiresAt.toISOString() });
+    logger.info('Offline session created successfully');
   } catch (error) {
     console.error('Error creating offline session:', error);
     throw error;
@@ -238,7 +239,7 @@ export const clearOfflineSession = async (): Promise<void> => {
       await saveToStore(AUTH_STORE, session);
     }
     
-    console.log('Offline session cleared');
+    logger.info('Offline session cleared');
   } catch (error) {
     console.error('Error clearing offline session:', error);
   }
@@ -256,7 +257,7 @@ export const clearOfflineAuth = async (): Promise<void> => {
     await deleteFromStore(AUTH_STORE, AUTH_KEYS.SESSION);
     await deleteFromStore(AUTH_STORE, AUTH_KEYS.USER_PROFILE);
     
-    console.log('Offline auth data cleared');
+    logger.info('Offline auth data cleared');
   } catch (error) {
     console.error('Error clearing offline auth:', error);
   }

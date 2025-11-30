@@ -11,6 +11,7 @@ import {
   storeOfflineCredentials,
 } from '../../../utils/offlineAuth';
 import { useOfflineAuth } from '../../../hooks/useOfflineAuth';
+import logger from '../../../utils/logger';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -67,7 +68,7 @@ const Login: React.FC = () => {
 
         // Load offline user manually since no Supabase auth state change
         await loadOfflineUser();
-        console.log('Offline login successful');
+        logger.info('Offline login successful');
         setLoading(false);
         return;
       }
@@ -109,7 +110,7 @@ const Login: React.FC = () => {
         if (!profileError && userProfile) {
           // Store credentials for offline use
           await storeOfflineCredentials(email, password, data.user.id, userProfile);
-          console.log('Online login successful - credentials stored for offline use');
+          logger.info('Online login successful - credentials stored for offline use');
         }
       }
 

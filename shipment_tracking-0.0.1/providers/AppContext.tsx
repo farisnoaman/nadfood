@@ -6,6 +6,7 @@ import type { Session } from '@supabase/supabase-js';
 import { Database } from '../../supabase/database.types';
 import * as IndexedDB from '../utils/indexedDB';
 import { clearOfflineSession, getOfflineSession, shouldClearOfflineSessionOnLaunch } from '../utils/offlineAuth';
+import logger from '../utils/logger';
 
 // Type alias for Supabase row types
 type UserRow = Database['public']['Tables']['users']['Row'];
@@ -242,7 +243,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     useEffect(() => {
         const initializeData = async () => {
             try {
-                console.log('Initializing IndexedDB and loading cached data...');
+                logger.info('Initializing IndexedDB and loading cached data...');
                 
                 // Run migration from localStorage to IndexedDB
                 await IndexedDB.migrateFromLocalStorage();
@@ -303,7 +304,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setCompanyLogo(cachedCompanyLogo);
                 setIsTimeWidgetVisible(cachedIsTimeWidgetVisible);
 
-                console.log('IndexedDB data loaded successfully');
+                logger.info('IndexedDB data loaded successfully');
                 isInitializing.current = false;
             } catch (error) {
                 console.error('Error initializing IndexedDB:', error);
@@ -318,7 +319,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const isOnline = navigator.onLine;
 
         if (!isOnline) {
-            console.log("Offline mode: Loading from cache only");
+            logger.info("Offline mode: Loading from cache only");
             // Load from IndexedDB cache
             try {
                 const [
@@ -347,7 +348,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 if (cachedPrices.length > 0) setProductPrices(cachedPrices);
                 if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
 
-                console.log('Offline data loaded from cache');
+                logger.info('Offline data loaded from cache');
                 return;
             } catch (cacheErr) {
                 console.error('Error loading cached data:', cacheErr);
@@ -477,7 +478,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     if (cachedPrices.length > 0) setProductPrices(cachedPrices);
                     if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
 
-                    console.log('Fallback: Loaded data from cache after timeout');
+                    logger.info('Fallback: Loaded data from cache after timeout');
                     return; // Don't throw error, we have fallback data
                 } catch (cacheErr) {
                     console.error('Fallback cache also failed:', cacheErr);
@@ -513,7 +514,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     if (cachedPrices.length > 0) setProductPrices(cachedPrices);
                     if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
 
-                    console.log('Fallback: Loaded data from cache after network error');
+                    logger.info('Fallback: Loaded data from cache after network error');
                     return; // Don't throw error, we have fallback data
                 } catch (cacheErr) {
                     console.error('Fallback cache also failed:', cacheErr);
@@ -557,7 +558,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 if (cachedPrices.length > 0) setProductPrices(cachedPrices);
                 if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
 
-                console.log('Cached data loaded successfully');
+                logger.info('Cached data loaded successfully');
 
                 // Try background refresh if online and no offline session
                 if (isOnline && !offlineSession) {
@@ -577,11 +578,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
         } else if (isOnline && !offlineSession) {
             // Online and no cached data - fetch from server
-            console.log('No cached data, fetching from server');
+            logger.info('No cached data, fetching from server');
             await fetchAllData();
         } else {
             // Offline with no cached data
-            console.log('Offline mode with no cached data');
+            logger.info('Offline mode with no cached data');
             setError('لا توجد بيانات محفوظة. يرجى الاتصال بالإنترنت لأول مرة.');
         }
     }, [fetchAllData]);
@@ -602,7 +603,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
                     if (!error && data) {
                         userProfile = userFromRow(data);
-                        console.log('Loaded user profile from server');
+                        logger.info('Loaded user profile from server');
                     }
                 } catch (err) {
                     console.warn('Server profile fetch failed, trying cache:', err);
@@ -615,7 +616,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS, 2000);
                     userProfile = cachedUsers.find(u => u.id === user.id) || null;
                     if (userProfile) {
-                        console.log('Loaded user profile from cache');
+                        logger.info('Loaded user profile from cache');
                     }
                 } catch (err) {
                     console.warn('Cache profile fetch failed:', err);
@@ -641,13 +642,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Minimal data loading fallback
     const loadMinimalData = useCallback(async (user: any) => {
         try {
-            console.log('Loading minimal data as fallback...');
+            logger.info('Loading minimal data as fallback...');
             // Just try to load basic user data from cache
             const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS, 2000);
             const userProfile = cachedUsers.find(u => u.id === user.id) || null;
             if (userProfile) {
                 setCurrentUser(userProfile);
-                console.log('Minimal user data loaded');
+                logger.info('Minimal user data loaded');
             }
         } catch (err) {
             console.warn('Minimal data loading failed:', err);
@@ -680,7 +681,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (existingLock) {
             const lockTimestamp = parseInt(existingLock.split('_')[0]);
             if (Date.now() - lockTimestamp < 30000) {
-                console.log('Another tab is syncing. Skipping this sync attempt.');
+                logger.info('Another tab is syncing. Skipping this sync attempt.');
                 return;
             }
         }
@@ -694,7 +695,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         try {
             setIsSyncing(true);
-            console.log(`Starting sync of ${mutationQueue.length} offline actions.`);
+            logger.info(`Starting sync of ${mutationQueue.length} offline actions.`);
 
             const offlineToRealIdMap: Record<string, string> = {};
             const successfullySyncedIndices: number[] = [];
@@ -794,7 +795,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Refresh data from server to get the new IDs and clean states
         await fetchAllData();
         setIsSyncing(false);
-        console.log('Sync finished.');
+        logger.info('Sync finished.');
 
         } finally {
             // Release lock only if we still own it
@@ -812,7 +813,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Online/Offline listener
     useEffect(() => {
         const handleOnline = async () => {
-            console.log('Connection restored - going online');
+            logger.info('Connection restored - going online');
             setIsOnline(true);
             
             // Clear any existing errors since we're back online
@@ -826,7 +827,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 // Then sync any pending mutations
                 await syncOfflineMutations();
                 
-                console.log('Online sync completed successfully');
+                logger.info('Online sync completed successfully');
             } catch (err) {
                 console.error('Error during online sync:', err);
                 // Don't show error to user, just log it
@@ -835,7 +836,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
         
         const handleOffline = () => {
-            console.log('Connection lost - going offline');
+            logger.info('Connection lost - going offline');
             setIsOnline(false);
             // Don't clear error when going offline - user should see what happened
         };
@@ -861,8 +862,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     table: 'shipments'
                 },
                 async (payload) => {
-                    console.log('Shipments change detected:', payload);
-                    console.log('Current user role:', currentUser?.role);
+                    logger.debug('Shipments change detected:', payload);
+                    logger.debug('Current user role:', currentUser?.role);
                     
                     // When shipments data changes, refetch all data to ensure consistency
                     if (isOnline) {
@@ -871,14 +872,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 }
             )
             .subscribe((status) => {
-                console.log('Shipments subscription status:', status);
-                console.log('Current user:', currentUser);
-                console.log('Current shipments count:', shipments.length);
+                logger.debug('Shipments subscription status:', status);
+                logger.debug('Current user:', currentUser);
+                logger.debug('Current shipments count:', shipments.length);
             });
 
         // Cleanup subscription on component unmount
         return () => {
-            console.log('Cleaning up shipments subscription');
+            logger.info('Cleaning up shipments subscription');
             shipmentsChannel.unsubscribe();
         };
     }, [fetchAllData, isOnline, currentUser, shipments.length]);
@@ -899,7 +900,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // Use helper function for consistent session clearing logic
             const shouldClear = await shouldClearOfflineSessionOnLaunch();
             if (shouldClear) {
-                console.log('App launched online - clearing any offline session for security');
+                logger.info('App launched online - clearing any offline session for security');
                 await clearOfflineSession();
             }
         };
@@ -909,11 +910,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session: Session | null) => {
-            console.log('Auth state change:', event, 'Initial load:', isInitialLoad);
+            logger.info('Auth state change:', event, 'Initial load:', isInitialLoad);
 
             // Handle sign out event explicitly
             if (event === 'SIGNED_OUT') {
-                console.log('User signed out, clearing data');
+                logger.info('User signed out, clearing data');
                 clearData();
                 setCurrentUser(null);
                 setLoading(false);
@@ -924,7 +925,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 const isOnline = navigator.onLine;
 
                 // PHASE 1: Quick session validation (non-blocking)
-                console.log('Phase 1: Validating session...');
+                logger.info('Phase 1: Validating session...');
 
                 // Set basic user info immediately to prevent UI blocking
                 // We'll load the full profile in background
@@ -938,7 +939,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setLoading(false); // Clear loading immediately after session validation
 
                 // PHASE 2: Background data loading (progressive)
-                console.log('Phase 2: Starting background data loading...');
+                logger.info('Phase 2: Starting background data loading...');
 
                 // Check for offline session in background
                 getOfflineSession().then(() => {
@@ -956,7 +957,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     ]);
                 }).then(([cachedUsers, cachedProducts]) => {
                     const hasCachedData = cachedUsers.length > 0 && cachedProducts.length > 0;
-                    console.log('Background cache check:', { users: cachedUsers.length, products: cachedProducts.length, hasData: hasCachedData });
+                    logger.debug('Background cache check:', { users: cachedUsers.length, products: cachedProducts.length, hasData: hasCachedData });
 
                     // Load user profile and data in background
                     return loadUserProfileAndData(session.user, isOnline, hasCachedData);
@@ -978,7 +979,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 const offlineSession = await getOfflineSession();
                 
                 if (offlineSession) {
-                    console.log('No Supabase session but offline session exists');
+                    logger.info('No Supabase session but offline session exists');
                     // Try to restore user from cached data
                     try {
                         const offlineUserPromise = IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS);
@@ -989,7 +990,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         const userProfile = cachedUsers.find(u => u.id === offlineSession.userId) || null;
                         
                         if (userProfile) {
-                            console.log('Restored user from offline session');
+                            logger.info('Restored user from offline session');
                             setCurrentUser(userProfile);
                             
                             // Load cached data with timeout protection
@@ -1023,7 +1024,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                             if (cachedPrices.length > 0) setProductPrices(cachedPrices);
                             if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
                             
-                            console.log('Offline session restored with cached data');
+                            logger.info('Offline session restored with cached data');
                         } else {
                             console.error('Offline session exists but no cached user profile');
                             await clearOfflineSession();
@@ -1035,7 +1036,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 } else {
                     // SECURITY FIX: Always require explicit login
                     // No automatic session restoration for security
-                    console.log('No active session - user must login');
+                    logger.info('No active session - user must login');
                     
                     // Clear all data and user state
                     clearData();
@@ -1165,7 +1166,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const addShipment = useCallback(async (shipment: Omit<Shipment, 'id'>) => {
         if (!isOnline) {
-            console.log('Offline: Queuing shipment creation.');
+            logger.info('Offline: Queuing shipment creation.');
             // Create a temporary ID for local display
             const offlineShipment: Shipment = { ...shipment, id: `offline-${crypto.randomUUID()}`, isPendingSync: true };
             
@@ -1205,7 +1206,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const updateShipment = useCallback(async (shipmentId: string, updates: Partial<Shipment>) => {
         if (!isOnline) {
-            console.log('Offline: Queuing shipment update.');
+            logger.info('Offline: Queuing shipment update.');
 
             // Optimistically update local state
             const updatedShipments = shipments.map(s =>

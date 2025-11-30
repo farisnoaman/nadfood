@@ -11,6 +11,7 @@ module.exports = {
     node: true,
   },
   rules: {
+    'no-console': 'error',
     // Add any custom rules here
   },
 };
