@@ -3,6 +3,8 @@
  * Provides a robust, high-capacity storage solution for PWA offline functionality
  */
 
+import { encryptData, decryptData } from './encryption';
+
 const DB_NAME = 'ShipmentTrackerDB';
 const DB_VERSION = 1;
 
@@ -282,20 +284,44 @@ export const saveAllToStore = async (storeName: string, data: any[]): Promise<vo
  */
 export const getMutationQueue = async (): Promise<any[]> => {
   try {
-    return await getAllFromStore(STORES.MUTATION_QUEUE);
+    const encryptedMutations = await getAllFromStore(STORES.MUTATION_QUEUE);
+
+    // Decrypt all mutations with error handling
+    const decryptedMutations = await Promise.all(
+      encryptedMutations.map(async (encryptedMutation: any) => {
+        try {
+          return await decryptData(encryptedMutation);
+        } catch (error) {
+          console.error('Error decrypting mutation, skipping:', error);
+          return null; // Skip corrupted data
+        }
+      })
+    );
+
+    // Filter out null values (corrupted data)
+    return decryptedMutations.filter(mutation => mutation !== null);
   } catch (error) {
     console.error('Error getting mutation queue:', error);
-    return [];
+    return []; // Return empty array on failure
   }
 };
 
 export const addToMutationQueue = async (mutation: any): Promise<void> => {
   try {
+    // Encrypt the mutation data before storing (with fallback)
+    let encryptedMutation: any;
+    try {
+      encryptedMutation = await encryptData(mutation);
+    } catch (encryptError) {
+      console.warn('Encryption failed for mutation, storing unencrypted:', encryptError);
+      encryptedMutation = JSON.stringify({ unencrypted: true, data: mutation });
+    }
+
     const db = await initDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORES.MUTATION_QUEUE, 'readwrite');
       const store = transaction.objectStore(STORES.MUTATION_QUEUE);
-      const request = store.add(mutation);
+      const request = store.add(encryptedMutation);
 
       request.onsuccess = () => resolve();
       request.onerror = () => {
@@ -305,7 +331,7 @@ export const addToMutationQueue = async (mutation: any): Promise<void> => {
     });
   } catch (error) {
     console.error('Error in addToMutationQueue:', error);
-    throw error;
+    // Don't throw - allow app to continue
   }
 };
 

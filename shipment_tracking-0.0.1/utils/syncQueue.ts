@@ -3,16 +3,17 @@
  * Handles queuing offline operations and syncing with server when online
  */
 
-import { 
-  initDB, 
-  getAllFromStore, 
-  saveToStore, 
-  deleteFromStore, 
+import {
+  initDB,
+  getAllFromStore,
+  saveToStore,
+  deleteFromStore,
   clearStore,
-  STORES,
   setMetadata,
-  getMetadata
+  getMetadata,
+  STORES
 } from './indexedDB';
+import { encryptData, decryptData, isEncrypted } from './encryption';
 
 // Types for sync operations
 export type SyncOperationType = 'create' | 'update' | 'delete';
@@ -70,31 +71,41 @@ export const addToSyncQueue = async (
 ): Promise<void> => {
   try {
     await initDB();
-    
+
+    // Encrypt sensitive data (with fallback for failures)
+    let encryptedData: string;
+    try {
+      encryptedData = await encryptData(data);
+    } catch (encryptError) {
+      logger.warn('Encryption failed, storing data unencrypted:', encryptError);
+      // Fallback: store as unencrypted but marked
+      encryptedData = JSON.stringify({ unencrypted: true, data });
+    }
+
     const item: SyncQueueItem = {
       id: generateId(),
       entityType,
       operation,
-      data,
+      data: encryptedData,
       timestamp: new Date().toISOString(),
       retryCount: 0,
       status: 'pending',
     };
-    
+
     await saveToStore(SYNC_QUEUE_STORE, item);
-    
+
     // Update pending count
     await updateSyncStatus();
-    
-    console.log(`Added to sync queue: ${operation} ${entityType}`);
-    
+
+    logger.debug(`Added to sync queue: ${operation} ${entityType}`);
+
     // If online, trigger sync
     if (navigator.onLine) {
       setTimeout(() => processSyncQueue(), 1000);
     }
   } catch (error) {
-    console.error('Error adding to sync queue:', error);
-    throw error;
+    logger.error('Error adding to sync queue:', error);
+    // Don't throw - allow app to continue without sync
   }
 };
 
@@ -172,7 +183,19 @@ const processSyncItem = async (
 ): Promise<boolean> => {
   try {
     await updateQueueItemStatus(item.id, 'syncing');
-    
+
+    // Decrypt the data before processing (with error handling)
+    let decryptedData: any;
+    try {
+      decryptedData = await decryptData(item.data);
+    } catch (decryptError) {
+      logger.error('Failed to decrypt sync item data:', decryptError);
+      // Mark as failed and skip
+      await updateQueueItemStatus(item.id, 'failed');
+      await updateQueueItemError(item.id, 'Decryption failed');
+      return false;
+    }
+
     let result;
     const tableName = getTableName(item.entityType);
     
@@ -180,25 +203,25 @@ const processSyncItem = async (
       case 'create':
         result = await supabase
           .from(tableName)
-          .insert(item.data)
+          .insert(decryptedData)
           .select();
         break;
-        
+
       case 'update':
         result = await supabase
           .from(tableName)
-          .update(item.data)
-          .eq('id', item.data.id)
+          .update(decryptedData)
+          .eq('id', decryptedData.id)
           .select();
         break;
-        
+
       case 'delete':
         result = await supabase
           .from(tableName)
           .delete()
-          .eq('id', item.data.id);
+          .eq('id', decryptedData.id);
         break;
-        
+
       default:
         throw new Error(`Unknown operation: ${item.operation}`);
     }
@@ -209,7 +232,7 @@ const processSyncItem = async (
     
     // Success - remove from queue
     await removeFromQueue(item.id);
-    console.log(`Synced: ${item.operation} ${item.entityType} ${item.data.id || ''}`);
+    logger.info(`Synced: ${item.operation} ${item.entityType} ${decryptedData.id || ''}`);
     return true;
     
   } catch (error: any) {

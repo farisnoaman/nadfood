@@ -14,12 +14,14 @@ import {
 import { useOfflineAuth } from '../../../hooks/useOfflineAuth';
 import logger from '../../../utils/logger';
 import { getCSRFTokenForForm } from '../../../utils/csrf';
+import { checkLoginRateLimit, recordLoginAttempt, getBlockMessage } from '../../../utils/authProtection';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rateLimitStatus, setRateLimitStatus] = useState<{ allowed: boolean; remainingAttempts: number; blockedUntil?: number; delayMs?: number } | null>(null);
   const { isTimeWidgetVisible, loadOfflineUser } = useAppContext();
   
   const {
@@ -47,6 +49,16 @@ const Login: React.FC = () => {
     setLoading(true);
     setError('');
 
+    // Check rate limiting
+    const rateLimit = checkLoginRateLimit(email);
+    setRateLimitStatus(rateLimit);
+
+    if (!rateLimit.allowed) {
+      setError(getBlockMessage(rateLimit.blockedUntil, rateLimit.delayMs));
+      setLoading(false);
+      return;
+    }
+
     try {
       // Check if offline
       if (isOffline) {
@@ -60,6 +72,7 @@ const Login: React.FC = () => {
         const validation = await validateCredentials(email, password);
 
         if (!validation.valid) {
+          recordLoginAttempt(email, false); // Record failed login attempt
           if (validation.expired) {
             setError('انتهت صلاحية بيانات الدخول المحفوظة. يرجى الاتصال بالإنترنت لتسجيل الدخول مرة أخرى.');
           } else {
@@ -74,6 +87,7 @@ const Login: React.FC = () => {
 
         // Load offline user manually since no Supabase auth state change
         await loadOfflineUser();
+        recordLoginAttempt(email, true); // Record successful login
         logger.info('Offline login successful');
         setLoading(false);
         return;
@@ -91,6 +105,9 @@ const Login: React.FC = () => {
       clearTimeout(timeoutId);
 
       if (authError) {
+        // Record failed login attempt
+        recordLoginAttempt(email, false);
+
         // Handle specific error cases
         if (authError.message.includes("Invalid login credentials")) {
           setError('اسم المستخدم أو كلمة المرور غير صحيحة');
@@ -116,10 +133,12 @@ const Login: React.FC = () => {
         if (!profileError && userProfile) {
           // Store credentials for offline use
           await storeOfflineCredentials(email, password, data.user.id, userProfile);
+          recordLoginAttempt(email, true); // Record successful login
           logger.info('Online login successful - credentials stored for offline use');
         } else {
           // Even if profile fetch failed, refresh existing credentials expiry
           await refreshOfflineCredentials();
+          recordLoginAttempt(email, true); // Still record as successful login
         }
       }
 
@@ -177,6 +196,23 @@ const Login: React.FC = () => {
                   </span>
                 </div>
               )}
+
+              {/* Rate limit warning */}
+              {rateLimitStatus && !rateLimitStatus.allowed && (
+                <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-600 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Icons.AlertTriangle className="h-5 w-5 text-red-700 dark:text-red-400" />
+                    <span className="text-sm text-red-800 dark:text-red-300">
+                      {getBlockMessage(rateLimitStatus.blockedUntil, rateLimitStatus.delayMs)}
+                    </span>
+                  </div>
+                  {rateLimitStatus.remainingAttempts > 0 && rateLimitStatus.remainingAttempts < 3 && (
+                    <div className="mt-2 text-xs text-red-700 dark:text-red-400">
+                      المحاولات المتبقية: {rateLimitStatus.remainingAttempts}
+                    </div>
+                  )}
+                </div>
+              )}
               
               <form onSubmit={handleSubmit} className="space-y-6">
               {error && <p className="text-red-500 text-sm text-center">{error}</p>}
@@ -198,11 +234,16 @@ const Login: React.FC = () => {
                   required
                   Icon={Icons.KeyRound}
               />
-              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={loading || (rateLimitStatus && !rateLimitStatus.allowed)}
+              >
                   {loading ? 'جاري الدخول...' : (
                       <>
                         <Icons.LogIn className="ml-2 h-5 w-5" />
-                        {isOffline && hasStoredCredentials ? 'دخول (غير متصل)' : 
+                        {isOffline && hasStoredCredentials ? 'دخول (غير متصل)' :
                          hasOfflineSession && !isOffline ? 'متابعة (جلسة نشطة)' : 'دخول'}
                       </>
                   )}
