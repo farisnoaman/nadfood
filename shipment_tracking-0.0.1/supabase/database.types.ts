@@ -214,6 +214,7 @@ export type Database = {
           total_wage: number | null
           transfer_date: string | null
           transfer_number: string | null
+          updated_at: string | null
           zaitri_fee: number | null
         }
         Insert: {
@@ -247,6 +248,7 @@ export type Database = {
           total_wage?: number | null
           transfer_date?: string | null
           transfer_number?: string | null
+          updated_at?: string | null
           zaitri_fee?: number | null
         }
         Update: {
@@ -280,6 +282,7 @@ export type Database = {
           total_wage?: number | null
           transfer_date?: string | null
           transfer_number?: string | null
+          updated_at?: string | null
           zaitri_fee?: number | null
         }
         Relationships: []
@@ -355,41 +358,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      debug_current_user: {
-        Args: never
-        Returns: {
-          email: string
-          role: string
-          user_id: string
-        }[]
-      }
-      debug_user_info: {
-        Args: never
-        Returns: {
-          auth_uid: string
-          function_role: string
-          profile_role: string
-          user_id: string
-        }[]
-      }
-      diagnose_auth: { Args: never; Returns: Json }
       get_authenticated_user_id: { Args: never; Returns: string }
       get_my_role: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
-      test_accountant_update_shipment: {
-        Args: { new_status: string; shipment_id_param: string }
-        Returns: Json
-      }
-      test_basic_data_access: { Args: never; Returns: Json }
-      test_shipment_policy: {
-        Args: { shipment_id: string }
-        Returns: {
-          can_select: boolean
-          can_update: boolean
-          user_id: string
-          user_role: string
-        }[]
-      }
+      get_user_role_safe: { Args: { user_id_param?: string }; Returns: string }
+      user_exists_safe: { Args: { user_id_param: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

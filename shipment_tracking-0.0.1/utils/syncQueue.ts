@@ -124,14 +124,35 @@ export const getPendingSyncItems = async (): Promise<SyncQueueItem[]> => {
 };
 
 /**
- * Get sync queue count
+ * Get mutation queue count
+ */
+const getMutationQueueCount = async (): Promise<number> => {
+  try {
+    // Import here to avoid circular dependency
+    const { getMutationQueue } = await import('./indexedDB');
+    const mutations = await getMutationQueue();
+    return mutations.length;
+  } catch (error) {
+    console.error('Error getting mutation queue count:', error);
+    return 0;
+  }
+};
+
+/**
+ * Get total sync queue count (sync queue + mutation queue)
  */
 export const getSyncQueueCount = async (): Promise<number> => {
   try {
-    const items = await getPendingSyncItems();
-    return items.length;
+    // Count sync queue items
+    const syncItems = await getPendingSyncItems();
+
+    // Count mutation queue items
+    const mutationCount = await getMutationQueueCount();
+
+    // Return total pending operations
+    return syncItems.length + mutationCount;
   } catch (error) {
-    console.error('Error getting sync queue count:', error);
+    console.error('Error getting total sync queue count:', error);
     return 0;
   }
 };
@@ -375,7 +396,7 @@ export const clearSyncQueue = async (): Promise<void> => {
 /**
  * Update sync status
  */
-const updateSyncStatus = async (): Promise<void> => {
+export const updateSyncStatus = async (): Promise<void> => {
   try {
     const pendingCount = await getSyncQueueCount();
     const lastSyncTime = await getMetadata<string | null>('lastSyncTime', null);

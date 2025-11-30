@@ -323,7 +323,18 @@ export const addToMutationQueue = async (mutation: any): Promise<void> => {
       const store = transaction.objectStore(STORES.MUTATION_QUEUE);
       const request = store.add(encryptedMutation);
 
-      request.onsuccess = () => resolve();
+      request.onsuccess = () => {
+        // Trigger sync status update when mutation is added
+        try {
+          // Import syncQueue to update status (avoid circular import)
+          import('./syncQueue').then(({ updateSyncStatus }) => {
+            if (updateSyncStatus) updateSyncStatus();
+          }).catch(err => console.warn('Could not update sync status:', err));
+        } catch (statusError) {
+          console.warn('Could not update sync status after adding mutation:', statusError);
+        }
+        resolve();
+      };
       request.onerror = () => {
         console.error('Error adding to mutation queue:', request.error);
         reject(request.error);
@@ -354,7 +365,20 @@ export const setMutationQueue = async (queue: any[]): Promise<void> => {
       let completed = 0;
       const total = queue.length;
 
+      const triggerStatusUpdate = () => {
+        // Trigger sync status update
+        try {
+          import('./syncQueue').then(({ updateSyncStatus }) => {
+            if (updateSyncStatus) updateSyncStatus();
+          }).catch(err => console.warn('Could not update sync status:', err));
+        } catch (statusError) {
+          console.warn('Could not update sync status after setting queue:', statusError);
+        }
+      };
+
       if (total === 0) {
+        // Trigger sync status update even for empty queue
+        triggerStatusUpdate();
         resolve();
         return;
       }
@@ -365,6 +389,8 @@ export const setMutationQueue = async (queue: any[]): Promise<void> => {
         request.onsuccess = () => {
           completed++;
           if (completed === total) {
+            // Trigger sync status update when all items are added
+            triggerStatusUpdate();
             resolve();
           }
         };

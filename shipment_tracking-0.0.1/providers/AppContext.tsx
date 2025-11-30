@@ -1218,6 +1218,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!isOnline) {
             logger.info('Offline: Queuing shipment update.');
 
+            // Set updated_at for local state consistency
+            updates.updated_at = new Date().toISOString();
+
             // Optimistically update local state
             const updatedShipments = shipments.map(s =>
                 s.id === shipmentId ? { ...s, ...updates } : s
@@ -1264,6 +1267,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 if (productsError) throw productsError;
             }
         }
+
+        // Update local state with updated_at for immediate UI update
+        updates.updated_at = new Date().toISOString();
+        const updatedShipments = shipments.map(s =>
+            s.id === shipmentId ? { ...s, ...updates } : s
+        );
+        setShipments(updatedShipments);
 
         await fetchAllData();
     }, [fetchAllData, isOnline, shipments]);
