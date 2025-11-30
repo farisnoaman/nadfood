@@ -83,6 +83,7 @@ const shipmentFromRow = (row: ShipmentRow, products: ShipmentProduct[]): Shipmen
     hasMissingPrices: row.has_missing_prices,
     createdBy: row.created_by ?? undefined,
     createdAt: row.created_at ?? undefined,
+    updated_at: row.updated_at ?? undefined,
 });
 
 const shipmentProductFromRow = (row: ShipmentProductRow): ShipmentProduct => ({
@@ -1030,7 +1031,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                             if (cachedProducts.length > 0) setProducts(cachedProducts);
                             if (cachedDrivers.length > 0) setDrivers(cachedDrivers);
                             if (cachedRegions.length > 0) setRegions(cachedRegions);
-                            if (cachedShipments.length > 0) setShipments(cachedShipments);
+                if (cachedShipments.length > 0) setShipments(cachedShipments);
                             if (cachedPrices.length > 0) setProductPrices(cachedPrices);
                             if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
                             

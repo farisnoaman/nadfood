@@ -46,7 +46,7 @@ export const useShipmentFilter = ({ baseShipments, drivers, initialSortOption = 
     return [...filtered].sort((a, b) => {
       switch (sortOption) {
         case 'oldest':
-          return new Date(a.entryTimestamp).getTime() - new Date(b.entryTimestamp).getTime();
+          return new Date(a.updated_at || a.modifiedAt || a.createdAt || 0).getTime() - new Date(b.updated_at || b.modifiedAt || b.createdAt || 0).getTime();
         case 'highest_due':
           const dueA = a.totalDueAmount ?? a.dueAmountAfterDiscount ?? a.dueAmount ?? 0;
           const dueB = b.totalDueAmount ?? b.dueAmountAfterDiscount ?? b.dueAmount ?? 0;
@@ -57,7 +57,7 @@ export const useShipmentFilter = ({ baseShipments, drivers, initialSortOption = 
           return dueALow - dueBLow;
         case 'newest':
         default:
-          return new Date(b.entryTimestamp).getTime() - new Date(a.entryTimestamp).getTime();
+          return new Date(b.updated_at || b.modifiedAt || b.createdAt || 0).getTime() - new Date(a.updated_at || a.modifiedAt || a.createdAt || 0).getTime();
       }
     });
   }, [baseShipments, searchTerm, regionFilter, statusFilter, sortOption, drivers, fromDate, toDate]);

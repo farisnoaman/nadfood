@@ -124,10 +124,11 @@ export interface Shipment {
   deductionsEditedBy?: string; // Admin who edited accountant's deductions
   deductionsEditedAt?: string; // Timestamp of deductions edit
   hasMissingPrices: boolean;
-  createdBy?: string; // User ID who created it
-  createdAt?: string; // Timestamp from the DB
-  isPendingSync?: boolean; // True if created offline and waiting to be sent to the server.
-}
+   createdBy?: string; // User ID who created it
+   createdAt?: string; // Timestamp from the DB
+   updated_at?: string; // Timestamp of last update
+   isPendingSync?: boolean; // True if created offline and waiting to be sent to the server.
+ }
 
 /**
  * Defines categories for notifications to allow for filtering.

@@ -57,7 +57,7 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
       'المنتجات', 'إجمالي أجر المنتجات', 'إجمالي الديزل', 'رسوم زعيتري', 'مصروفات إدارية', 'المبلغ المستحق',
       'قيمة التالف', 'قيمة النقص', 'خرج الطريق', 'المبلغ المستحق بعد الخصم',
       'مبالغ أخرى', 'سندات تحسين', 'ممسى', 'إجمالي المبلغ المستحق النهائي',
-      'رقم الحوالة', 'تاريخ الحوالة'
+      'رقم الحوالة', 'تاريخ الحوالة', 'آخر تحديث'
     ];
 
     const csvRows = [headers.join(',')];
@@ -94,6 +94,7 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
         shipment.totalDueAmount ?? 0,
         shipment.transferNumber ?? '',
         shipment.transferDate ?? '',
+        shipment.updated_at ?? '',
       ];
 
       const row = rowData.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`);
@@ -245,10 +246,10 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
                                                 </p>
                                             </div>
                                         </div>
-                                         <div className="flex justify-between items-center mt-2">
-                                             <div className="text-[10px] text-gray-500 dark:text-gray-400">
-                                                 <span>أخر تعديل: {formatDateForDisplay(shipment.modifiedAt || shipment.createdAt)}</span>
-                                             </div>
+                                          <div className="flex justify-between items-center mt-2">
+                                              <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                                                  <span>آخر تحديث: {formatDateForDisplay(shipment.updated_at)}</span>
+                                              </div>
                                              <Button size="sm" onClick={() => setSelectedShipment(shipment)} className="text-xs px-3 py-1">
                                                  <Icons.Edit className="ml-1 h-3 w-3" />
                                                  عرض وتعديل
