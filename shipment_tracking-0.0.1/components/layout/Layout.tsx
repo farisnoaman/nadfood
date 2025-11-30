@@ -2,6 +2,7 @@ import React from 'react';
 import Navbar from './Navbar';
 import TimeWidget from '../common/display/TimeWidget';
 import InstallPrompt from '../common/components/InstallPrompt';
+import SessionWarning from '../common/components/SessionWarning';
 import { useAppContext } from '../../providers/AppContext';
 import { Icons } from '../Icons';
 
@@ -38,6 +39,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <OfflineBanner />
       <Navbar />
       {isTimeWidgetVisible && <TimeWidget />}
+      <SessionWarning />
       <main className="p-3 sm:p-6 lg:p-8">
         {children}
       </main>

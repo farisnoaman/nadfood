@@ -13,6 +13,7 @@ import {
   createSuccessResponse,
   validatePassword,
   validateUUID,
+  validateCSRF,
   checkRateLimit,
   logExecution
 } from '../_shared.ts';
@@ -42,6 +43,12 @@ Deno.serve(async (req) => {
     if (!rateLimit.allowed) {
       logExecution(functionName, `Rate limit exceeded for user: ${user.id}`);
       return createErrorResponse('تم تجاوز حد الطلبات. يرجى المحاولة لاحقاً.', 429);
+    }
+
+    // Validate CSRF token
+    if (!validateCSRF(req)) {
+      logExecution(functionName, 'CSRF validation failed');
+      return createErrorResponse('Invalid CSRF token', 403);
     }
 
     // Verify admin role

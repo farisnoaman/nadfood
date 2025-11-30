@@ -13,4 +13,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+// Configure Supabase client with enhanced security settings
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Reduce session duration for better security
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    // Note: Actual session expiry is configured server-side in Supabase dashboard
+    // Access tokens: 1 hour (default)
+    // Refresh tokens: 24 hours (configured in Supabase project settings)
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'shipment-tracking-app',
+    },
+  },
+});

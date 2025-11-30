@@ -2,10 +2,20 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.80.0';
 
 // CORS headers for cross-origin requests
+// Restrict origins for better security
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://your-production-domain.com', // Replace with actual production domain
+  // Add your staging domains here
+];
+
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Origin': allowedOrigins.includes(Deno.env.get('ORIGIN') || '') ? Deno.env.get('ORIGIN') : allowedOrigins[0],
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-csrf-token',
+  'Access-Control-Allow-Methods': 'POST, GET, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Credentials': 'true',
+  'Access-Control-Max-Age': '86400', // 24 hours
 };
 
 // Admin role constant (Arabic)
@@ -174,6 +184,25 @@ export const checkRateLimit = (identifier: string): { allowed: boolean; remainin
 
   record.count++;
   return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - record.count, resetTime: record.resetTime };
+};
+
+// CSRF validation
+export const validateCSRF = (request: Request): boolean => {
+  const csrfToken = request.headers.get('x-csrf-token');
+  if (!csrfToken) {
+    logExecution('CSRF', 'Missing CSRF token');
+    return false;
+  }
+
+  // For Edge Functions, we validate that a token is present
+  // In a full implementation, you'd validate against a server-side token
+  // For now, we just check presence and basic format
+  if (csrfToken.length < 32) {
+    logExecution('CSRF', 'Invalid CSRF token format');
+    return false;
+  }
+
+  return true;
 };
 
 // Log function execution

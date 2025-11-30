@@ -25,6 +25,7 @@ export interface OfflineCredentials {
   userId: string;
   createdAt: string;
   lastUsed: string;
+  expiresAt: string; // New field for credential expiry
 }
 
 export interface OfflineSession {
@@ -69,10 +70,14 @@ export const storeOfflineCredentials = async (
 ): Promise<void> => {
   try {
     await initDB();
-    
+
     // Create password hash with email as salt
     const passwordHash = await hashPassword(password, email.toLowerCase());
-    
+
+    // Set credential expiry to 90 days from now
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 90);
+
     const credentials: OfflineCredentials = {
       key: AUTH_KEYS.CREDENTIALS,
       email: email.toLowerCase(),
@@ -80,6 +85,7 @@ export const storeOfflineCredentials = async (
       userId,
       createdAt: new Date().toISOString(),
       lastUsed: new Date().toISOString(),
+      expiresAt: expiresAt.toISOString(),
     };
     
     await saveToStore(AUTH_STORE, credentials);
@@ -113,7 +119,7 @@ export const storeOfflineCredentials = async (
 export const validateOfflineCredentials = async (
   email: string,
   password: string
-): Promise<{ valid: boolean; userId?: string; userProfile?: CachedUserProfile }> => {
+): Promise<{ valid: boolean; userId?: string; userProfile?: CachedUserProfile; expired?: boolean }> => {
   try {
     await initDB();
     
@@ -130,14 +136,22 @@ export const validateOfflineCredentials = async (
       return { valid: false };
     }
     
+    // Check if credentials have expired
+    if (new Date(credentials.expiresAt) < new Date()) {
+      logger.warn('Offline credentials have expired');
+      // Clear expired credentials
+      await deleteFromStore(AUTH_STORE, AUTH_KEYS.CREDENTIALS);
+      return { valid: false, expired: true };
+    }
+
     // Validate password hash
     const passwordHash = await hashPassword(password, email.toLowerCase());
-    
+
     if (credentials.passwordHash !== passwordHash) {
       logger.debug('Password hash mismatch');
       return { valid: false };
     }
-    
+
     // Update last used timestamp
     credentials.lastUsed = new Date().toISOString();
     await saveToStore(AUTH_STORE, credentials);
@@ -310,6 +324,31 @@ export const shouldReauthenticateOnline = async (): Promise<boolean> => {
         console.error('Error checking reauth requirement:', error);
         return false;
     }
+};
+
+/**
+ * Refresh offline credentials expiry
+ * Called when user successfully logs in online to extend credential validity
+ */
+export const refreshOfflineCredentials = async (): Promise<void> => {
+  try {
+    await initDB();
+
+    const credentials = await getFromStore<OfflineCredentials>(AUTH_STORE, AUTH_KEYS.CREDENTIALS);
+    if (credentials) {
+      // Extend expiry by 90 days from now
+      const newExpiry = new Date();
+      newExpiry.setDate(newExpiry.getDate() + 90);
+
+      credentials.expiresAt = newExpiry.toISOString();
+      credentials.lastUsed = new Date().toISOString();
+
+      await saveToStore(AUTH_STORE, credentials);
+      logger.info('Offline credentials expiry extended');
+    }
+  } catch (error) {
+    logger.error('Error refreshing offline credentials:', error);
+  }
 };
 
 /**

@@ -89,15 +89,15 @@ export const useOfflineAuth = (): UseOfflineAuthReturn => {
   const validateCredentials = useCallback(async (email: string, password: string) => {
     try {
       const validation = await validateOfflineCredentials(email, password);
-      
+
       if (validation.valid) {
         // Update status after successful validation
         await refreshStatus();
       }
-      
+
       return validation;
     } catch (error) {
-      console.error('Error validating offline credentials:', error);
+      logger.error('Error validating offline credentials:', error);
       return { valid: false };
     }
   }, [refreshStatus]);

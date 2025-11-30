@@ -9,9 +9,11 @@ import { useAppContext } from '../../../providers/AppContext';
 import { supabase } from '../../../utils/supabaseClient';
 import {
   storeOfflineCredentials,
+  refreshOfflineCredentials,
 } from '../../../utils/offlineAuth';
 import { useOfflineAuth } from '../../../hooks/useOfflineAuth';
 import logger from '../../../utils/logger';
+import { getCSRFTokenForForm } from '../../../utils/csrf';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -56,9 +58,13 @@ const Login: React.FC = () => {
         }
 
         const validation = await validateCredentials(email, password);
-        
+
         if (!validation.valid) {
-          setError('اسم المستخدم أو كلمة المرور غير صحيحة');
+          if (validation.expired) {
+            setError('انتهت صلاحية بيانات الدخول المحفوظة. يرجى الاتصال بالإنترنت لتسجيل الدخول مرة أخرى.');
+          } else {
+            setError('اسم المستخدم أو كلمة المرور غير صحيحة');
+          }
           setLoading(false);
           return;
         }
@@ -111,6 +117,9 @@ const Login: React.FC = () => {
           // Store credentials for offline use
           await storeOfflineCredentials(email, password, data.user.id, userProfile);
           logger.info('Online login successful - credentials stored for offline use');
+        } else {
+          // Even if profile fetch failed, refresh existing credentials expiry
+          await refreshOfflineCredentials();
         }
       }
 
