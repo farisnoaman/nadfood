@@ -27,10 +27,10 @@ export default defineConfig({
             return 'router-vendor';
           }
 
-          // UI libraries
-          if (id.includes('node_modules/lucide-react')) {
-            return 'ui-vendor';
-          }
+           // UI libraries
+           if (id.includes('node_modules/lucide-react')) {
+             return 'react-vendor';
+           }
 
           // Database & API
           if (id.includes('node_modules/@supabase/supabase-js')) {
@@ -53,20 +53,20 @@ export default defineConfig({
             return 'accountant-features';
           }
 
-          // Common components
-          if (id.includes('/components/common/')) {
-            return 'common-components';
-          }
+            // Common components and Icons
+           if (id.includes('/components/layout/') || id.includes('/providers/') || id.includes('/components/common/') || id.includes('/components/Icons.tsx')) {
+             return 'react-vendor';
+           }
 
-          // Layout and providers
-          if (id.includes('/components/layout/') || id.includes('/providers/')) {
-            return 'layout-providers';
-          }
+           // Layout and providers
+           if (id.includes('/components/layout/') || id.includes('/providers/')) {
+             return 'react-vendor';
+           }
 
-          // Utilities
-          if (id.includes('/utils/')) {
-            return 'utils';
-          }
+           // Utilities
+            if (id.includes('/utils/')) {
+             return 'utils';
+           }
         }
       }
     },

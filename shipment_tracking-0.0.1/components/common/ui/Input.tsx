@@ -28,16 +28,19 @@ const Input: React.FC<InputProps> = ({ label, id, Icon, actionIcon, onActionClic
             <Icon className="h-5 w-5 text-secondary-400" aria-hidden="true" />
           </div>
         )}
-        {actionIcon && (
-          <button
-            type="button"
-            onClick={onActionClick}
-            className="absolute inset-y-0 end-0 flex items-center pe-3 hover:text-secondary-600 focus:outline-none"
-            aria-label="Toggle visibility"
-          >
-            {React.createElement(actionIcon, { className: "h-5 w-5 text-secondary-400" })}
-          </button>
-        )}
+        {actionIcon && (() => {
+          const ActionIcon = actionIcon;
+          return (
+            <button
+              type="button"
+              onClick={onActionClick}
+              className="absolute inset-y-0 end-0 flex items-center pe-3 hover:text-secondary-600 focus:outline-none"
+              aria-label="Toggle visibility"
+            >
+              <ActionIcon className="h-5 w-5 text-secondary-400" />
+            </button>
+          );
+        })()}
         <input
           id={id}
           className={`${baseClasses} ${colorClasses} ${paddingClasses} ${className || ''}`}
