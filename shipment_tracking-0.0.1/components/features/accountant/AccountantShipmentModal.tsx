@@ -17,9 +17,9 @@ const ShipmentSummary: React.FC<{ shipment: Shipment }> = ({ shipment }) => (
     <h4 className="font-bold mb-2">معلومات الشحنة</h4>
     <FieldValue label="إجمالي الأجر" value={shipment.totalWage} />
     <FieldValue label="إجمالي الديزل" value={shipment.totalDiesel} />
+    <FieldValue label="خرج الطريق" value={shipment.roadExpenses} />
     <FieldValue label="رسوم زعيتري" value={shipment.zaitriFee} />
     <FieldValue label="مصروفات إدارية" value={shipment.adminExpenses} />
-    <FieldValue label="خرج الطريق" value={shipment.roadExpenses} />
     <div className="font-bold mt-2"><FieldValue label="المبلغ المستحق" value={shipment.dueAmount} /></div>
   </div>
 );
@@ -171,14 +171,14 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
         <div className="space-y-4 p-1">
           <ShipmentStepper status={currentShipment.status} />
 
-          <ShipmentSummary shipment={currentShipment} />
-          
           <ProductDetails
             products={currentShipment.products}
             isExpanded={isProductsExpanded}
             onToggle={() => setIsProductsExpanded(!isProductsExpanded)}
             title="المنتجات"
           />
+
+          <ShipmentSummary shipment={currentShipment} />
 
           {/* Warning for missing prices */}
           {isEditable && hasMissingPrice && (

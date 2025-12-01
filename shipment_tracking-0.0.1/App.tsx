@@ -28,7 +28,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[]
 };
 
 const AppRoutes: React.FC = () => {
-    const { currentUser, loading, error, isProfileLoaded } = useAppContext();
+    const { currentUser, loading, error, isProfileLoaded, syncOfflineMutations } = useAppContext();
     const [loadingTimeout, setLoadingTimeout] = useState(false);
     const loadingTimeoutRef = useRef<{ primary: NodeJS.Timeout; emergency: NodeJS.Timeout } | null>(null);
 
@@ -163,10 +163,10 @@ const AppRoutes: React.FC = () => {
                                             <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
                                             <Route path="/manager/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN]}><AdminDashboard /></ProtectedRoute>} />
                                         </Routes>
-                                    </Suspense>
-                                    {/* Sync Status Indicator - shown when logged in */}
-                                    <SyncStatusIndicator />
-                                </Layout>
+                                     </Suspense>
+                                     {/* Sync Status Indicator - shown when logged in */}
+                                     <SyncStatusIndicator onSync={syncOfflineMutations} />
+                                 </Layout>
                             ) : <Login />
                         } />
                     </Routes>

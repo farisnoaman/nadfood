@@ -207,6 +207,7 @@ interface AppContextType {
     isSyncing: boolean;
     isProfileLoaded: boolean;
     refreshAllData: () => Promise<void>;
+    syncOfflineMutations: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -233,8 +234,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Settings states - will be hydrated from IndexedDB after mount
     const [accountantPrintAccess, setAccountantPrintAccess] = useState<boolean>(false);
     const [isPrintHeaderEnabled, setIsPrintHeaderEnabled] = useState<boolean>(true);
-    const [appName, setAppName] = useState<string>('تتبع الشحنات');
-    const [companyName, setCompanyName] = useState<string>('اسم الشركة');
+    const [appName, setAppName] = useState<string>('بلغيث للنقل');
+    const [companyName, setCompanyName] = useState<string>('بلغيث للنقل');
     const [companyAddress, setCompanyAddress] = useState<string>('عنوان الشركة');
     const [companyPhone, setCompanyPhone] = useState<string>('رقم الهاتف');
     const [companyLogo, setCompanyLogo] = useState<string>('');
@@ -278,8 +279,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     // Settings
                     IndexedDB.getSetting('accountantPrintAccess', false),
                     IndexedDB.getSetting('isPrintHeaderEnabled', true),
-                    IndexedDB.getSetting('appName', 'تتبع الشحنات'),
-                    IndexedDB.getSetting('companyName', 'اسم الشركة'),
+                    IndexedDB.getSetting('appName', 'بلغيث للنقل'),
+                    IndexedDB.getSetting('companyName', 'بلغيث للنقل'),
                     IndexedDB.getSetting('companyAddress', 'عنوان الشركة'),
                     IndexedDB.getSetting('companyPhone', 'رقم الهاتف'),
                     IndexedDB.getSetting('companyLogo', ''),
@@ -411,8 +412,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             setAccountantPrintAccess(settingsMap['accountantPrintAccess'] === 'true');
             setIsPrintHeaderEnabled(settingsMap['isPrintHeaderEnabled'] === 'true');
-            setAppName(settingsMap['appName'] || 'تتبع الشحنات');
-            setCompanyName(settingsMap['companyName'] || 'اسم الشركة');
+            setAppName(settingsMap['appName'] || 'بلغيث للنقل');
+            setCompanyName(settingsMap['companyName'] || 'بلغيث للنقل');
             setCompanyAddress(settingsMap['companyAddress'] || 'عنوان الشركة');
             setCompanyPhone(settingsMap['companyPhone'] || 'رقم الهاتف');
             setCompanyLogo(settingsMap['companyLogo'] || '');
@@ -422,8 +423,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             await Promise.all([
                 IndexedDB.setSetting('accountantPrintAccess', settingsMap['accountantPrintAccess'] === 'true'),
                 IndexedDB.setSetting('isPrintHeaderEnabled', settingsMap['isPrintHeaderEnabled'] === 'true'),
-                IndexedDB.setSetting('appName', settingsMap['appName'] || 'تتبع الشحنات'),
-                IndexedDB.setSetting('companyName', settingsMap['companyName'] || 'اسم الشركة'),
+                IndexedDB.setSetting('appName', settingsMap['appName'] || 'بلغيث للنقل'),
+                IndexedDB.setSetting('companyName', settingsMap['companyName'] || 'بلغيث للنقل'),
                 IndexedDB.setSetting('companyAddress', settingsMap['companyAddress'] || 'عنوان الشركة'),
                 IndexedDB.setSetting('companyPhone', settingsMap['companyPhone'] || 'رقم الهاتف'),
                 IndexedDB.setSetting('companyLogo', settingsMap['companyLogo'] || ''),
@@ -702,43 +703,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const successfullySyncedIndices: number[] = [];
 
             for (const [index, mutation] of mutationQueue.entries()) {
-                try {
-                    if (mutation.type === 'addShipment') {
-                        // Strip the offline ID and pending flag. DB will generate a new UUID.
-                        const { products, id: offlineId, isPendingSync, ...shipmentData } = mutation.payload;
-                        
-                        const shipmentRow = shipmentToRow(shipmentData);
-                        if (!shipmentRow.created_by && currentUser?.id) {
-                            shipmentRow.created_by = currentUser.id;
-                        }
+        try {
+            if (mutation.type === 'addShipment') {
+                // Strip the offline ID and pending flag. DB will generate a new UUID.
+                const { products, id: offlineId, isPendingSync, ...shipmentData } = mutation.payload;
 
-                        // Insert shipment and get new ID
-                        const { data: newShipmentData, error: shipmentError } = await supabase
-                            .from('shipments')
-                            .insert(shipmentRow as any)
-                            .select()
-                            .single();
-                        
-                        if (shipmentError) throw shipmentError;
+                const shipmentRow = shipmentToRow(shipmentData);
+                if (!shipmentRow.created_by && currentUser?.id) {
+                    shipmentRow.created_by = currentUser.id;
+                }
 
-                        // Store mapping: offlineId -> real UUID
-                        if (offlineId && String(offlineId).startsWith('offline-')) {
-                            offlineToRealIdMap[offlineId] = newShipmentData.id;
-                        }
+                // Insert shipment and get new ID
+                const { data: newShipmentData, error: shipmentError } = await supabase
+                    .from('shipments')
+                    .insert(shipmentRow as any)
+                    .select()
+                    .single();
 
-                        // Insert products with NEW shipment ID
-                        const shipmentProductsToInsert = products.map((p: ShipmentProduct) => ({
-                             shipment_id: newShipmentData.id,
-                             product_id: p.productId, 
-                             product_name: p.productName, 
-                             carton_count: p.cartonCount, 
-                             product_wage_price: p.productWagePrice 
-                        }));
-                        
-                        const { error: productsError } = await supabase.from('shipment_products').insert(shipmentProductsToInsert);
-                        if (productsError) throw productsError;
+                if (shipmentError) throw shipmentError;
 
-                    } else if (mutation.type === 'updateShipment') {
+                // Store mapping: offlineId -> real UUID
+                if (offlineId && String(offlineId).startsWith('offline-')) {
+                    offlineToRealIdMap[offlineId] = newShipmentData.id;
+                }
+
+                // Insert products with NEW shipment ID
+                const shipmentProductsToInsert = products.map((p: ShipmentProduct) => ({
+                     shipment_id: newShipmentData.id,
+                     product_id: p.productId,
+                     product_name: p.productName,
+                     carton_count: p.cartonCount,
+                     product_wage_price: p.productWagePrice
+                }));
+
+                const { error: productsError } = await supabase.from('shipment_products').insert(shipmentProductsToInsert);
+                if (productsError) throw productsError;
+
+                logger.info(`Successfully synced addShipment: ${newShipmentData.id}`);
+
+            } else if (mutation.type === 'updateShipment') {
                         let { shipmentId, updates } = mutation.payload;
 
                         // If this update is for an offline shipment we just synced, map the ID
@@ -751,8 +754,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         // Update the main shipment record
                         if (Object.keys(shipmentUpdates).length > 0) {
                             const updateRow = shipmentToRow(shipmentUpdates);
+                            logger.info(`Updating shipment ${shipmentId} with status:`, updateRow.status);
                             const { error } = await supabase.from('shipments').update(updateRow).eq('id', shipmentId);
                             if (error) throw error;
+                            logger.info(`Successfully updated shipment ${shipmentId} status to: ${updateRow.status}`);
                         }
 
                         // Update products if provided
@@ -785,18 +790,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     successfullySyncedIndices.push(index);
                 } catch (err) {
                     console.error('Failed to sync mutation:', mutation, err);
-                // Keep failed mutation in queue for retry
-            }
+                    // Keep failed mutation in queue for retry
+                    logger.error(`Sync failed for ${mutation.type}:`, err);
+                }
         }
         
         // Remove successfully synced items
         const newQueue = mutationQueue.filter((_: any, index: number) => !successfullySyncedIndices.includes(index));
         await IndexedDB.setMutationQueue(newQueue);
-        
+
+        // Update sync status
+        const { updateSyncStatus } = await import('../utils/syncQueue');
+        await updateSyncStatus();
+
+        logger.info(`Sync completed: ${successfullySyncedIndices.length} mutations synced successfully`);
+
         // Refresh data from server to get the new IDs and clean states
         await fetchAllData();
         setIsSyncing(false);
-        logger.info('Sync finished.');
+        logger.info('Sync finished and data refreshed.');
 
         } finally {
             // Release lock only if we still own it
@@ -905,14 +917,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setNotifications([]);
     }, []);
 
-    // CRITICAL FIX: Clear offline session when app launches online to prevent automatic login bypass
+    // Enhanced offline-first initialization
     useEffect(() => {
         const initializeApp = async () => {
-            // Use helper function for consistent session clearing logic
+            const isOnline = navigator.onLine;
+            const isPWA = 'serviceWorker' in navigator && window.matchMedia('(display-mode: standalone)').matches;
+
+            logger.info(`App initializing - Online: ${isOnline}, PWA: ${isPWA}`);
+
+            // Handle offline session clearing for security
             const shouldClear = await shouldClearOfflineSessionOnLaunch();
             if (shouldClear) {
                 logger.info('App launched online - clearing any offline session for security');
                 await clearOfflineSession();
+            }
+
+            // PWA-specific offline handling
+            if (isPWA) {
+                logger.info('Running in PWA mode - enabling offline-first features');
+
+                // Check if we have cached data for offline use
+                try {
+                    const [cachedUsers, cachedProducts] = await Promise.all([
+                        IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS, 2000),
+                        IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS, 2000)
+                    ]);
+
+                    const hasCachedData = cachedUsers.length > 0 && cachedProducts.length > 0;
+
+                    if (!isOnline && !hasCachedData) {
+                        logger.warn('PWA offline but no cached data available');
+                        setError('التطبيق في وضع عدم الاتصال ولكن لا توجد بيانات محفوظة. يرجى الاتصال بالإنترنت لتحميل البيانات أولاً.');
+                    } else if (!isOnline && hasCachedData) {
+                        logger.info('PWA offline with cached data - loading from cache');
+                        // Load cached data immediately for offline use
+                        await loadData(true, false, null);
+                    } else if (isOnline) {
+                        logger.info('PWA online - will sync data in background');
+                        // Online - data will be loaded by auth state change
+                    }
+                } catch (cacheError) {
+                    logger.error('Error checking cached data:', cacheError);
+                    if (!isOnline) {
+                        setError('فشل في تحميل البيانات المحفوظة. يرجى الاتصال بالإنترنت.');
+                    }
+                }
             }
         };
 
@@ -1379,6 +1428,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         companyLogo, setCompanyLogo, isTimeWidgetVisible, setIsTimeWidgetVisible,
         loading, error, isOnline, isSyncing, isProfileLoaded,
         refreshAllData: fetchAllData,
+        syncOfflineMutations,
     }), [
         currentUser, handleLogout, loadOfflineUser, users, addUser, updateUser,
         products, addProduct, updateProduct,
@@ -1389,7 +1439,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
         accountantPrintAccess, isPrintHeaderEnabled, appName, companyName, companyAddress, companyPhone, companyLogo, isTimeWidgetVisible,
         loading, error, isOnline, isSyncing, isProfileLoaded, setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible,
-        fetchAllData
+        fetchAllData, syncOfflineMutations
     ]);
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

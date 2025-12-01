@@ -57,36 +57,67 @@ export const exportShipmentsToCSV = (shipments: Shipment[], regions: Region[], d
   const data = shipments.map(s => {
     const region = regions.find(r => r.id === s.regionId);
     const driver = drivers.find(d => d.id === s.driverId);
+
+    // Format products list
+    const productsList = s.products?.map(p => p.productName).join(', ') || '';
+
+    // Calculate amount due after deductions
+    const amountDueAfterDeductions = (s.dueAmount || 0) - (s.damagedValue || 0) - (s.shortageValue || 0) - (s.otherAmounts || 0);
+
+    // Calculate final amount due
+    const finalAmountDue = amountDueAfterDeductions + (s.improvementBonds || 0) + (s.eveningAllowance || 0);
+
     return {
-      'رقم أمر المبيعات': s.salesOrder,
-      'التاريخ': formatDateForDisplay(s.orderDate),
+      'تاريخ الأمر': formatDateForDisplay(s.orderDate),
+      'أمر المبيعات': s.salesOrder,
       'المنطقة': region?.name || 'غير معروف',
       'السائق': driver?.name || 'غير معروف',
-      'الحالة': s.status,
+      'رقم اللوحة': driver?.plateNumber || 'غير معروف',
+      'المنتجات': productsList,
+      'إجمالي أجر المنتجات': s.totalWage,
       'إجمالي الديزل': s.totalDiesel,
-      'إجمالي الأجرة': s.totalWage,
-      'رسوم الزيتري': s.zaitriFee,
-      'مصروفات الإدارة': s.adminExpenses,
-      'المبلغ المستحق': s.dueAmount,
-      'قيمة التالف': s.damagedValue,
-      'قيمة العجز': s.shortageValue,
-      'مصروفات الطريق': s.roadExpenses,
-      'المبلغ المستحق بعد الخصم': s.dueAmountAfterDiscount,
+      'خرج الطريق': s.roadExpenses,
+      'رسوم زعيتري': s.zaitriFee,
+      'مصروفات إدارية': s.adminExpenses,
       'مبالغ أخرى': s.otherAmounts,
-      'سندات التحسين': s.improvementBonds,
-      'بدل مسائي': s.eveningAllowance,
-      'إجمالي المبلغ المستحق': s.totalDueAmount,
-      'نسبة الضريبة': s.taxRate,
-      'إجمالي الضريبة': s.totalTax,
+      'قيمة التالف': s.damagedValue,
+      'قيمة النقص': s.shortageValue,
+      'المبلغ المستحق بعد الخصم': amountDueAfterDeductions,
+      'سندات تحسين': s.improvementBonds,
+      'ممسى': s.eveningAllowance,
+      'إجمالي المبلغ المستحق النهائي': finalAmountDue,
       'رقم الحوالة': s.transferNumber || '',
       'تاريخ الحوالة': formatDateForDisplay(s.transferDate),
     };
   });
-  
-  const headers = Object.keys(data[0] || {});
+
+  // Define headers in the exact order requested
+  const headers = [
+    'تاريخ الأمر',
+    'أمر المبيعات',
+    'المنطقة',
+    'السائق',
+    'رقم اللوحة',
+    'المنتجات',
+    'إجمالي أجر المنتجات',
+    'إجمالي الديزل',
+    'خرج الطريق',
+    'رسوم زعيتري',
+    'مصروفات إدارية',
+    'مبالغ أخرى',
+    'قيمة التالف',
+    'قيمة النقص',
+    'المبلغ المستحق بعد الخصم',
+    'سندات تحسين',
+    'ممسى',
+    'إجمالي المبلغ المستحق النهائي',
+    'رقم الحوالة',
+    'تاريخ الحوالة',
+  ];
+
   const csvContent = arrayToCSV(data, headers);
   const filename = `shipments_${new Date().toISOString().split('T')[0]}.csv`;
-  
+
   downloadCSV(csvContent, filename);
 };
 

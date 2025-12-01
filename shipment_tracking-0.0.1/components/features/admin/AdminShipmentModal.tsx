@@ -20,9 +20,9 @@ const BasicInformationSection: React.FC<{ shipment: Shipment; regionRoadExpenses
         <div className="pt-2 border-t dark:border-secondary-700 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
             <FieldValue label="إجمالي الأجر" value={shipment.totalWage} />
             <FieldValue label="إجمالي الديزل" value={shipment.totalDiesel} />
+            <FieldValue label="خرج الطريق" value={regionRoadExpenses} />
             <FieldValue label="رسوم زعيتري" value={shipment.zaitriFee} />
             <FieldValue label="مصروفات إدارية" value={shipment.adminExpenses} />
-            <FieldValue label="خرج الطريق" value={regionRoadExpenses} />
             <div className="md:col-span-2 pt-2 border-t dark:border-secondary-700">
                 <FieldValue label="المبلغ المستحق" value={shipment.dueAmount} />
             </div>

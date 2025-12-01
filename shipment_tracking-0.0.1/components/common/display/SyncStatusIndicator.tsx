@@ -3,12 +3,15 @@ import { Icons } from '../../Icons';
 import {
   getSyncStatus,
   subscribeSyncStatus,
-  processSyncQueue,
   SyncStatus
 } from '../../../utils/syncQueue';
 
 
-const SyncStatusIndicator: React.FC = () => {
+interface SyncStatusIndicatorProps {
+  onSync?: () => Promise<void>;
+}
+
+const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ onSync }) => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(getSyncStatus());
   const [showDetails, setShowDetails] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -34,10 +37,12 @@ const SyncStatusIndicator: React.FC = () => {
 
   const handleManualSync = async () => {
     if (syncing || !syncStatus.isOnline) return;
-    
+
     setSyncing(true);
     try {
-      await processSyncQueue();
+      if (onSync) {
+        await onSync();
+      }
     } finally {
       setSyncing(false);
     }
