@@ -220,7 +220,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
     if (!currentUser) return;
     const driver = drivers.find((d: Driver) => d.id === currentShipment.driverId);
     const companyDetails = { companyName, companyAddress, companyPhone, companyLogo, isPrintHeaderEnabled };
-    printShipmentDetails(currentShipment, driver, companyDetails, currentUser);
+    printShipmentDetails(currentShipment, driver, companyDetails, currentUser, regions);
   };
 
   const isFinal = currentShipment.status === ShipmentStatus.FINAL || currentShipment.status === ShipmentStatus.FINAL_MODIFIED;

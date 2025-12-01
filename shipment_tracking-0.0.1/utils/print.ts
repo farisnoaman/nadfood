@@ -33,7 +33,7 @@ interface CompanyPrintDetails {
  * @param companyDetails - Company information for the print header.
  * @param currentUser - The user who is printing the report, for auditing purposes.
  */
-export const printShipmentDetails = async (shipment: Shipment, driver: Driver | undefined, companyDetails: CompanyPrintDetails, currentUser: User): Promise<void> => {
+export const printShipmentDetails = async (shipment: Shipment, driver: Driver | undefined, companyDetails: CompanyPrintDetails, currentUser: User, regions: any[]): Promise<void> => {
   let printContainer: HTMLDivElement | null = null;
   let root: ReactDOM.Root | null = null;
 
@@ -70,12 +70,15 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
       hour: '2-digit', minute: '2-digit', second: '2-digit'
     });
 
+    const regionName = regions.find((r: any) => r.id === shipment.regionId)?.name || 'غير معروف';
+
     // Step 2: Render the component into the off-screen container.
     root.render(
       React.createElement(PrintableShipment, {
         shipment,
         driverName: driver?.name || 'غير معروف',
         plateNumber: driver?.plateNumber || 'غير معروف',
+        regionName,
         printedBy: currentUser.username,
         printTimestamp: printTimestamp,
         ...companyDetails,

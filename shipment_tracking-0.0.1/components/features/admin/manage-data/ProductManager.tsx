@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Product } from '../../../../types';
 import Button from '../../../common/ui/Button';
 import Input from '../../../common/ui/Input';
@@ -9,6 +9,7 @@ import { useAppContext } from '../../../../providers/AppContext';
 const ProductManager: React.FC = () => {
   const { products, addProduct, updateProduct, isOnline } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
+  const [visibleCount, setVisibleCount] = useState(20);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -26,6 +27,13 @@ const ProductManager: React.FC = () => {
       p.id.toLowerCase().includes(lowerCaseSearchTerm)
     );
   }, [products, searchTerm]);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [searchTerm]);
+
+  const visibleProducts = filteredProducts.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredProducts.length;
 
   const handleOpenAddModal = () => {
     setEditingProduct(null);
@@ -104,8 +112,9 @@ const ProductManager: React.FC = () => {
         </div>
       </div>
       <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((p: Product) => (
+        {visibleProducts.length > 0 ? (
+           <div>
+             {visibleProducts.map((p: Product) =>
             <div key={p.id} className={`flex justify-between items-center p-3 bg-secondary-100 dark:bg-secondary-800 rounded transition-opacity ${p.isActive ?? true ? '' : 'opacity-50'}`}>
               <div>
                 <span>{p.name}</span>
@@ -125,7 +134,15 @@ const ProductManager: React.FC = () => {
                 </Button>
               </div>
             </div>
-          ))
+          )}
+          {hasMore && (
+            <div className="text-center py-4">
+              <Button onClick={() => setVisibleCount(prev => prev + 20)}>
+                تحميل المزيد
+              </Button>
+            </div>
+          )}
+          </div>
         ) : (
           <div className="text-center text-secondary-500 py-4">لا توجد منتجات تطابق البحث.</div>
         )}

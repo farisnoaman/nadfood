@@ -6,6 +6,7 @@ import Button from '../../common/ui/Button';
 import { useAppContext } from '../../../providers/AppContext';
 import FieldValue from '../../common/components/FieldValue';
 import SupabaseService from '../../../utils/supabaseService';
+import { supabase } from '../../../utils/supabaseClient';
 import { runSettingsMigrationIfNeeded } from '../../../utils/settingsMigration';
 import logger from '../../../utils/logger';
 
@@ -366,7 +367,7 @@ const AdminSettings: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Icons.Shield className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <Icons.AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-red-800 dark:text-red-200 mb-2">
             غير مصرح لك بالوصول
           </h2>
@@ -408,7 +409,7 @@ const AdminSettings: React.FC = () => {
             <Button
               variant="secondary"
               size="sm"
-              onClick={fetchDbSettings}
+              onClick={() => fetchDbSettings()}
               disabled={isLoading}
               className="w-full sm:w-auto"
             >

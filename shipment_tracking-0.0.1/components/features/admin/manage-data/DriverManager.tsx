@@ -8,6 +8,7 @@ import { useAppContext } from '../../../../providers/AppContext';
 
 const DriverManager: React.FC = () => {
     const { drivers, addDriver, updateDriver, deleteDriver, isOnline } = useAppContext();
+    const [visibleCount, setVisibleCount] = useState(20);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [newDriverName, setNewDriverName] = useState('');
     const [newDriverPlate, setNewDriverPlate] = useState('');
@@ -70,6 +71,9 @@ const DriverManager: React.FC = () => {
         }
     };
 
+    const visibleDrivers = drivers.slice(0, visibleCount);
+    const hasMore = visibleCount < drivers.length;
+
     return (
         <>
             <div className="flex flex-col sm:flex-row flex-wrap justify-end items-start sm:items-center gap-4 mb-4">
@@ -81,7 +85,9 @@ const DriverManager: React.FC = () => {
                 </div>
             </div>
             <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
-                {drivers.map((d: Driver) => (
+                {visibleDrivers.length > 0 ? (
+                    <>
+                        {visibleDrivers.map((d: Driver) => (
                     <div key={d.id} className={`flex justify-between items-center p-3 bg-secondary-100 dark:bg-secondary-800 rounded transition-opacity ${d.isActive ?? true ? '' : 'opacity-50'}`}>
                         <div>
                             <span>{d.name} ({d.plateNumber})</span>
@@ -102,7 +108,18 @@ const DriverManager: React.FC = () => {
                         </div>
                     </div>
                 ))}
-            </div>
+                {hasMore && (
+                    <div className="text-center py-4">
+                        <Button onClick={() => setVisibleCount(prev => prev + 20)}>
+                            تحميل المزيد
+                        </Button>
+                    </div>
+                )}
+                </>
+            ) : (
+                <div className="text-center text-secondary-500 py-4">لا توجد سائقين.</div>
+            )}
+        </div>
             
             <Modal isOpen={isAddModalOpen} onClose={handleCloseAddModal} title="إضافة سائق جديد">
                 <div className="space-y-4">

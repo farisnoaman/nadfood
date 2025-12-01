@@ -1,12 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import Card from '../../common/display/Card';
-import Button from '../../common/ui/Button';
 import { Icons } from '../../Icons';
 import ProductManager from './manage-data/ProductManager';
 import DriverManager from './manage-data/DriverManager';
 import RegionManager from './manage-data/RegionManager';
 import PriceManager from './manage-data/PriceManager';
 import SearchableSelect from '../../common/forms/SearchableSelect';
+import { supabase } from '../../../utils/supabaseClient';
 
 type DataType = 'products' | 'drivers' | 'regions' | 'prices';
 
@@ -17,45 +17,90 @@ const TABS: { id: DataType; label: string; icon: React.ElementType }[] = [
     { id: 'prices', label: 'الأسعار', icon: Icons.ChevronsRightLeft },
 ];
 
-// Dummy excel utility function
-const readExcelFile = async (file: File): Promise<any[]> => {
-    console.log(`Reading Excel file: ${file.name}`);
-    alert(`تمت قراءة الملف ${file.name}. (هذه وظيفة وهمية)`);
-    return [];
+
+
+// Download CSV file
+const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
+    const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
 };
 
 const ManageData: React.FC = () => {
     const [activeType, setActiveType] = useState<DataType>('products');
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
+    const handleExport = async () => {
         try {
-            await readExcelFile(file);
+            const data = await exportData(activeType);
+            if (data.rows.length === 0) {
+                alert("لا توجد بيانات للتصدير.");
+                return;
+            }
+            downloadCSV(`${activeType}_export.csv`, data.headers, data.rows);
         } catch (error) {
-            console.error("Error reading excel file:", error);
-            alert("حدث خطأ أثناء قراءة الملف.");
+            console.error("Error exporting data:", error);
+            alert("حدث خطأ أثناء تصدير البيانات.");
         }
-        
-        if(fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-    };
-    
-    const handleDownloadSample = () => {
-        alert('هذه وظيفة وهمية لتنزيل نموذج CSV/Excel.');
     };
 
-    const handleExport = () => {
-        alert('هذه وظيفة وهمية لتصدير البيانات الحالية إلى CSV/Excel.');
+    const exportData = async (type: DataType): Promise<{ headers: string[]; rows: string[][] }> => {
+        switch (type) {
+            case 'products':
+                return await exportProducts();
+            case 'drivers':
+                return await exportDrivers();
+            case 'regions':
+                return await exportRegions();
+            case 'prices':
+                return await exportPrices();
+            default:
+                return { headers: [], rows: [] };
+        }
+    };
+
+    const exportProducts = async () => {
+        const { data, error } = await supabase.from('products').select('*');
+        if (error) throw error;
+        if (data.length === 0) return { headers: [], rows: [] };
+        const headers = Object.keys(data[0]);
+        const rows = data.map(item => headers.map(key => item[key]?.toString() || ''));
+        return { headers, rows };
+    };
+
+    const exportDrivers = async () => {
+        const { data, error } = await supabase.from('drivers').select('*');
+        if (error) throw error;
+        if (data.length === 0) return { headers: [], rows: [] };
+        const headers = Object.keys(data[0]);
+        const rows = data.map(item => headers.map(key => item[key]?.toString() || ''));
+        return { headers, rows };
+    };
+
+    const exportRegions = async () => {
+        const { data, error } = await supabase.from('regions').select('*');
+        if (error) throw error;
+        if (data.length === 0) return { headers: [], rows: [] };
+        const headers = Object.keys(data[0]);
+        const rows = data.map(item => headers.map(key => item[key]?.toString() || ''));
+        return { headers, rows };
+    };
+
+    const exportPrices = async () => {
+        const { data, error } = await supabase.from('product_prices').select('*');
+        if (error) throw error;
+        if (data.length === 0) return { headers: [], rows: [] };
+        const headers = Object.keys(data[0]);
+        const rows = data.map(item => headers.map(key => item[key]?.toString() || ''));
+        return { headers, rows };
     };
 
     const contentMap: Record<DataType, React.ReactNode> = {
         products: <ProductManager />,
         drivers: <DriverManager />,
-        regions: <RegionManager />,
+        regions: <RegionManager onExport={handleExport} />,
         prices: <PriceManager />,
     };
 
@@ -93,25 +138,9 @@ const ManageData: React.FC = () => {
                 </nav>
             </div>
 
-            <div className="pt-6">
-                 <div className="flex flex-wrap justify-end gap-2 mb-4">
-                    <Button onClick={handleDownloadSample}>
-                        <Icons.FileDown className="ml-2 h-4 w-4" />
-                        تحميل نموذج
-                    </Button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".csv, .xlsx, .xls" className="hidden" />
-                    <Button onClick={() => fileInputRef.current?.click()}>
-                        <Icons.FileInput className="ml-2 h-4 w-4" />
-                        استيراد
-                    </Button>
-                    <Button onClick={handleExport}>
-                        <Icons.FileOutput className="ml-2 h-4 w-4" />
-                        تصدير
-                    </Button>
-                </div>
-                
-                {contentMap[activeType]}
-            </div>
+             <div className="pt-6">
+                 {contentMap[activeType]}
+             </div>
         </Card>
     );
 };

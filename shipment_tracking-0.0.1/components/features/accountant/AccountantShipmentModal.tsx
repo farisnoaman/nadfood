@@ -60,7 +60,7 @@ interface AccountantShipmentModalProps {
 
 const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipment, isOpen, onClose, isEditable }) => {
   const {
-    updateShipment, addNotification, accountantPrintAccess, drivers, productPrices,
+    updateShipment, addNotification, accountantPrintAccess, drivers, productPrices, regions,
     isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, currentUser
   } = useAppContext();
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });
@@ -160,7 +160,7 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
     if (!currentUser) return;
     const driver = drivers.find((d: Driver) => d.id === currentShipment.driverId);
     const companyDetails = { companyName, companyAddress, companyPhone, companyLogo, isPrintHeaderEnabled };
-    printShipmentDetails(currentShipment, driver, companyDetails, currentUser);
+    printShipmentDetails(currentShipment, driver, companyDetails, currentUser, regions);
   };
 
   const isFinal = currentShipment.status === ShipmentStatus.FINAL || currentShipment.status === ShipmentStatus.FINAL_MODIFIED;

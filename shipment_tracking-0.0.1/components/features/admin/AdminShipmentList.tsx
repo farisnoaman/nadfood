@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shipment, ShipmentStatus, Driver, Region } from '../../../types';
 import Badge from '../../common/display/Badge';
 import Button from '../../common/ui/Button';
@@ -25,6 +25,7 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
   const [view, setView] = useState<'grid' | 'list'>(window.innerWidth < 768 ? 'list' : 'grid');
   const [isDateFilterVisible, setIsDateFilterVisible] = useState(false);
   const [isSearchFilterVisible, setIsSearchFilterVisible] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   const initialFilter = defaultStatusFilter === 'draft' ? ShipmentStatus.DRAFT : defaultStatusFilter === 'all' ? 'all' : Array.isArray(defaultStatusFilter) ? defaultStatusFilter : 'all';
 
@@ -41,6 +42,13 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
     drivers,
     initialStatusFilter: initialFilter
   });
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [filteredShipments]);
+
+  const visibleShipments = filteredShipments.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredShipments.length;
 
 
   const getRegionName = (id: string) => regions.find((r: Region) => r.id === id)?.name || 'غير معروف';
@@ -212,14 +220,15 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
             </div>
         </Card>
 
-        {filteredShipments.length > 0 ? (
-            <div>
+        {visibleShipments.length > 0 ? (
+            <>
+                <div>
                  {/* List View */}
                 {view === 'list' && (
                     <div className="space-y-2">
                         {/* Mobile List View */}
                         <div className="md:hidden">
-                            {filteredShipments.map((shipment) => {
+                            {visibleShipments.map((shipment) => {
                                  return (
                                      <div key={shipment.id} className="bg-gradient-to-br from-white via-blue-50 to-indigo-100 dark:from-secondary-800 dark:via-secondary-750 dark:to-secondary-700 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 p-3 mb-2 border border-gray-200 dark:border-secondary-600">
                                         <div className="flex justify-between items-start mb-2">
@@ -270,7 +279,7 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
                                 <div className="text-left">المبلغ النهائي</div>
                                 <div className="text-right">الإجراء</div>
                             </div>
-                            {filteredShipments.map((shipment) => (
+                            {visibleShipments.map((shipment) => (
                                 <ShipmentListItem
                                     key={shipment.id}
                                     shipment={shipment}
@@ -288,7 +297,7 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
                 {/* Grid View (default for mobile, optional for desktop) */}
                 <div className={view === 'list' ? 'hidden' : ''}>
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filteredShipments.map((shipment) => {
+                        {visibleShipments.map((shipment) => {
                             const finalAmount = shipment.totalDueAmount ?? calculateAdminValues(shipment).totalDueAmount ?? 0;
                              return (
                                  <div key={shipment.id} className="bg-gradient-to-br from-white via-blue-50 to-indigo-100 dark:from-secondary-800 dark:via-secondary-750 dark:to-secondary-700 shadow-lg hover:shadow-xl transition-all duration-300 rounded-lg overflow-hidden flex flex-col border border-gray-200 dark:border-secondary-600">
@@ -353,6 +362,14 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
                     </div>
                 </div>
             </div>
+            {hasMore && (
+                <div className="text-center py-4">
+                    <Button onClick={() => setVisibleCount(prev => prev + 20)}>
+                        تحميل المزيد
+                    </Button>
+                </div>
+            )}
+            </>
         ) : (
             <div className="text-center py-10 text-secondary-500">لا توجد شحنات تطابق البحث.</div>
         )}

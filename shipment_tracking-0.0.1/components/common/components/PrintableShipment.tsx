@@ -5,6 +5,7 @@ interface PrintableShipmentProps {
   shipment: Shipment;
   driverName: string;
   plateNumber: string;
+  regionName: string;
   printedBy: string;
   printTimestamp: string;
   companyName: string;
@@ -18,6 +19,7 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
   shipment,
   driverName,
   plateNumber,
+  regionName,
   printedBy,
   printTimestamp,
   companyName,
@@ -78,10 +80,10 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>رقم اللوحة:</td>
                 <td style={{ padding: '4px 0' }}>{plateNumber}</td>
               </tr>
-              <tr>
-                <td style={{ padding: '4px 0', fontWeight: 'bold' }}>المنطقة:</td>
-                <td style={{ padding: '4px 0' }}>{shipment.regionId}</td>
-              </tr>
+               <tr>
+                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>المنطقة:</td>
+                 <td style={{ padding: '4px 0' }}>{regionName}</td>
+               </tr>
             </tbody>
           </table>
         </div>

@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { ProductPrice, Region, Product } from '../../../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ProductPrice, Region, Product } from '../../../../types';
 import Button from '../../../common/ui/Button';
 import Input from '../../../common/ui/Input';
 import Modal from '../../../common/ui/Modal';
@@ -10,6 +10,7 @@ import SearchableSelect from '../../../common/forms/SearchableSelect';
 const PriceManager: React.FC = () => {
     const { productPrices, addProductPrice, updateProductPrice, deleteProductPrice, regions, products, isOnline } = useAppContext();
     const [searchTerm, setSearchTerm] = useState('');
+    const [visibleCount, setVisibleCount] = useState(20);
     const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
     const [editingPrice, setEditingPrice] = useState<ProductPrice | null>(null);
     const [priceToDelete, setPriceToDelete] = useState<ProductPrice | null>(null);
@@ -31,6 +32,13 @@ const PriceManager: React.FC = () => {
             );
         });
     }, [productPrices, regions, products, searchTerm]);
+
+    useEffect(() => {
+        setVisibleCount(20);
+    }, [searchTerm]);
+
+    const visiblePrices = filteredPrices.slice(0, visibleCount);
+    const hasMore = visibleCount < filteredPrices.length;
 
     const handleOpenPriceModal = (price: ProductPrice | null) => {
         setEditingPrice(price);
@@ -111,8 +119,9 @@ const PriceManager: React.FC = () => {
                 </div>
             </div>
             <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
-                {filteredPrices.length > 0 ? (
-                    filteredPrices.map((p: ProductPrice) => {
+                {visiblePrices.length > 0 ? (
+                    <>
+                        {visiblePrices.map((p: ProductPrice) => {
                         const regionName = regions.find((r: Region) => r.id === p.regionId)?.name || 'غير معروف';
                         const productName = products.find((prod: Product) => prod.id === p.productId)?.name || 'غير معروف';
                         return (
@@ -131,7 +140,15 @@ const PriceManager: React.FC = () => {
                                 </div>
                             </div>
                         );
-                    })
+                    })}
+                    {hasMore && (
+                        <div className="text-center py-4">
+                            <Button onClick={() => setVisibleCount(prev => prev + 20)}>
+                                تحميل المزيد
+                            </Button>
+                        </div>
+                    )}
+                    </>
                 ) : (
                     <div className="text-center text-secondary-500 py-4">لا توجد أسعار تطابق البحث.</div>
                 )}

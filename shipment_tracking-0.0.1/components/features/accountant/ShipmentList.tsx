@@ -16,25 +16,30 @@ interface ShipmentListProps {
 
 const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, viewType, view }) => {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [visibleCount, setVisibleCount] = useState(20);
   const { regions, drivers } = useAppContext();
 
   const getRegionName = (id: string) => regions.find((r: any) => r.id === id)?.name || 'غير معروف';
   const getDriverName = (id: number) => drivers.find((d: any) => d.id === id)?.name || 'غير معروف';
 
-  if (shipments.length === 0) {
+  const visibleShipments = shipments.slice(0, visibleCount);
+  const hasMore = visibleCount < shipments.length;
+
+  if (visibleShipments.length === 0) {
     return <div className="text-center py-10 text-secondary-500">لا توجد شحنات لعرضها.</div>;
   }
   
   const actionLabel = 'مراجعة';
 
   return (
-    <div>
+    <>
+      <div>
       {/* List View */}
       {view === 'list' && (
           <div className="space-y-2">
               {/* Mobile List View */}
-              <div className="md:hidden">
-                  {shipments.map((shipment) => (
+               <div className="md:hidden">
+                   {visibleShipments.map((shipment) => (
                       <div key={shipment.id} className="bg-white dark:bg-secondary-800 rounded-lg shadow p-3 mb-2">
                           <div className="flex justify-between items-start mb-2">
                               <div className="flex-1 min-w-0">
@@ -82,8 +87,8 @@ const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, viewType, view }
                       <div className="text-center">الحالة</div>
                       <div className="text-left">المبلغ المستحق</div>
                       <div className="text-right">الإجراء</div>
-                  </div>
-                  {shipments.map((shipment) => (
+                   </div>
+                   {visibleShipments.map((shipment) => (
                       <ShipmentListItem
                           key={shipment.id}
                           shipment={shipment}
@@ -101,7 +106,7 @@ const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, viewType, view }
       {/* Grid View (default for mobile, optional for desktop) */}
       <div className={view === 'list' ? 'hidden' : ''}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {shipments.map((shipment) => (
+          {visibleShipments.map((shipment) => (
             <div key={shipment.id} className={`bg-white dark:bg-secondary-800 shadow rounded-lg overflow-hidden flex flex-col transition-opacity ${shipment.isPendingSync ? 'opacity-60' : ''}`}>
               {/* Header */}
               <div className="px-4 py-3 bg-secondary-50 dark:bg-secondary-800/50 flex justify-between items-center border-b border-secondary-200 dark:border-secondary-700">
@@ -177,7 +182,15 @@ const ShipmentList: React.FC<ShipmentListProps> = ({ shipments, viewType, view }
           isEditable={viewType === 'received'}
         />
       )}
-    </div>
+      </div>
+      {hasMore && (
+        <div className="text-center py-4">
+          <Button onClick={() => setVisibleCount(prev => prev + 20)}>
+            تحميل المزيد
+          </Button>
+        </div>
+      )}
+    </>
   );
 };
 

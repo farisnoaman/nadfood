@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Region } from '../../../../types';
 import Button from '../../../common/ui/Button';
 import Input from '../../../common/ui/Input';
@@ -6,9 +6,14 @@ import Modal from '../../../common/ui/Modal';
 import { Icons } from '../../../Icons';
 import { useAppContext } from '../../../../providers/AppContext';
 
-const RegionManager: React.FC = () => {
+interface RegionManagerProps {
+    onExport?: () => void;
+}
+
+const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
     const { regions, addRegion, updateRegion, deleteRegion, isOnline } = useAppContext();
     const [searchTerm, setSearchTerm] = useState('');
+    const [visibleCount, setVisibleCount] = useState(20);
     const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
     const [editingRegion, setEditingRegion] = useState<Region | null>(null);
     const [regionToDelete, setRegionToDelete] = useState<Region | null>(null);
@@ -25,6 +30,13 @@ const RegionManager: React.FC = () => {
             r.name.toLowerCase().includes(lowerCaseSearchTerm)
         );
     }, [regions, searchTerm]);
+
+    useEffect(() => {
+        setVisibleCount(20);
+    }, [searchTerm]);
+
+    const visibleRegions = filteredRegions.slice(0, visibleCount);
+    const hasMore = visibleCount < filteredRegions.length;
 
     const handleOpenRegionModal = (region: Region | null) => {
         setEditingRegion(region);
@@ -96,35 +108,50 @@ const RegionManager: React.FC = () => {
                         Icon={Icons.Search}
                     />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    <Button variant="secondary" onClick={() => handleOpenRegionModal(null)} disabled={!isOnline} title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}>
-                        <Icons.Plus className="ml-2 h-4 w-4" />
-                        إضافة منطقة جديدة
-                    </Button>
-                </div>
+                 <div className="flex flex-wrap gap-2">
+                     <Button variant="secondary" onClick={() => handleOpenRegionModal(null)} disabled={!isOnline} title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}>
+                         <Icons.Plus className="ml-2 h-4 w-4" />
+                         إضافة منطقة جديدة
+                     </Button>
+                     {onExport && (
+                         <Button onClick={onExport}>
+                             <Icons.FileOutput className="ml-2 h-4 w-4" />
+                             تصدير
+                         </Button>
+                     )}
+                 </div>
             </div>
             <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
-                {filteredRegions.length > 0 ? (
-                    filteredRegions.map((r: Region) => (
-                        <div key={r.id} className="flex justify-between items-center p-3 bg-secondary-100 dark:bg-secondary-800 rounded">
-                            <div>
-                                <p className="font-semibold">{r.name}</p>
-                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-secondary-600 dark:text-secondary-400 mt-1">
-                                    <span>{`الديزل: ${r.dieselLiters} لتر بسعر ${r.dieselLiterPrice}/لتر`}</span>
-                                    <span>رسوم زعيتري: {r.zaitriFee}</span>
-                                    <span>خرج الطريق: {r.roadExpenses || 0}</span>
+                {visibleRegions.length > 0 ? (
+                    <>
+                        {visibleRegions.map((r: Region) => (
+                            <div key={r.id} className="flex justify-between items-center p-3 bg-secondary-100 dark:bg-secondary-800 rounded">
+                                <div>
+                                    <p className="font-semibold">{r.name}</p>
+                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-secondary-600 dark:text-secondary-400 mt-1">
+                                        <span>{`الديزل: ${r.dieselLiters} لتر بسعر ${r.dieselLiterPrice}/لتر`}</span>
+                                        <span>رسوم زعيتري: {r.zaitriFee}</span>
+                                        <span>خرج الطريق: {r.roadExpenses || 0}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                                    <Button size="sm" variant="ghost" onClick={() => handleOpenRegionModal(r)} title="تعديل" disabled={!isOnline}>
+                                        <Icons.Edit className="h-5 w-5 text-blue-500" />
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => setRegionToDelete(r)} title="حذف" disabled={!isOnline}>
+                                        <Icons.Trash2 className="h-4 w-4" />
+                                    </Button>
                                 </div>
                             </div>
-                            <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                <Button size="sm" variant="ghost" onClick={() => handleOpenRegionModal(r)} title="تعديل" disabled={!isOnline}>
-                                    <Icons.Edit className="h-5 w-5 text-blue-500" />
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => setRegionToDelete(r)} title="حذف" disabled={!isOnline}>
-                                    <Icons.Trash2 className="h-4 w-4" />
+                        ))}
+                        {hasMore && (
+                            <div className="text-center py-4">
+                                <Button onClick={() => setVisibleCount(prev => prev + 20)}>
+                                    تحميل المزيد
                                 </Button>
                             </div>
-                        </div>
-                    ))
+                        )}
+                    </>
                 ) : (
                     <div className="text-center text-secondary-500 py-4">لا توجد مناطق تطابق البحث.</div>
                 )}
