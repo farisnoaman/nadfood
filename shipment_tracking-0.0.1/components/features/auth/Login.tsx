@@ -19,6 +19,7 @@ import { checkLoginRateLimit, recordLoginAttempt, getBlockMessage } from '../../
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [rateLimitStatus, setRateLimitStatus] = useState<{ allowed: boolean; remainingAttempts: number; blockedUntil?: number; delayMs?: number } | null>(null);
@@ -228,11 +229,13 @@ const Login: React.FC = () => {
               <Input
                   id="password"
                   label="كلمة المرور"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   Icon={Icons.KeyRound}
+                  actionIcon={showPassword ? Icons.EyeOff : Icons.Eye}
+                  onActionClick={() => setShowPassword(!showPassword)}
               />
               <Button
                 type="submit"

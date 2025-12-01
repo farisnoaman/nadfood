@@ -6,7 +6,8 @@ import {
     ChevronDown, Plus, Trash2, FileInput, FileOutput, Users, MapPin,
     Package, Bell, Save, AlertTriangle, ChevronsRightLeft, Undo2, FileText, UserPlus,
     FileDown, CircleCheck, CircleX, Grid, List, Settings, ArrowRight, ArrowLeft, Printer,
-    ArrowUp, ArrowDown, Share, BarChart3, WifiOff, RefreshCw, Wifi, CheckCircle, Info
+    ArrowUp, ArrowDown, Share, BarChart3, WifiOff, RefreshCw, Wifi, CheckCircle, Info,
+    Eye, EyeOff
 } from 'lucide-react';
 
 // Type guard to ensure all icons are valid components
@@ -32,6 +33,8 @@ export const Icons = {
     Send: validateIcon(Send, 'Send'),
     Archive: validateIcon(Archive, 'Archive'),
     Edit: validateIcon(Edit, 'Edit'),
+    Eye: validateIcon(Eye, 'Eye'),
+    EyeOff: validateIcon(EyeOff, 'EyeOff'),
     X: validateIcon(X, 'X'),
     Check: validateIcon(Check, 'Check'),
     Search: validateIcon(Search, 'Search'),
