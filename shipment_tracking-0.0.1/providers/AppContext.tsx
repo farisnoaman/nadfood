@@ -248,7 +248,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const initializeData = async () => {
             try {
                 logger.info('Initializing IndexedDB and loading cached data...');
-                
+
+                // Clear any existing Supabase session to require fresh login
+                await supabase.auth.signOut();
+
                 // Run migration from localStorage to IndexedDB
                 await IndexedDB.migrateFromLocalStorage();
                 
@@ -564,11 +567,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
                 logger.info('Cached data loaded successfully');
 
-                // Try background refresh if online and no offline session
+                // Try background sync and refresh if online and no offline session
                 if (isOnline && !offlineSession) {
-                    fetchAllData().catch(err =>
-                        console.warn('Background refresh failed:', err)
-                    );
+                    // First sync any pending operations
+                    syncOfflineMutations().then(() => {
+                        // Then refresh data from server
+                        fetchAllData().catch(err =>
+                            console.warn('Background refresh failed:', err)
+                        );
+                    }).catch(err => {
+                        console.warn('Sync failed before refresh:', err);
+                        // Still try to refresh data
+                        fetchAllData().catch(err =>
+                            console.warn('Background refresh failed:', err)
+                        );
+                    });
                 }
             } catch (cacheErr) {
                 console.error('Cache loading failed:', cacheErr);
