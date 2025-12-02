@@ -223,9 +223,11 @@ const processSyncItem = async (
     
     switch (item.operation) {
       case 'create':
+        // Exclude id to let Supabase generate server ID
+        const { id, ...createData } = decryptedData;
         result = await supabase
           .from(tableName)
-          .insert(decryptedData)
+          .insert(createData)
           .select();
         break;
 
@@ -241,35 +243,44 @@ const processSyncItem = async (
         result = await supabase
           .from(tableName)
           .delete()
-          .eq('id', decryptedData.id);
+          .eq('id', decryptedData.id)
+          .select();
         break;
 
       default:
         throw new Error(`Unknown operation: ${item.operation}`);
     }
-    
+
     if (result.error) {
       throw result.error;
     }
-    
+
+    // Check if operation actually affected rows
+    if (!result.data || result.data.length === 0) {
+      throw new Error(`Operation failed: no rows affected for ${item.operation} ${item.entityType}`);
+    }
+
     // Success - remove from queue
     await removeFromQueue(item.id);
-    logger.info(`Synced: ${item.operation} ${item.entityType} ${decryptedData.id || ''}`);
+    logger.info(`Synced: ${item.operation} ${item.entityType} ${decryptedData.id || result.data[0]?.id || ''}`, { result: result.data });
     return true;
     
-  } catch (error: any) {
-    console.error(`Sync failed for ${item.operation} ${item.entityType}:`, error);
-    
-    if (item.retryCount >= MAX_RETRIES) {
-      // Mark as permanently failed
-      await updateQueueItemStatus(item.id, 'failed', error.message);
-    } else {
-      // Mark for retry
-      await updateQueueItemStatus(item.id, 'pending', error.message);
-    }
-    
-    return false;
-  }
+   } catch (error: any) {
+     logger.error(`Sync failed for ${item.operation} ${item.entityType}:`, error, { itemId: item.id, retryCount: item.retryCount });
+     console.error(`Sync failed for ${item.operation} ${item.entityType}:`, error);
+
+     if (item.retryCount >= MAX_RETRIES) {
+       // Mark as permanently failed
+       await updateQueueItemStatus(item.id, 'failed', error.message);
+       logger.warn(`Permanently failed sync item: ${item.id}`);
+     } else {
+       // Mark for retry
+       await updateQueueItemStatus(item.id, 'pending', error.message);
+       logger.info(`Retrying sync item: ${item.id}, attempt ${item.retryCount + 1}`);
+     }
+
+     return false;
+   }
 };
 
 /**
@@ -309,7 +320,14 @@ export const processSyncQueue = async (supabase?: any): Promise<{
   if (!supabase) {
     supabase = defaultSupabase;
   }
-  
+
+  // Refresh auth session before syncing
+  try {
+    await supabase.auth.refreshSession();
+  } catch (authError) {
+    console.warn('Failed to refresh auth session:', authError);
+  }
+
   currentSyncStatus.isSyncing = true;
   notifySyncStatusChange();
   
