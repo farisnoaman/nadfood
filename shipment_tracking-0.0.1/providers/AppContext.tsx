@@ -701,6 +701,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const syncOfflineMutations = useCallback(async () => {
         logger.info('Starting offline mutations sync');
+
+        // Refresh auth session before syncing
+        try {
+            await supabase.auth.refreshSession();
+            logger.info('Auth session refreshed for sync');
+        } catch (authError) {
+            logger.warn('Failed to refresh auth session:', authError);
+        }
+
         const mutationQueue = await IndexedDB.getMutationQueue();
         if (mutationQueue.length === 0) {
             logger.info('No pending mutations to sync');
@@ -756,6 +765,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
                 if (shipmentError) throw shipmentError;
 
+                logger.info('Mutation sync result:', { type: mutation.type, data: newShipmentData, error: shipmentError });
+
                 // Store mapping: offlineId -> real UUID
                 if (offlineId && String(offlineId).startsWith('offline-')) {
                     offlineToRealIdMap[offlineId] = newShipmentData.id;
@@ -789,19 +800,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         if (Object.keys(shipmentUpdates).length > 0) {
                             const updateRow = shipmentToRow(shipmentUpdates);
                             logger.info(`Updating shipment ${shipmentId} with status:`, updateRow.status);
-                            const { error } = await supabase.from('shipments').update(updateRow).eq('id', shipmentId);
+                            const { data, error } = await supabase.from('shipments').update(updateRow).eq('id', shipmentId).select();
                             if (error) throw error;
-                            logger.info(`Successfully updated shipment ${shipmentId} status to: ${updateRow.status}`);
+                            if (!data || data.length === 0) throw new Error('Update failed: no rows affected');
+                            logger.info(`Successfully updated shipment ${shipmentId} status to: ${updateRow.status}`, { data });
                         }
 
                         // Update products if provided
                         if (products !== undefined) {
                             // Delete existing products for this shipment
-                            const { error: deleteError } = await supabase
+                            const { data: deleteData, error: deleteError } = await supabase
                                 .from('shipment_products')
                                 .delete()
-                                .eq('shipment_id', shipmentId);
+                                .eq('shipment_id', shipmentId)
+                                .select();
                             if (deleteError) throw deleteError;
+                            logger.info(`Deleted ${deleteData?.length || 0} products for shipment ${shipmentId}`);
 
                             // Insert new products if any
                             if (products.length > 0) {
@@ -813,9 +827,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                                     product_wage_price: p.productWagePrice
                                 }));
 
-                                const { error: productsError } = await supabase
+                                const { data: productsData, error: productsError } = await supabase
                                     .from('shipment_products')
-                                    .insert(shipmentProductsToInsert);
+                                    .insert(shipmentProductsToInsert)
+                                    .select();
+                                if (productsError) throw productsError;
+                                logger.info(`Inserted ${productsData?.length || 0} products for shipment ${shipmentId}`);
                                 if (productsError) throw productsError;
                             }
                         }
