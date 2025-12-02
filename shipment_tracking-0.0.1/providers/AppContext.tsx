@@ -218,6 +218,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [needsSync, setNeedsSync] = useState(false);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isSyncing, setIsSyncing] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true); // Track if this is the first load
@@ -312,6 +313,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setIsTimeWidgetVisible(cachedIsTimeWidgetVisible);
 
                 logger.info('IndexedDB data loaded successfully');
+
+                // Check for pending mutations that need sync
+                const mutationQueue = await IndexedDB.getMutationQueue();
+                const isOnline = navigator.onLine;
+                if (isOnline && mutationQueue.length > 0) {
+                    logger.info(`Found ${mutationQueue.length} pending mutations, will sync after login`);
+                    setNeedsSync(true);
+                }
                 isInitializing.current = false;
             } catch (error) {
                 console.error('Error initializing IndexedDB:', error);
@@ -569,19 +578,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
                 // Try background sync and refresh if online and no offline session
                 if (isOnline && !offlineSession) {
-                    // First sync any pending operations
-                    syncOfflineMutations().then(() => {
+                    try {
+                        // First sync any pending operations if needed
+                        if (needsSync) {
+                            logger.info('Syncing pending operations from app initialization');
+                            await syncOfflineMutations();
+                            setNeedsSync(false);
+                        }
                         // Then refresh data from server
-                        fetchAllData().catch(err =>
-                            console.warn('Background refresh failed:', err)
-                        );
-                    }).catch(err => {
-                        console.warn('Sync failed before refresh:', err);
-                        // Still try to refresh data
-                        fetchAllData().catch(err =>
-                            console.warn('Background refresh failed:', err)
-                        );
-                    });
+                        await fetchAllData();
+                    } catch (err) {
+                        console.warn('Sync or refresh failed:', err);
+                        // Try refresh anyway
+                        try {
+                            await fetchAllData();
+                        } catch (refreshErr) {
+                            console.warn('Background refresh failed:', refreshErr);
+                        }
+                    }
                 }
             } catch (cacheErr) {
                 console.error('Cache loading failed:', cacheErr);
@@ -686,8 +700,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
 
     const syncOfflineMutations = useCallback(async () => {
+        logger.info('Starting offline mutations sync');
         const mutationQueue = await IndexedDB.getMutationQueue();
-        if (mutationQueue.length === 0) return;
+        if (mutationQueue.length === 0) {
+            logger.info('No pending mutations to sync');
+            return;
+        }
+        logger.info(`Found ${mutationQueue.length} pending mutations to sync`);
 
         // Cross-tab synchronization: Prevent multiple tabs from syncing simultaneously
         const lockKey = 'sync_lock';
