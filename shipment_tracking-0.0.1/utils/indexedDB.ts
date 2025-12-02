@@ -4,7 +4,6 @@
  */
 
 import { encryptData, decryptData } from './encryption';
-import { updateSyncStatus } from './syncQueue';
 
 const DB_NAME = 'ShipmentTrackerDB';
 const DB_VERSION = 1;
@@ -315,7 +314,10 @@ export const addToMutationQueue = async (mutation: any): Promise<void> => {
       request.onsuccess = () => {
         // Trigger sync status update when mutation is added
         try {
-          updateSyncStatus();
+          // Import syncQueue to update status (avoid circular import)
+          import('./syncQueue').then(({ updateSyncStatus }) => {
+            if (updateSyncStatus) updateSyncStatus();
+          }).catch(err => console.warn('Could not update sync status:', err));
         } catch (statusError) {
           console.warn('Could not update sync status after adding mutation:', statusError);
         }
@@ -354,7 +356,9 @@ export const setMutationQueue = async (queue: any[]): Promise<void> => {
       const triggerStatusUpdate = () => {
         // Trigger sync status update
         try {
-          updateSyncStatus();
+          import('./syncQueue').then(({ updateSyncStatus }) => {
+            if (updateSyncStatus) updateSyncStatus();
+          }).catch(err => console.warn('Could not update sync status:', err));
         } catch (statusError) {
           console.warn('Could not update sync status after setting queue:', statusError);
         }
