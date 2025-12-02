@@ -6,6 +6,7 @@ import type { Session } from '@supabase/supabase-js';
 import { Database } from '../supabase/database.types';
 import * as IndexedDB from '../utils/indexedDB';
 import { clearOfflineSession, getOfflineSession, shouldClearOfflineSessionOnLaunch } from '../utils/offlineAuth';
+import { updateSyncStatus } from '../utils/syncQueue';
 import logger from '../utils/logger';
 
 // Type alias for Supabase row types
@@ -800,7 +801,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await IndexedDB.setMutationQueue(newQueue);
 
         // Update sync status
-        const { updateSyncStatus } = await import('../utils/syncQueue');
         await updateSyncStatus();
 
         logger.info(`Sync completed: ${successfullySyncedIndices.length} mutations synced successfully`);

@@ -11,9 +11,11 @@ import {
   clearStore,
   setMetadata,
   getMetadata,
-  STORES
+  STORES,
+  getMutationQueue
 } from './indexedDB';
 import { encryptData, decryptData } from './encryption';
+import { supabase as defaultSupabase } from './supabaseClient';
 import logger from './logger';
 
 // Types for sync operations
@@ -129,8 +131,6 @@ export const getPendingSyncItems = async (): Promise<SyncQueueItem[]> => {
  */
 const getMutationQueueCount = async (): Promise<number> => {
   try {
-    // Import here to avoid circular dependency
-    const { getMutationQueue } = await import('./indexedDB');
     const mutations = await getMutationQueue();
     return mutations.length;
   } catch (error) {
@@ -305,15 +305,9 @@ export const processSyncQueue = async (supabase?: any): Promise<{
     return { success: 0, failed: 0, remaining: await getSyncQueueCount() };
   }
   
-  // If no supabase provided, try to import it
+  // If no supabase provided, use the default
   if (!supabase) {
-    try {
-      const { supabase: sb } = await import('./supabaseClient');
-      supabase = sb;
-    } catch (error) {
-      console.error('Cannot import supabase client:', error);
-      return { success: 0, failed: 0, remaining: await getSyncQueueCount() };
-    }
+    supabase = defaultSupabase;
   }
   
   currentSyncStatus.isSyncing = true;
