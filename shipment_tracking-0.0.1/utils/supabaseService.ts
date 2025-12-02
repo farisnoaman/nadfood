@@ -4,7 +4,7 @@
  */
 
 import { createClient, SupabaseClient as SupabaseClientType } from '@supabase/supabase-js';
-import type { Database } from '../../supabase/database.types';
+import type { Database } from '../supabase/database.types';
 import logger from './logger';
 
 class SupabaseService {
@@ -31,7 +31,7 @@ class SupabaseService {
   static async testConnection() {
     try {
       const client = this.getClient();
-      const { data, error } = await client
+      const { error } = await client
         .from('users')
         .select('count')
         .limit(1);
@@ -110,22 +110,22 @@ class SupabaseService {
   // Generic database operations
   static async select(table: string, options?: any) {
     const client = this.getClient();
-    return await client.from(table).select(options);
+    return await client.from(table as any).select(options);
   }
 
   static async insert(table: string, data: any) {
     const client = this.getClient();
-    return await client.from(table).insert(data);
+    return await client.from(table as any).insert(data);
   }
 
   static async update(table: string, data: any, matchConditions: any) {
     const client = this.getClient();
-    return await client.from(table).update(data).match(matchConditions);
+    return await client.from(table as any).update(data).match(matchConditions);
   }
 
   static async delete(table: string, matchConditions: any) {
     const client = this.getClient();
-    return await client.from(table).delete().match(matchConditions);
+    return await client.from(table as any).delete().match(matchConditions);
   }
 }
 

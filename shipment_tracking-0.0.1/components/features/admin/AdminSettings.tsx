@@ -27,7 +27,7 @@ const AdminSettings: React.FC = () => {
   const [dbSettings, setDbSettings] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [hasUnsavedChanges] = useState(false);
   const [syncNotifications, setSyncNotifications] = useState<string[]>([]);
 
   // State for edit mode and temporary form data
@@ -96,23 +96,7 @@ const AdminSettings: React.FC = () => {
     }
   }, [currentUser]);
 
-  // Check if local state differs from database
-  const hasChanges = useCallback(() => {
-    const localSettings = {
-      accountantPrintAccess: accountantPrintAccess.toString(),
-      isPrintHeaderEnabled: isPrintHeaderEnabled.toString(),
-      appName,
-      companyName,
-      companyAddress,
-      companyPhone,
-      companyLogo,
-      isTimeWidgetVisible: isTimeWidgetVisible.toString()
-    };
 
-    return Object.entries(localSettings).some(([key, value]) => {
-      return dbSettings[key] !== value;
-    });
-  }, [accountantPrintAccess, isPrintHeaderEnabled, appName, companyName, companyAddress, companyPhone, companyLogo, isTimeWidgetVisible, dbSettings]);
 
   // Update AppContext state when database changes are received
   const updateAppContextFromDatabase = useCallback(async () => {
@@ -193,7 +177,7 @@ const AdminSettings: React.FC = () => {
           schema: 'public',
           table: 'app_settings'
         },
-        (payload) => {
+        () => {
           logger.info('Settings changed by another admin');
           // Refresh database state
           fetchDbSettings();
@@ -216,41 +200,7 @@ const AdminSettings: React.FC = () => {
     setTempDetails({ name: companyName, address: companyAddress, phone: companyPhone, logo: companyLogo, appName: appName });
     setIsEditing(false);
   };
-  const handleSaveClick = async () => {
-    try {
-      // Update local state
-      setAppName(tempDetails.appName);
-      setCompanyName(tempDetails.name);
-      setCompanyAddress(tempDetails.address);
-      setCompanyPhone(tempDetails.phone);
-      setCompanyLogo(tempDetails.logo);
 
-      // Save to database
-      const settingsToUpdate = [
-        { setting_key: 'appName', setting_value: tempDetails.appName },
-        { setting_key: 'companyName', setting_value: tempDetails.name },
-        { setting_key: 'companyAddress', setting_value: tempDetails.address },
-        { setting_key: 'companyPhone', setting_value: tempDetails.phone },
-        { setting_key: 'companyLogo', setting_value: tempDetails.logo }
-      ];
-
-      for (const setting of settingsToUpdate) {
-        const { error } = await supabase
-          .from('app_settings')
-          .upsert(setting, { onConflict: 'setting_key' });
-
-        if (error) {
-          console.error('Error saving setting:', setting.setting_key, error);
-          throw error;
-        }
-      }
-
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      alert('حدث خطأ في حفظ الإعدادات. يرجى المحاولة مرة أخرى.');
-    }
-  };
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTempDetails(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };

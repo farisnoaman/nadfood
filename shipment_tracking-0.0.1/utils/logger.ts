@@ -4,7 +4,7 @@
  * Automatically sanitizes sensitive data
  */
 
-type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+
 
 // Sensitive data patterns to redact
 const SENSITIVE_PATTERNS = [

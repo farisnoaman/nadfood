@@ -16,12 +16,7 @@ const ENCRYPTION_CONFIG = {
 const ENCRYPTION_KEY_KEY = 'encryption_key';
 const KEY_CREATED_KEY = 'key_created_at';
 
-// Encryption key interface
-interface EncryptionKeyData {
-  key: string; // Base64 encoded key
-  createdAt: number;
-  version: number;
-}
+
 
 /**
  * Generate a new encryption key
@@ -92,11 +87,7 @@ async function getEncryptionKey(): Promise<CryptoKey> {
     const newKey = await generateEncryptionKey();
     const exportedKey = await exportKey(newKey);
 
-    const keyData: EncryptionKeyData = {
-      key: exportedKey,
-      createdAt: Date.now(),
-      version: 1,
-    };
+
 
     localStorage.setItem(ENCRYPTION_KEY_KEY, exportedKey);
     localStorage.setItem(KEY_CREATED_KEY, Date.now().toString());
@@ -140,10 +131,10 @@ export async function encryptData(data: any): Promise<string> {
     const encrypted = await crypto.subtle.encrypt(
       {
         name: ENCRYPTION_CONFIG.ALGORITHM,
-        iv: iv,
+        iv: iv as any,
       },
       key,
-      encodedData
+      encodedData as any
     );
 
     // Combine IV and encrypted data

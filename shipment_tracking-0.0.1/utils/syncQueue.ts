@@ -13,7 +13,8 @@ import {
   getMetadata,
   STORES
 } from './indexedDB';
-import { encryptData, decryptData, isEncrypted } from './encryption';
+import { encryptData, decryptData } from './encryption';
+import logger from './logger';
 
 // Types for sync operations
 export type SyncOperationType = 'create' | 'update' | 'delete';
@@ -213,7 +214,7 @@ const processSyncItem = async (
       logger.error('Failed to decrypt sync item data:', decryptError);
       // Mark as failed and skip
       await updateQueueItemStatus(item.id, 'failed');
-      await updateQueueItemError(item.id, 'Decryption failed');
+      await updateQueueItemStatus(item.id, 'failed', 'Decryption failed');
       return false;
     }
 

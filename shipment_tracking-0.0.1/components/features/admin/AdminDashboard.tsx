@@ -20,13 +20,7 @@ const AdminDashboard: React.FC = () => {
         shipments.filter((s: Shipment) => s.status === ShipmentStatus.SENT_TO_ADMIN),
     [shipments]);
 
-    const draftAndFinalShipments = useMemo(() =>
-        shipments.filter((s: Shipment) =>
-            s.status === ShipmentStatus.DRAFT ||
-            s.status === ShipmentStatus.FINAL ||
-            s.status === ShipmentStatus.FINAL_MODIFIED
-        ),
-    [shipments]);
+
 
     const TabButton: React.FC<{tabId: Tab; label: string; icon: React.ElementType}> = ({ tabId, label, icon: Icon }) => (
         <button

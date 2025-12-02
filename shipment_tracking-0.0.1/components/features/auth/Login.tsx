@@ -13,7 +13,6 @@ import {
 } from '../../../utils/offlineAuth';
 import { useOfflineAuth } from '../../../hooks/useOfflineAuth';
 import logger from '../../../utils/logger';
-import { getCSRFTokenForForm } from '../../../utils/csrf';
 import { checkLoginRateLimit, recordLoginAttempt, getBlockMessage } from '../../../utils/authProtection';
 
 const Login: React.FC = () => {
@@ -74,7 +73,7 @@ const Login: React.FC = () => {
 
         if (!validation.valid) {
           recordLoginAttempt(email, false); // Record failed login attempt
-          if (validation.expired) {
+          if ((validation as any).expired) {
             setError('انتهت صلاحية بيانات الدخول المحفوظة. يرجى الاتصال بالإنترنت لتسجيل الدخول مرة أخرى.');
           } else {
             setError('اسم المستخدم أو كلمة المرور غير صحيحة');

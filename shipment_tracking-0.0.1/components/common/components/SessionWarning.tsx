@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../../Icons';
-import logger from '../../../utils/logger';
 
 interface SessionWarningProps {
   onRenewCredentials?: () => void;

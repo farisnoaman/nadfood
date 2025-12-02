@@ -12,6 +12,7 @@ import {
   validateOfflineCredentials,
   createOfflineSession
 } from '../utils/offlineAuth';
+import logger from '../utils/logger';
 
 interface OfflineAuthState {
   isOffline: boolean;
@@ -86,7 +87,7 @@ export const useOfflineAuth = (): UseOfflineAuthReturn => {
     };
   }, [refreshStatus]);
 
-  const validateCredentials = useCallback(async (email: string, password: string) => {
+  const validateCredentials = useCallback(async (email: string, password: string): Promise<{ valid: boolean; userId?: string; userProfile?: any; expired?: boolean }> => {
     try {
       const validation = await validateOfflineCredentials(email, password);
 
