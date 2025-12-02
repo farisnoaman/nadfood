@@ -11,9 +11,9 @@ import {
   clearStore,
   setMetadata,
   getMetadata,
-  STORES,
   getMutationQueue
 } from './indexedDB';
+import { STORES } from './constants';
 import { encryptData, decryptData } from './encryption';
 import { supabase as defaultSupabase } from './supabaseClient';
 import logger from './logger';

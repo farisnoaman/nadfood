@@ -3,7 +3,8 @@
  * Handles credential storage and validation for offline login
  */
 
-import { initDB, getFromStore, saveToStore, deleteFromStore, STORES, getMetadata, setMetadata } from './indexedDB';
+import { initDB, getFromStore, saveToStore, deleteFromStore, getMetadata, setMetadata } from './indexedDB';
+import { STORES } from './constants';
 import logger from './logger';
 
 // Store name for auth data

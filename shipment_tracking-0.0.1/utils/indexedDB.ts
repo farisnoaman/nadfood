@@ -9,19 +9,7 @@ import { updateSyncStatus } from './syncQueue';
 const DB_NAME = 'ShipmentTrackerDB';
 const DB_VERSION = 1;
 
-// Object store names
-export const STORES = {
-  USERS: 'users',
-  PRODUCTS: 'products',
-  DRIVERS: 'drivers',
-  REGIONS: 'regions',
-  SHIPMENTS: 'shipments',
-  PRODUCT_PRICES: 'productPrices',
-  NOTIFICATIONS: 'notifications',
-  MUTATION_QUEUE: 'mutationQueue',
-  SETTINGS: 'settings',
-  METADATA: 'metadata'
-} as const;
+import { STORES } from './constants';
 
 let dbInstance: IDBDatabase | null = null;
 

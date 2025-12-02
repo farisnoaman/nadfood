@@ -159,3 +159,17 @@ export const EXPORT_FORMATS = {
   EXCEL: 'xlsx',
   PDF: 'pdf',
 } as const;
+
+// === INDEXEDDB STORES ===
+export const STORES = {
+  USERS: 'users',
+  PRODUCTS: 'products',
+  DRIVERS: 'drivers',
+  REGIONS: 'regions',
+  SHIPMENTS: 'shipments',
+  PRODUCT_PRICES: 'productPrices',
+  NOTIFICATIONS: 'notifications',
+  MUTATION_QUEUE: 'mutationQueue',
+  SETTINGS: 'settings',
+  METADATA: 'metadata'
+} as const;

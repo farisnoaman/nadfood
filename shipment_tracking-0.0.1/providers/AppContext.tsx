@@ -5,6 +5,7 @@ import { supabase } from '../utils/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 import { Database } from '../supabase/database.types';
 import * as IndexedDB from '../utils/indexedDB';
+import { STORES } from '../utils/constants';
 import { clearOfflineSession, getOfflineSession, shouldClearOfflineSessionOnLaunch } from '../utils/offlineAuth';
 import { updateSyncStatus } from '../utils/syncQueue';
 import logger from '../utils/logger';
@@ -270,13 +271,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     cachedCompanyLogo,
                     cachedIsTimeWidgetVisible
                 ] = await Promise.all([
-                    IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
-                    IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
-                    IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
-                    IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
-                    IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
-                    IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
-                    IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS),
+                    IndexedDB.getAllFromStore<User>(STORES.USERS),
+                    IndexedDB.getAllFromStore<Product>(STORES.PRODUCTS),
+                    IndexedDB.getAllFromStore<Driver>(STORES.DRIVERS),
+                    IndexedDB.getAllFromStore<Region>(STORES.REGIONS),
+                    IndexedDB.getAllFromStore<Shipment>(STORES.SHIPMENTS),
+                    IndexedDB.getAllFromStore<ProductPrice>(STORES.PRODUCT_PRICES),
+                    IndexedDB.getAllFromStore<Notification>(STORES.NOTIFICATIONS),
                     // Settings
                     IndexedDB.getSetting('accountantPrintAccess', false),
                     IndexedDB.getSetting('isPrintHeaderEnabled', true),
@@ -334,13 +335,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     cachedPrices,
                     cachedNotifications
                 ] = await Promise.all([
-                    IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
-                    IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
-                    IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
-                    IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
-                    IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
-                    IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
-                    IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
+                    IndexedDB.getAllFromStore<User>(STORES.USERS),
+                    IndexedDB.getAllFromStore<Product>(STORES.PRODUCTS),
+                    IndexedDB.getAllFromStore<Driver>(STORES.DRIVERS),
+                    IndexedDB.getAllFromStore<Region>(STORES.REGIONS),
+                    IndexedDB.getAllFromStore<Shipment>(STORES.SHIPMENTS),
+                    IndexedDB.getAllFromStore<ProductPrice>(STORES.PRODUCT_PRICES),
+                    IndexedDB.getAllFromStore<Notification>(STORES.NOTIFICATIONS)
                 ]);
 
                 if (cachedUsers.length > 0) setUsers(cachedUsers);
@@ -397,12 +398,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }, {} as Record<string, ShipmentProduct[]>);
             const newShipments = shipmentsRes.data!.map(s => shipmentFromRow(s, shipmentProductsByShipmentId[s.id] || []));
 
-            setUsers(newUsers); await IndexedDB.saveAllToStore(IndexedDB.STORES.USERS, newUsers);
-            setProducts(newProducts); await IndexedDB.saveAllToStore(IndexedDB.STORES.PRODUCTS, newProducts);
-            setDrivers(newDrivers); await IndexedDB.saveAllToStore(IndexedDB.STORES.DRIVERS, newDrivers);
-            setRegions(newRegions); await IndexedDB.saveAllToStore(IndexedDB.STORES.REGIONS, newRegions);
-            setProductPrices(newPrices); await IndexedDB.saveAllToStore(IndexedDB.STORES.PRODUCT_PRICES, newPrices);
-            setNotifications(newNotifications); await IndexedDB.saveAllToStore(IndexedDB.STORES.NOTIFICATIONS, newNotifications);
+            setUsers(newUsers); await IndexedDB.saveAllToStore(STORES.USERS, newUsers);
+            setProducts(newProducts); await IndexedDB.saveAllToStore(STORES.PRODUCTS, newProducts);
+            setDrivers(newDrivers); await IndexedDB.saveAllToStore(STORES.DRIVERS, newDrivers);
+            setRegions(newRegions); await IndexedDB.saveAllToStore(STORES.REGIONS, newRegions);
+            setProductPrices(newPrices); await IndexedDB.saveAllToStore(STORES.PRODUCT_PRICES, newPrices);
+            setNotifications(newNotifications); await IndexedDB.saveAllToStore(STORES.NOTIFICATIONS, newNotifications);
 
             // Process and update settings
             const settingsData = settingsRes.data!;
@@ -444,7 +445,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const finalShipments = [...pendingShipments, ...newShipments];
 
             setShipments(finalShipments);
-            await IndexedDB.saveAllToStore(IndexedDB.STORES.SHIPMENTS, finalShipments);
+            await IndexedDB.saveAllToStore(STORES.SHIPMENTS, finalShipments);
 
         } catch (err: any) {
             clearTimeout(timeoutId);
@@ -464,13 +465,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         cachedPrices,
                         cachedNotifications
                     ] = await Promise.all([
-                        IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
-                        IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
-                        IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
-                        IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
-                        IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
-                        IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
-                        IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
+                        IndexedDB.getAllFromStore<User>(STORES.USERS),
+                        IndexedDB.getAllFromStore<Product>(STORES.PRODUCTS),
+                        IndexedDB.getAllFromStore<Driver>(STORES.DRIVERS),
+                        IndexedDB.getAllFromStore<Region>(STORES.REGIONS),
+                        IndexedDB.getAllFromStore<Shipment>(STORES.SHIPMENTS),
+                        IndexedDB.getAllFromStore<ProductPrice>(STORES.PRODUCT_PRICES),
+                        IndexedDB.getAllFromStore<Notification>(STORES.NOTIFICATIONS)
                     ]);
 
                     if (cachedUsers.length > 0) setUsers(cachedUsers);
@@ -500,13 +501,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         cachedPrices,
                         cachedNotifications
                     ] = await Promise.all([
-                        IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS),
-                        IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
-                        IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
-                        IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
-                        IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
-                        IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
-                        IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
+                        IndexedDB.getAllFromStore<User>(STORES.USERS),
+                        IndexedDB.getAllFromStore<Product>(STORES.PRODUCTS),
+                        IndexedDB.getAllFromStore<Driver>(STORES.DRIVERS),
+                        IndexedDB.getAllFromStore<Region>(STORES.REGIONS),
+                        IndexedDB.getAllFromStore<Shipment>(STORES.SHIPMENTS),
+                        IndexedDB.getAllFromStore<ProductPrice>(STORES.PRODUCT_PRICES),
+                        IndexedDB.getAllFromStore<Notification>(STORES.NOTIFICATIONS)
                     ]);
 
                     if (cachedUsers.length > 0) setUsers(cachedUsers);
@@ -543,13 +544,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     cachedPrices,
                     cachedNotifications
                 ] = await Promise.all([
-                    IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS, cacheTimeout),
-                    IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS, cacheTimeout),
-                    IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS, cacheTimeout),
-                    IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS, cacheTimeout),
-                    IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS, cacheTimeout),
-                    IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES, cacheTimeout),
-                    IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS, cacheTimeout)
+                    IndexedDB.getAllFromStore<User>(STORES.USERS, cacheTimeout),
+                    IndexedDB.getAllFromStore<Product>(STORES.PRODUCTS, cacheTimeout),
+                    IndexedDB.getAllFromStore<Driver>(STORES.DRIVERS, cacheTimeout),
+                    IndexedDB.getAllFromStore<Region>(STORES.REGIONS, cacheTimeout),
+                    IndexedDB.getAllFromStore<Shipment>(STORES.SHIPMENTS, cacheTimeout),
+                    IndexedDB.getAllFromStore<ProductPrice>(STORES.PRODUCT_PRICES, cacheTimeout),
+                    IndexedDB.getAllFromStore<Notification>(STORES.NOTIFICATIONS, cacheTimeout)
                 ]);
 
                 // Update state with cached data
@@ -616,7 +617,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // Fallback to cached profile if needed
             if (!userProfile) {
                 try {
-                    const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS, 2000);
+                    const cachedUsers = await IndexedDB.getAllFromStore<User>(STORES.USERS, 2000);
                     userProfile = cachedUsers.find(u => u.id === user.id) || null;
                     if (userProfile) {
                         logger.info('Loaded user profile from cache');
@@ -647,7 +648,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
             logger.info('Loading minimal data as fallback...');
             // Just try to load basic user data from cache
-            const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS, 2000);
+            const cachedUsers = await IndexedDB.getAllFromStore<User>(STORES.USERS, 2000);
             const userProfile = cachedUsers.find(u => u.id === user.id) || null;
             if (userProfile) {
                 setCurrentUser(userProfile);
@@ -939,8 +940,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 // Check if we have cached data for offline use
                 try {
                     const [cachedUsers, cachedProducts] = await Promise.all([
-                        IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS, 2000),
-                        IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS, 2000)
+                        IndexedDB.getAllFromStore<User>(STORES.USERS, 2000),
+                        IndexedDB.getAllFromStore<Product>(STORES.PRODUCTS, 2000)
                     ]);
 
                     const hasCachedData = cachedUsers.length > 0 && cachedProducts.length > 0;
@@ -1005,8 +1006,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 getOfflineSession().then(() => {
                     // Check cached data availability in background
                     const cacheCheckPromise = Promise.all([
-                        IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS, 3000),
-                        IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS, 3000)
+                        IndexedDB.getAllFromStore<User>(STORES.USERS, 3000),
+                        IndexedDB.getAllFromStore<Product>(STORES.PRODUCTS, 3000)
                     ]);
 
                     return Promise.race([
@@ -1042,7 +1043,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     logger.info('No Supabase session but offline session exists');
                     // Try to restore user from cached data
                     try {
-                        const offlineUserPromise = IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS);
+                        const offlineUserPromise = IndexedDB.getAllFromStore<User>(STORES.USERS);
                         const offlineUserTimeout = new Promise<User[]>((_, reject) =>
                             setTimeout(() => reject(new Error('Offline user fetch timeout')), 2000)
                         );
@@ -1055,12 +1056,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                             
                             // Load cached data with timeout protection
                             const offlineDataPromise = Promise.all([
-                                IndexedDB.getAllFromStore<Product>(IndexedDB.STORES.PRODUCTS),
-                                IndexedDB.getAllFromStore<Driver>(IndexedDB.STORES.DRIVERS),
-                                IndexedDB.getAllFromStore<Region>(IndexedDB.STORES.REGIONS),
-                                IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS),
-                                IndexedDB.getAllFromStore<ProductPrice>(IndexedDB.STORES.PRODUCT_PRICES),
-                                IndexedDB.getAllFromStore<Notification>(IndexedDB.STORES.NOTIFICATIONS)
+                                IndexedDB.getAllFromStore<Product>(STORES.PRODUCTS),
+                                IndexedDB.getAllFromStore<Driver>(STORES.DRIVERS),
+                                IndexedDB.getAllFromStore<Region>(STORES.REGIONS),
+                                IndexedDB.getAllFromStore<Shipment>(STORES.SHIPMENTS),
+                                IndexedDB.getAllFromStore<ProductPrice>(STORES.PRODUCT_PRICES),
+                                IndexedDB.getAllFromStore<Notification>(STORES.NOTIFICATIONS)
                             ]);
 
                             const offlineDataTimeout = new Promise<never>((_, reject) =>
@@ -1115,7 +1116,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
             const offlineSession = await getOfflineSession();
             if (offlineSession) {
-                const cachedUsers = await IndexedDB.getAllFromStore<User>(IndexedDB.STORES.USERS);
+                const cachedUsers = await IndexedDB.getAllFromStore<User>(STORES.USERS);
                 const userProfile = cachedUsers.find(u => u.id === offlineSession.userId);
                 if (userProfile) {
                     setCurrentUser(userProfile);
@@ -1230,10 +1231,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // Create a temporary ID for local display
             const offlineShipment: Shipment = { ...shipment, id: `offline-${crypto.randomUUID()}`, isPendingSync: true };
             
-            const currentShipments = await IndexedDB.getAllFromStore<Shipment>(IndexedDB.STORES.SHIPMENTS);
+            const currentShipments = await IndexedDB.getAllFromStore<Shipment>(STORES.SHIPMENTS);
             const updatedShipments = [offlineShipment, ...currentShipments]; // Add to top
             setShipments(updatedShipments);
-            await IndexedDB.saveAllToStore(IndexedDB.STORES.SHIPMENTS, updatedShipments);
+            await IndexedDB.saveAllToStore(STORES.SHIPMENTS, updatedShipments);
 
             await IndexedDB.addToMutationQueue({ type: 'addShipment', payload: offlineShipment });
             return;
@@ -1276,7 +1277,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 s.id === shipmentId ? { ...s, ...updates } : s
             );
             setShipments(updatedShipments);
-            await IndexedDB.saveAllToStore(IndexedDB.STORES.SHIPMENTS, updatedShipments);
+            await IndexedDB.saveAllToStore(STORES.SHIPMENTS, updatedShipments);
 
             // Queue the mutation
             await IndexedDB.addToMutationQueue({ type: 'updateShipment', payload: { shipmentId, updates } });
