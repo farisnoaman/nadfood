@@ -121,7 +121,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
   
   // Get region to display road expenses in basic info
   const shipmentRegion = regions.find((r: Region) => r.id === shipment.regionId);
-  const regionRoadExpenses = shipmentRegion?.roadExpenses || 0;
+  const regionRoadExpenses = currentShipment.roadExpenses ?? (shipmentRegion?.roadExpenses || 0);
 
   // Calculate amount after deductions
   const calculateAmountAfterDeductions = (ship: Shipment): number => {

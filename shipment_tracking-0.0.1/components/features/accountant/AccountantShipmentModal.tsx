@@ -12,12 +12,12 @@ import ShipmentStepper from '../../common/components/ShipmentStepper';
 // --- Helper Functions and Sub-components ---
 
 /** Displays the complete summary of the shipment - read-only for accountant */
-const ShipmentSummary: React.FC<{ shipment: Shipment }> = ({ shipment }) => (
+const ShipmentSummary: React.FC<{ shipment: Shipment; roadExpenses: number }> = ({ shipment, roadExpenses }) => (
   <div className="bg-secondary-100 dark:bg-secondary-900 p-3 rounded-md">
     <h4 className="font-bold mb-2">معلومات الشحنة</h4>
     <FieldValue label="إجمالي الأجر" value={shipment.totalWage} />
     <FieldValue label="إجمالي الديزل" value={shipment.totalDiesel} />
-    <FieldValue label="خرج الطريق" value={shipment.roadExpenses} />
+    <FieldValue label="خرج الطريق" value={roadExpenses} />
     <FieldValue label="رسوم زعيتري" value={shipment.zaitriFee} />
     <FieldValue label="مصروفات إدارية" value={shipment.adminExpenses} />
     <div className="font-bold mt-2"><FieldValue label="المبلغ المستحق" value={shipment.dueAmount} /></div>
@@ -69,6 +69,9 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMissingPrice, setHasMissingPrice] = useState(false);
+
+  const shipmentRegion = regions.find((r) => r.id === shipment.regionId);
+  const roadExpenses = currentShipment.roadExpenses ?? (shipmentRegion?.roadExpenses || 0);
 
   useEffect(() => {
     setCurrentShipment({ ...shipment });
@@ -122,7 +125,7 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
     if (!currentShipment.totalDiesel || currentShipment.totalDiesel === 0) zeros.push('إجمالي الديزل');
     if (!currentShipment.zaitriFee || currentShipment.zaitriFee === 0) zeros.push('رسوم زعيتري');
     if (!currentShipment.adminExpenses || currentShipment.adminExpenses === 0) zeros.push('مصروفات إدارية');
-    if (!currentShipment.roadExpenses || currentShipment.roadExpenses === 0) zeros.push('خرج الطريق');
+    if (!roadExpenses || roadExpenses === 0) zeros.push('خرج الطريق');
 
     if (zeros.length > 0) {
       setZeroFields(zeros);
@@ -178,7 +181,7 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
             title="المنتجات"
           />
 
-          <ShipmentSummary shipment={currentShipment} />
+           <ShipmentSummary shipment={currentShipment} roadExpenses={roadExpenses} />
 
           {/* Warning for missing prices */}
           {isEditable && hasMissingPrice && (

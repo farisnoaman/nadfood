@@ -56,7 +56,12 @@ export const calculateInitialShipmentValues = (
  * @returns A partial Shipment object containing the `dueAmountAfterDiscount`.
  */
 export const calculateAccountantValues = (shipment: Shipment): Partial<Shipment> => {
-    const { dueAmount = 0, damagedValue = 0, shortageValue = 0, roadExpenses = 0 } = shipment;
+    const { dueAmount = 0, damagedValue = 0, shortageValue = 0 } = shipment;
+    let roadExpenses = shipment.roadExpenses;
+    if (roadExpenses === null || roadExpenses === undefined) {
+        console.warn(`Road expenses is null/undefined for shipment ${shipment.id}, defaulting to 0`);
+        roadExpenses = 0;
+    }
     const dueAmountAfterDiscount = dueAmount - damagedValue - shortageValue - roadExpenses;
     return { dueAmountAfterDiscount };
 };
