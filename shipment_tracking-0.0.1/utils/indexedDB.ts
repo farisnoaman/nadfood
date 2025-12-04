@@ -6,7 +6,7 @@
 import { encryptData, decryptData } from './encryption';
 
 const DB_NAME = 'ShipmentTrackerDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 import { STORES } from './constants';
 
@@ -75,6 +75,14 @@ export const initDB = (): Promise<IDBDatabase> => {
 
       if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
         db.createObjectStore(STORES.SETTINGS, { keyPath: 'key' });
+      }
+
+      if (!db.objectStoreNames.contains(STORES.INSTALLMENTS)) {
+        db.createObjectStore(STORES.INSTALLMENTS, { keyPath: 'id' });
+      }
+
+      if (!db.objectStoreNames.contains(STORES.INSTALLMENT_PAYMENTS)) {
+        db.createObjectStore(STORES.INSTALLMENT_PAYMENTS, { keyPath: 'id' });
       }
 
       if (!db.objectStoreNames.contains(STORES.METADATA)) {

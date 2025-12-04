@@ -151,3 +151,36 @@ export interface Notification {
   targetRoles?: Role[]; // Send to all users with these roles
   targetUserIds?: string[]; // Send to specific users (UUIDs)
 }
+
+/**
+ * Represents an installment plan for debt collection or regular payments.
+ */
+export interface Installment {
+  id: string; // UUID from Supabase
+  shipmentId: string; // Reference to the shipment
+  payableAmount: number; // Total amount to be paid (always positive)
+  remainingAmount: number; // Amount still owed
+  status: 'active' | 'completed' | 'cancelled';
+  installmentType?: 'regular' | 'debt_collection'; // Type of installment
+  originalAmount?: number; // Original amount (negative for debt collection)
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
+/**
+ * Represents a payment made towards an installment.
+ */
+export interface InstallmentPayment {
+  id: string; // UUID from Supabase
+  installmentId: string; // Reference to the installment
+  amount: number; // Payment amount
+  receivedDate: string; // Date payment was received
+  paymentMethod?: string;
+  referenceNumber?: string;
+  notes?: string;
+  createdAt: string;
+  createdBy?: string;
+}

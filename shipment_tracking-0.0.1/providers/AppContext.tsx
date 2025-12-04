@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useEffect, useContext, useMemo, useCallback, useRef } from 'react';
-import { User, Role, Product, Region, Driver, Shipment, ProductPrice, Notification, NotificationCategory, ShipmentProduct, ShipmentStatus } from '../types';
+import { User, Role, Product, Region, Driver, Shipment, ProductPrice, Notification, NotificationCategory, ShipmentProduct, ShipmentStatus, Installment, InstallmentPayment } from '../types';
 import { supabase } from '../utils/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 import { Database } from '../supabase/database.types';
@@ -112,6 +112,33 @@ const notificationFromRow = (row: NotificationRow): Notification => ({
     targetUserIds: row.target_user_ids ?? undefined,
 });
 
+const installmentFromRow = (row: InstallmentRow): Installment => ({
+    id: row.id,
+    shipmentId: row.shipment_id,
+    payableAmount: row.payable_amount,
+    remainingAmount: row.remaining_amount,
+    status: row.status as 'active' | 'completed' | 'cancelled',
+    installmentType: (row as any).installment_type as 'regular' | 'debt_collection' || 'regular',
+    originalAmount: (row as any).original_amount ?? undefined,
+    notes: row.notes ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    createdBy: row.created_by ?? undefined,
+    updatedBy: row.updated_by ?? undefined,
+});
+
+const installmentPaymentFromRow = (row: InstallmentPaymentRow): InstallmentPayment => ({
+    id: row.id,
+    installmentId: row.installment_id,
+    amount: row.amount,
+    receivedDate: row.received_date,
+    paymentMethod: row.payment_method ?? undefined,
+    referenceNumber: row.reference_number ?? undefined,
+    notes: row.notes ?? undefined,
+    createdAt: row.created_at ?? new Date().toISOString(),
+    createdBy: row.created_by ?? undefined,
+});
+
 const shipmentToRow = (shipment: Partial<Shipment>): Partial<Database['public']['Tables']['shipments']['Update']> => {
     const keyMap: { [K in keyof Shipment]?: keyof Database['public']['Tables']['shipments']['Update'] } = {
         salesOrder: 'sales_order',
@@ -210,6 +237,12 @@ interface AppContextType {
     isProfileLoaded: boolean;
     refreshAllData: () => Promise<void>;
     syncOfflineMutations: () => Promise<void>;
+    installments: Installment[];
+    createInstallment: (installment: Omit<Installment, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+    updateInstallment: (installmentId: string, updates: Partial<Installment>) => Promise<void>;
+    installmentPayments: InstallmentPayment[];
+    addInstallmentPayment: (payment: Omit<InstallmentPayment, 'id' | 'createdAt'>) => Promise<void>;
+    updateInstallmentPayment: (paymentId: string, updates: Partial<InstallmentPayment>) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -232,6 +265,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [regions, setRegions] = useState<Region[]>([]);
     const [shipments, setShipments] = useState<Shipment[]>([]);
     const [productPrices, setProductPrices] = useState<ProductPrice[]>([]);
+    const [installments, setInstallments] = useState<Installment[]>([]);
+    const [installmentPayments, setInstallmentPayments] = useState<InstallmentPayment[]>([]);
     const [notifications, setNotifications] = useState<Notification[]>([]);
 
     // Settings states - will be hydrated from IndexedDB after mount
@@ -380,7 +415,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
 
         try {
-            const [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes, settingsRes] = await Promise.all([
+            const [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes, settingsRes, installmentsRes, installmentPaymentsRes] = await Promise.all([
                 supabase.from('users').select('*').abortSignal(controller.signal),
                 supabase.from('products').select('*').abortSignal(controller.signal),
                 supabase.from('drivers').select('*').abortSignal(controller.signal),
@@ -390,11 +425,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 supabase.from('product_prices').select('*').abortSignal(controller.signal),
                 supabase.from('notifications').select('*').order('timestamp', { ascending: false }).abortSignal(controller.signal),
                 supabase.from('app_settings').select('*').abortSignal(controller.signal),
+                supabase.from('installments').select('*').abortSignal(controller.signal),
+                supabase.from('installment_payments').select('*').order('received_date', { ascending: false }).abortSignal(controller.signal),
             ]);
 
             clearTimeout(timeoutId);
 
-            const responses = [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes, settingsRes];
+            const responses = [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes, settingsRes, installmentsRes, installmentPaymentsRes];
             for (const res of responses) { if (res.error) throw res.error; }
 
             const newUsers = usersRes.data!.map(userFromRow);
@@ -403,6 +440,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const newRegions = regionsRes.data!.map(regionFromRow);
             const newPrices = pricesRes.data!.map(priceFromRow);
             const newNotifications = notificationsRes.data!.map(notificationFromRow);
+            const newInstallments = installmentsRes.data!.map(installmentFromRow);
+            const newInstallmentPayments = installmentPaymentsRes.data!.map(installmentPaymentFromRow);
             const shipmentProductsByShipmentId = shipmentProductsRes.data!.reduce((acc, sp) => {
                 if (!acc[sp.shipment_id]) { acc[sp.shipment_id] = []; }
                 acc[sp.shipment_id].push(shipmentProductFromRow(sp));
@@ -416,6 +455,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setRegions(newRegions); await IndexedDB.saveAllToStore(STORES.REGIONS, newRegions);
             setProductPrices(newPrices); await IndexedDB.saveAllToStore(STORES.PRODUCT_PRICES, newPrices);
             setNotifications(newNotifications); await IndexedDB.saveAllToStore(STORES.NOTIFICATIONS, newNotifications);
+            setInstallments(newInstallments); await IndexedDB.saveAllToStore(STORES.INSTALLMENTS, newInstallments);
+            setInstallmentPayments(newInstallmentPayments); await IndexedDB.saveAllToStore(STORES.INSTALLMENT_PAYMENTS, newInstallmentPayments);
 
             // Process and update settings
             const settingsData = settingsRes.data!;
@@ -1464,7 +1505,93 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return null;
         }
     }, [fetchAllData]);
-    
+
+    const createInstallment = useCallback(async (installment: Omit<Installment, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!isOnline) {
+            logger.info('Offline: Queuing installment creation.');
+            await IndexedDB.addToMutationQueue({ type: 'createInstallment', payload: installment });
+            return;
+        }
+
+        const { error } = await supabase.from('installments').insert({
+            shipment_id: installment.shipmentId,
+            payable_amount: installment.payableAmount,
+            remaining_amount: installment.payableAmount, // Initially same as payable
+            status: installment.status,
+            installment_type: installment.installmentType || 'regular',
+            original_amount: installment.originalAmount,
+            notes: installment.notes,
+            created_by: currentUser?.id,
+            updated_by: currentUser?.id,
+        });
+
+        if (error) throw error;
+        await fetchAllData();
+    }, [isOnline, currentUser?.id, fetchAllData]);
+
+    const updateInstallment = useCallback(async (installmentId: string, updates: Partial<Installment>) => {
+        if (!isOnline) {
+            logger.info('Offline: Queuing installment update.');
+            await IndexedDB.addToMutationQueue({ type: 'updateInstallment', payload: { installmentId, updates } });
+            return;
+        }
+
+        const updateData: Partial<Database['public']['Tables']['installments']['Update']> = {};
+        if (updates.payableAmount !== undefined) updateData.payable_amount = updates.payableAmount;
+        if (updates.remainingAmount !== undefined) updateData.remaining_amount = updates.remainingAmount;
+        if (updates.status !== undefined) updateData.status = updates.status;
+        if (updates.installmentType !== undefined) updateData.installment_type = updates.installmentType;
+        if (updates.originalAmount !== undefined) updateData.original_amount = updates.originalAmount;
+        if (updates.notes !== undefined) updateData.notes = updates.notes;
+        if (updates.updatedBy !== undefined) updateData.updated_by = updates.updatedBy;
+
+        const { error } = await supabase.from('installments').update(updateData).eq('id', installmentId);
+
+        if (error) throw error;
+        await fetchAllData();
+    }, [isOnline, fetchAllData]);
+
+    const addInstallmentPayment = useCallback(async (payment: Omit<InstallmentPayment, 'id' | 'createdAt'>) => {
+        if (!isOnline) {
+            logger.info('Offline: Queuing installment payment.');
+            await IndexedDB.addToMutationQueue({ type: 'addInstallmentPayment', payload: payment });
+            return;
+        }
+
+        const { error } = await supabase.from('installment_payments').insert({
+            installment_id: payment.installmentId,
+            amount: payment.amount,
+            received_date: payment.receivedDate,
+            payment_method: payment.paymentMethod,
+            reference_number: payment.referenceNumber,
+            notes: payment.notes,
+            created_by: currentUser?.id,
+        });
+
+        if (error) throw error;
+        await fetchAllData();
+    }, [isOnline, currentUser?.id, fetchAllData]);
+
+    const updateInstallmentPayment = useCallback(async (paymentId: string, updates: Partial<InstallmentPayment>) => {
+        if (!isOnline) {
+            logger.info('Offline: Queuing installment payment update.');
+            await IndexedDB.addToMutationQueue({ type: 'updateInstallmentPayment', payload: { paymentId, updates } });
+            return;
+        }
+
+        const updateData: Partial<Database['public']['Tables']['installment_payments']['Update']> = {};
+        if (updates.amount !== undefined) updateData.amount = updates.amount;
+        if (updates.receivedDate !== undefined) updateData.received_date = updates.receivedDate;
+        if (updates.paymentMethod !== undefined) updateData.payment_method = updates.paymentMethod;
+        if (updates.referenceNumber !== undefined) updateData.reference_number = updates.referenceNumber;
+        if (updates.notes !== undefined) updateData.notes = updates.notes;
+
+        const { error } = await supabase.from('installment_payments').update(updateData).eq('id', paymentId);
+
+        if (error) throw error;
+        await fetchAllData();
+    }, [isOnline, fetchAllData]);
+
     const value = useMemo(() => ({
         currentUser, handleLogout, loadOfflineUser, users, addUser, updateUser,
         products, addProduct, updateProduct,
@@ -1473,6 +1600,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         shipments, addShipment, updateShipment,
         productPrices, addProductPrice, updateProductPrice, deleteProductPrice,
         notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
+        installments, createInstallment, updateInstallment, installmentPayments, addInstallmentPayment, updateInstallmentPayment,
         accountantPrintAccess, setAccountantPrintAccess, isPrintHeaderEnabled, setIsPrintHeaderEnabled,
         appName, setAppName, companyName, setCompanyName, companyAddress, setCompanyAddress, companyPhone, setCompanyPhone,
         companyLogo, setCompanyLogo, isTimeWidgetVisible, setIsTimeWidgetVisible,
@@ -1487,6 +1615,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         shipments, addShipment, updateShipment,
         productPrices, addProductPrice, updateProductPrice, deleteProductPrice,
         notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
+        installments, createInstallment, updateInstallment, installmentPayments, addInstallmentPayment, updateInstallmentPayment,
         accountantPrintAccess, isPrintHeaderEnabled, appName, companyName, companyAddress, companyPhone, companyLogo, isTimeWidgetVisible,
         loading, error, isOnline, isSyncing, isProfileLoaded, setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible,
         fetchAllData, syncOfflineMutations

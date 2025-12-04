@@ -7,6 +7,7 @@ import ArabicDatePicker from '../../common/ui/ArabicDatePicker';
 import { Icons } from '../../Icons';
 import { printShipmentDetails } from '../../../utils/print';
 import { useAppContext } from '../../../providers/AppContext';
+import { calculateFinalAmount } from '../../../utils/calculations';
 import FieldValue from '../../common/components/FieldValue';
 import ProductDetails from '../../common/components/ProductDetails';
 import ShipmentStepper from '../../common/components/ShipmentStepper';
@@ -111,9 +112,9 @@ interface AdminShipmentModalProps {
 }
 
 const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpen, onClose }) => {
-  const { 
-    updateShipment, currentUser, addNotification, drivers, regions,
-    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo 
+  const {
+    updateShipment, createInstallment, currentUser, addNotification, drivers, regions,
+    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo
   } = useAppContext();
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
@@ -223,6 +224,47 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
     printShipmentDetails(currentShipment, driver, companyDetails, currentUser, regions);
   };
 
+  const handleMoveToInstallments = async () => {
+    if (!currentUser) return;
+    setIsSubmitting(true);
+    try {
+      const finalAmount = calculateFinalAmount(currentShipment);
+
+      // Convert negative amount to positive for debt collection
+      const payableAmount = Math.abs(finalAmount);
+
+      await createInstallment({
+        shipmentId: currentShipment.id,
+        payableAmount: payableAmount,
+        remainingAmount: payableAmount,
+        status: 'active',
+        installmentType: 'debt_collection',
+        originalAmount: finalAmount, // Store the original negative amount
+        createdBy: currentUser.id,
+        updatedBy: currentUser.id,
+      });
+
+      // Update shipment status to INSTALLMENTS
+      await updateShipment(currentShipment.id, {
+        status: ShipmentStatus.INSTALLMENTS
+      });
+
+      await addNotification({
+        message: `تم ترحيل الشحنة (${currentShipment.salesOrder}) إلى التسديدات`,
+        category: NotificationCategory.USER_ACTION,
+        targetRoles: [Role.ADMIN]
+      });
+
+      alert('تم ترحيل الشحنة إلى التسديدات بنجاح');
+      onClose();
+    } catch (error) {
+      console.error('Failed to move to installments:', error);
+      alert('فشل في ترحيل الشحنة إلى التسديدات');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const isFinal = currentShipment.status === ShipmentStatus.FINAL || currentShipment.status === ShipmentStatus.FINAL_MODIFIED;
   const amountAfterDeductions = calculateAmountAfterDeductions(currentShipment);
   const finalAmount = calculateFinalAmount(currentShipment);
@@ -265,28 +307,52 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
             onValueChange={handleValueChange}
         />
 
+        {/* Warning message for negative amounts */}
+        {finalAmount < 0 && (
+          <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md">
+            <p className="text-sm text-orange-800 dark:text-orange-200 font-medium">
+              هذا الشحنة يحتوي على خسارة - سيتم تحويله إلى تسديدات
+            </p>
+          </div>
+        )}
+
         <div className="pt-6 border-t dark:border-secondary-600">
-            <div className="grid grid-cols-2 gap-3">
-                {isFinal && (
-                    <Button variant="secondary" onClick={handlePrint} className="w-full">
-                        <Icons.Printer className="ml-2 h-4 w-4" />
-                        طباعة
+            {finalAmount < 0 ? (
+                // Show only "ترحيل الى التسديدات" button for negative amounts
+                <div className="flex justify-center">
+                    <Button
+                        variant="primary"
+                        onClick={handleMoveToInstallments}
+                        disabled={isSubmitting}
+                        className="px-8 py-3 text-lg font-semibold"
+                    >
+                        {isSubmitting ? 'جاري الترحيل...' : <> <Icons.ArrowRight className="ml-2 h-5 w-5" /> ترحيل الى التسديدات </>}
                     </Button>
-                )}
-                {!isFinal && <div></div>} {/* Empty space when print button is hidden */}
+                </div>
+            ) : (
+                // Show normal buttons for non-negative amounts
+                <div className="grid grid-cols-2 gap-3">
+                    {isFinal && (
+                        <Button variant="secondary" onClick={handlePrint} className="w-full">
+                            <Icons.Printer className="ml-2 h-4 w-4" />
+                            طباعة
+                        </Button>
+                    )}
+                    {!isFinal && <div></div>} {/* Empty space when print button is hidden */}
 
-                <Button variant="secondary" onClick={onClose} disabled={isSubmitting} className="w-full">
-                    إغلاق
-                </Button>
+                    <Button variant="secondary" onClick={onClose} disabled={isSubmitting} className="w-full">
+                        إغلاق
+                    </Button>
 
-                <Button variant="secondary" onClick={handleSaveAsDraft} disabled={isSubmitting} className="w-full">
-                    {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Save className="ml-2 h-4 w-4" /> حفظ كمسودة </>}
-                </Button>
+                    <Button variant="secondary" onClick={handleSaveAsDraft} disabled={isSubmitting} className="w-full">
+                        {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Save className="ml-2 h-4 w-4" /> حفظ كمسودة </>}
+                    </Button>
 
-                <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting} className="w-full">
-                    {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'إغلاق نهائي'} </>}
-                </Button>
-            </div>
+                    <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting} className="w-full">
+                        {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'إغلاق نهائي'} </>}
+                    </Button>
+                </div>
+            )}
         </div>
       </div>
     </Modal>

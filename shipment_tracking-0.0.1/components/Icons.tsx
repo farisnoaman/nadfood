@@ -7,7 +7,7 @@ import {
     Package, Bell, Save, AlertTriangle, ChevronsRightLeft, Undo2, FileText, UserPlus,
     FileDown, CircleCheck, CircleX, Grid, List, Settings, ArrowRight, ArrowLeft, Printer,
     ArrowUp, ArrowDown, Share, BarChart3, WifiOff, RefreshCw, Wifi, CheckCircle, Info,
-    Eye, EyeOff
+    Eye, EyeOff, DollarSign
 } from 'lucide-react';
 
 // Type guard to ensure all icons are valid components
@@ -72,7 +72,8 @@ export const Icons = {
     WifiOff: validateIcon(WifiOff, 'WifiOff'),
     RefreshCw: validateIcon(RefreshCw, 'RefreshCw'),
     Wifi: validateIcon(Wifi, 'Wifi'),
-    Info: validateIcon(Info, 'Info')
+    Info: validateIcon(Info, 'Info'),
+    DollarSign: validateIcon(DollarSign, 'DollarSign')
 };
 
 // Fallback icons in case any are undefined

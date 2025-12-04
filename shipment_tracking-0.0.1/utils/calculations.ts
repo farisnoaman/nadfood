@@ -68,24 +68,39 @@ export const calculateAccountantValues = (shipment: Shipment): Partial<Shipment>
 
 /**
  * Calculates the final financial values managed by the admin.
- * This function takes the accountant's calculated amount, applies admin adjustments (additions/deductions), and calculates tax.
- * @param shipment - The shipment object, which should include `dueAmountAfterDiscount` and admin-specific fields.
- * @returns A partial Shipment object containing the `totalDueAmount` and `totalTax`.
+ * Formula: إجمالي المبلغ المستحق النهائي = المبلغ المستحق + سندات تحسين + ممسى - التالف - النقص - مبالغ أخرى
+ * @param shipment - The shipment object with all financial fields.
+ * @returns A partial Shipment object containing the `totalDueAmount`.
  */
 export const calculateAdminValues = (shipment: Shipment): Partial<Shipment> => {
-    const { 
-        dueAmountAfterDiscount = 0, 
-        otherAmounts = 0, 
-        improvementBonds = 0, 
-        eveningAllowance = 0,
-        taxRate = 0
+    const {
+        dueAmount = 0,
+        damagedValue = 0,
+        shortageValue = 0,
+        otherAmounts = 0,
+        improvementBonds = 0,
+        eveningAllowance = 0
     } = shipment;
-    
-    // "otherAmounts" is a deduction as per UI labels ("خصميات إضافية")
-    // "improvementBonds" and "eveningAllowance" are additions ("إضافات")
-    const totalDueAmountBeforeTax = (dueAmountAfterDiscount || 0) + (improvementBonds || 0) + (eveningAllowance || 0) - (otherAmounts || 0);
-    const totalTax = taxRate > 0 ? totalDueAmountBeforeTax * (taxRate / 100) : 0;
-    const totalDueAmount = totalDueAmountBeforeTax + totalTax;
 
-    return { totalDueAmount, totalTax };
+    // Formula: المبلغ المستحق + سندات تحسين + ممسى - التالف - النقص - مبالغ أخرى
+    const totalDueAmount = dueAmount + improvementBonds + eveningAllowance - damagedValue - shortageValue - otherAmounts;
+
+    return { totalDueAmount };
+};
+
+/**
+ * Calculates the final amount for a shipment, ensuring it's calculated correctly.
+ * This is the authoritative function for all final amount calculations across the app.
+ * @param shipment - The shipment object with all financial fields
+ * @returns The final amount (can be negative)
+ */
+export const calculateFinalAmount = (shipment: Shipment): number => {
+    // First try to use the stored totalDueAmount if available and valid
+    if (shipment.totalDueAmount !== undefined && shipment.totalDueAmount !== null && !isNaN(shipment.totalDueAmount)) {
+        return shipment.totalDueAmount;
+    }
+
+    // Fallback to calculating from scratch using admin values
+    const adminValues = calculateAdminValues(shipment);
+    return adminValues.totalDueAmount || 0;
 };

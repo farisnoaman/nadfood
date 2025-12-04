@@ -169,6 +169,8 @@ export const STORES = {
   SHIPMENTS: 'shipments',
   PRODUCT_PRICES: 'productPrices',
   NOTIFICATIONS: 'notifications',
+  INSTALLMENTS: 'installments',
+  INSTALLMENT_PAYMENTS: 'installmentPayments',
   MUTATION_QUEUE: 'mutationQueue',
   SETTINGS: 'settings',
   METADATA: 'metadata'

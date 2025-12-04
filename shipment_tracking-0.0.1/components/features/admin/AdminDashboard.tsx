@@ -1,16 +1,17 @@
 
 import React, { useState, useMemo } from 'react';
 import AdminShipmentList from './AdminShipmentList';
+import AdminInstallments from './AdminInstallments';
+import AdminReports from './AdminReports';
 import ManageData from './ManageData';
 import ManageUsers from './ManageUsers';
 import { Icons } from '../../Icons';
 import { Shipment, ShipmentStatus } from '../../../types';
 import AdminSettings from './AdminSettings';
-import AdminReports from './AdminReports';
 import { useAppContext } from '../../../providers/AppContext';
 import ErrorBoundary from '../../common/ui/ErrorBoundary';
 
-type Tab = 'reports' | 'received' | 'all_shipments' | 'data_management' | 'user_management' | 'settings';
+type Tab = 'reports' | 'received' | 'all_shipments' | 'installments' | 'data_management' | 'user_management' | 'settings';
 
 const AdminDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('received');
@@ -44,7 +45,8 @@ const AdminDashboard: React.FC = () => {
                 <div className="sm:hidden">
                     <div className="grid grid-cols-3 gap-2 border-b border-secondary-200 dark:border-secondary-700 pb-2">
                         <TabButton tabId="received" label="المستلمة" icon={Icons.Archive} />
-                                <TabButton tabId="all_shipments" label="الشحنات" icon={Icons.Truck} />
+                        <TabButton tabId="all_shipments" label="الشحنات" icon={Icons.Truck} />
+                        <TabButton tabId="installments" label="التسديدات" icon={Icons.DollarSign} />
                         <TabButton tabId="reports" label="التقارير" icon={Icons.BarChart3} />
                         <TabButton tabId="data_management" label="البيانات" icon={Icons.Package} />
                         <TabButton tabId="user_management" label="المستخدمين" icon={Icons.Users} />
@@ -56,6 +58,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="hidden sm:flex flex-wrap gap-2 border-b border-secondary-200 dark:border-secondary-700 pb-2">
                     <TabButton tabId="received" label="المستلمة" icon={Icons.Archive} />
                     <TabButton tabId="all_shipments" label="الشحنات" icon={Icons.Truck} />
+                    <TabButton tabId="installments" label="التسديدات" icon={Icons.DollarSign} />
                     <TabButton tabId="reports" label="التقارير" icon={Icons.BarChart3} />
                     <TabButton tabId="data_management" label="إدارة البيانات" icon={Icons.Package} />
                     <TabButton tabId="user_management" label="إدارة المستخدمين" icon={Icons.Users} />
@@ -66,6 +69,7 @@ const AdminDashboard: React.FC = () => {
                 {activeTab === 'reports' && <AdminReports />}
                 {activeTab === 'received' && <AdminShipmentList shipments={receivedShipments} />}
                  {activeTab === 'all_shipments' && <AdminShipmentList shipments={shipments} defaultStatusFilter={[ShipmentStatus.DRAFT, ShipmentStatus.FINAL, ShipmentStatus.FINAL_MODIFIED]} />}
+                {activeTab === 'installments' && <AdminInstallments />}
                 {activeTab === 'data_management' && <ManageData />}
                 {activeTab === 'user_management' && <ManageUsers />}
                 {activeTab === 'settings' && (
