@@ -425,8 +425,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 supabase.from('product_prices').select('*').abortSignal(controller.signal),
                 supabase.from('notifications').select('*').order('timestamp', { ascending: false }).abortSignal(controller.signal),
                 supabase.from('app_settings').select('*').abortSignal(controller.signal),
-                supabase.from('installments').select('*').abortSignal(controller.signal),
-                supabase.from('installment_payments').select('*').order('received_date', { ascending: false }).abortSignal(controller.signal),
+                (supabase as any).from('installments').select('*').abortSignal(controller.signal),
+                (supabase as any).from('installment_payments').select('*').order('received_date', { ascending: false }).abortSignal(controller.signal),
             ]);
 
             clearTimeout(timeoutId);
@@ -1513,7 +1513,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return;
         }
 
-        const { error } = await supabase.from('installments').insert({
+        // Check if installment already exists for this shipment
+        const { data: existingInstallment, error: checkError } = await supabase
+            .from('installments')
+            .select('id')
+            .eq('shipment_id', installment.shipmentId)
+            .maybeSingle();
+
+        if (checkError) {
+            throw checkError;
+        }
+
+        if (existingInstallment) {
+            // Check if the shipment status is already INSTALLMENTS
+            const shipment = shipments.find(s => s.id === installment.shipmentId);
+            if (shipment && shipment.status === ShipmentStatus.INSTALLMENTS) {
+                throw new Error('Installment already exists for this shipment');
+            } else {
+                // Installment exists but shipment status is not updated - this means previous transfer failed
+                // Don't create duplicate, just update the shipment status
+                await updateShipment(installment.shipmentId, { status: ShipmentStatus.INSTALLMENTS });
+                await fetchAllData();
+                return;
+            }
+        }
+
+        const { error } = await (supabase as any).from('installments').insert({
             shipment_id: installment.shipmentId,
             payable_amount: installment.payableAmount,
             remaining_amount: installment.payableAmount, // Initially same as payable
@@ -1527,7 +1552,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (error) throw error;
         await fetchAllData();
-    }, [isOnline, currentUser?.id, fetchAllData]);
+    }, [isOnline, currentUser?.id, fetchAllData, shipments]);
 
     const updateInstallment = useCallback(async (installmentId: string, updates: Partial<Installment>) => {
         if (!isOnline) {
@@ -1545,7 +1570,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (updates.notes !== undefined) updateData.notes = updates.notes;
         if (updates.updatedBy !== undefined) updateData.updated_by = updates.updatedBy;
 
-        const { error } = await supabase.from('installments').update(updateData).eq('id', installmentId);
+        const { error } = await (supabase as any).from('installments').update(updateData).eq('id', installmentId);
 
         if (error) throw error;
         await fetchAllData();
@@ -1558,12 +1583,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return;
         }
 
-        const { error } = await supabase.from('installment_payments').insert({
+        const { error } = await (supabase as any).from('installment_payments').insert({
             installment_id: payment.installmentId,
             amount: payment.amount,
             received_date: payment.receivedDate,
-            payment_method: payment.paymentMethod,
-            reference_number: payment.referenceNumber,
             notes: payment.notes,
             created_by: currentUser?.id,
         });
@@ -1586,7 +1609,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (updates.referenceNumber !== undefined) updateData.reference_number = updates.referenceNumber;
         if (updates.notes !== undefined) updateData.notes = updates.notes;
 
-        const { error } = await supabase.from('installment_payments').update(updateData).eq('id', paymentId);
+        const { error } = await (supabase as any).from('installment_payments').update(updateData).eq('id', paymentId);
 
         if (error) throw error;
         await fetchAllData();

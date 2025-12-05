@@ -15,11 +15,11 @@ type Tab = 'reports' | 'received' | 'all_shipments' | 'installments' | 'data_man
 
 const AdminDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('received');
-    const { shipments } = useAppContext();
+    const { shipments, installments } = useAppContext();
 
     const receivedShipments = useMemo(() =>
-        shipments.filter((s: Shipment) => s.status === ShipmentStatus.SENT_TO_ADMIN),
-    [shipments]);
+        shipments.filter((s: Shipment) => s.status === ShipmentStatus.SENT_TO_ADMIN && !installments.some(i => i.shipmentId === s.id)),
+    [shipments, installments]);
 
 
 
@@ -68,7 +68,7 @@ const AdminDashboard: React.FC = () => {
             <div>
                 {activeTab === 'reports' && <AdminReports />}
                 {activeTab === 'received' && <AdminShipmentList shipments={receivedShipments} />}
-                 {activeTab === 'all_shipments' && <AdminShipmentList shipments={shipments} defaultStatusFilter={[ShipmentStatus.DRAFT, ShipmentStatus.FINAL, ShipmentStatus.FINAL_MODIFIED]} />}
+                 {activeTab === 'all_shipments' && <AdminShipmentList shipments={shipments} defaultStatusFilter={[ShipmentStatus.DRAFT, ShipmentStatus.FINAL, ShipmentStatus.FINAL_MODIFIED, ShipmentStatus.INSTALLMENTS]} />}
                 {activeTab === 'installments' && <AdminInstallments />}
                 {activeTab === 'data_management' && <ManageData />}
                 {activeTab === 'user_management' && <ManageUsers />}

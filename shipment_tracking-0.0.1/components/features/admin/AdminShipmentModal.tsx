@@ -7,7 +7,7 @@ import ArabicDatePicker from '../../common/ui/ArabicDatePicker';
 import { Icons } from '../../Icons';
 import { printShipmentDetails } from '../../../utils/print';
 import { useAppContext } from '../../../providers/AppContext';
-import { calculateFinalAmount } from '../../../utils/calculations';
+
 import FieldValue from '../../common/components/FieldValue';
 import ProductDetails from '../../common/components/ProductDetails';
 import ShipmentStepper from '../../common/components/ShipmentStepper';
@@ -36,14 +36,15 @@ const DeductionsSection: React.FC<{
     shipment: Shipment;
     onValueChange: (field: keyof Shipment, value: string) => void;
     amountAfterDeductions: number;
-}> = ({ shipment, onValueChange, amountAfterDeductions }) => (
+    disabled?: boolean;
+}> = ({ shipment, onValueChange, amountAfterDeductions, disabled = false }) => (
     <div className="space-y-2 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
         <h4 className="font-bold text-lg">قسم الخصميات</h4>
         <div className="pt-2 border-t dark:border-secondary-700">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
-                <Input label="التالف" type="number" min="1" value={shipment.damagedValue || ''} onChange={e => onValueChange('damagedValue', e.target.value)} />
-                <Input label="النقص" type="number" min="1" value={shipment.shortageValue || ''} onChange={e => onValueChange('shortageValue', e.target.value)} />
-                <Input label="مبالغ أخرى" type="number" min="1" value={shipment.otherAmounts || ''} onChange={e => onValueChange('otherAmounts', e.target.value)} />
+                <Input label="التالف" type="number" min="1" value={shipment.damagedValue || ''} onChange={e => onValueChange('damagedValue', e.target.value)} disabled={disabled} />
+                <Input label="النقص" type="number" min="1" value={shipment.shortageValue || ''} onChange={e => onValueChange('shortageValue', e.target.value)} disabled={disabled} />
+                <Input label="مبالغ أخرى" type="number" min="1" value={shipment.otherAmounts || ''} onChange={e => onValueChange('otherAmounts', e.target.value)} disabled={disabled} />
             </div>
             <div className="font-bold pt-2 mt-2 border-t dark:border-secondary-700">
                 <FieldValue label="المبلغ بعد الخصم" value={amountAfterDeductions} />
@@ -53,12 +54,12 @@ const DeductionsSection: React.FC<{
 );
 
 /** Additions Section */
-const AdditionsSection: React.FC<{ shipment: Shipment; onValueChange: (field: keyof Shipment, value: string) => void; }> = ({ shipment, onValueChange }) => (
+const AdditionsSection: React.FC<{ shipment: Shipment; onValueChange: (field: keyof Shipment, value: string) => void; disabled?: boolean; }> = ({ shipment, onValueChange, disabled = false }) => (
     <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
         <h4 className="font-bold text-lg">قسم الإضافات</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <Input label="سندات تحسين" type="number" min="0" value={shipment.improvementBonds || ''} onChange={e => onValueChange('improvementBonds', e.target.value)} />
-            <Input label="ممسى" type="number" min="0" value={shipment.eveningAllowance || ''} onChange={e => onValueChange('eveningAllowance', e.target.value)} />
+            <Input label="سندات تحسين" type="number" min="0" value={shipment.improvementBonds || ''} onChange={e => onValueChange('improvementBonds', e.target.value)} disabled={disabled} />
+            <Input label="ممسى" type="number" min="0" value={shipment.eveningAllowance || ''} onChange={e => onValueChange('eveningAllowance', e.target.value)} disabled={disabled} />
         </div>
     </div>
 );
@@ -82,22 +83,24 @@ const FinalCalculationSection: React.FC<{ finalAmount: number; shipment: Shipmen
 );
 
 /** Transfer Section */
-const TransferSection: React.FC<{ shipment: Shipment; onValueChange: (field: keyof Shipment, value: string) => void; }> = ({ shipment, onValueChange }) => (
+const TransferSection: React.FC<{ shipment: Shipment; onValueChange: (field: keyof Shipment, value: string) => void; disabled?: boolean; }> = ({ shipment, onValueChange, disabled = false }) => (
     <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
         <h4 className="font-bold text-lg">قسم الحوالة</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <Input 
-                label="رقم الحوالة (8 أرقام على الأقل)" 
-                type="text" 
-                minLength={8} 
-                value={shipment.transferNumber || ''} 
-                onChange={e => onValueChange('transferNumber', e.target.value)} 
+            <Input
+                label="رقم الحوالة (8 أرقام على الأقل)"
+                type="text"
+                minLength={8}
+                value={shipment.transferNumber || ''}
+                onChange={e => onValueChange('transferNumber', e.target.value)}
+                disabled={disabled}
                 required
             />
             <ArabicDatePicker
                 label="تاريخ الحوالة"
                 value={shipment.transferDate || ''}
                 onChange={(value) => onValueChange('transferDate', value)}
+                disabled={disabled}
             />
         </div>
     </div>
@@ -114,7 +117,7 @@ interface AdminShipmentModalProps {
 const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpen, onClose }) => {
   const {
     updateShipment, createInstallment, currentUser, addNotification, drivers, regions,
-    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo
+    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, installments
   } = useAppContext();
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
@@ -244,11 +247,6 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
         updatedBy: currentUser.id,
       });
 
-      // Update shipment status to INSTALLMENTS
-      await updateShipment(currentShipment.id, {
-        status: ShipmentStatus.INSTALLMENTS
-      });
-
       await addNotification({
         message: `تم ترحيل الشحنة (${currentShipment.salesOrder}) إلى التسديدات`,
         category: NotificationCategory.USER_ACTION,
@@ -257,15 +255,26 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
 
       alert('تم ترحيل الشحنة إلى التسديدات بنجاح');
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to move to installments:', error);
-      alert('فشل في ترحيل الشحنة إلى التسديدات');
+      if (error.message === 'Installment already exists for this shipment') {
+        await addNotification({
+          message: `فشل في ترحيل الشحنة (${currentShipment.salesOrder}) - يوجد تسديدات مسبق لها`,
+          category: NotificationCategory.USER_ACTION,
+          targetRoles: [Role.ADMIN]
+        });
+        alert('يوجد تسديدات مسبق لهذه الشحنة');
+      } else {
+        alert('فشل في ترحيل الشحنة إلى التسديدات');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const isFinal = currentShipment.status === ShipmentStatus.FINAL || currentShipment.status === ShipmentStatus.FINAL_MODIFIED;
+  const hasInstallment = installments.some(i => i.shipmentId === currentShipment.id);
+  const isViewOnly = currentShipment.status === ShipmentStatus.INSTALLMENTS || hasInstallment;
   const amountAfterDeductions = calculateAmountAfterDeductions(currentShipment);
   const finalAmount = calculateFinalAmount(currentShipment);
 
@@ -289,12 +298,14 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
         <AdditionsSection
             shipment={currentShipment}
             onValueChange={handleValueChange}
+            disabled={isViewOnly}
         />
 
         <DeductionsSection
             shipment={currentShipment}
             onValueChange={handleValueChange}
             amountAfterDeductions={amountAfterDeductions}
+            disabled={isViewOnly}
         />
 
         <FinalCalculationSection
@@ -305,6 +316,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
         <TransferSection
             shipment={currentShipment}
             onValueChange={handleValueChange}
+            disabled={isViewOnly}
         />
 
         {/* Warning message for negative amounts */}
@@ -317,7 +329,14 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
         )}
 
         <div className="pt-6 border-t dark:border-secondary-600">
-            {finalAmount < 0 ? (
+            {isViewOnly ? (
+                // View-only mode: show only close button
+                <div className="flex justify-center">
+                    <Button variant="secondary" onClick={onClose} className="px-8 py-3 text-lg font-semibold">
+                        إغلاق
+                    </Button>
+                </div>
+            ) : finalAmount < 0 ? (
                 // Show only "ترحيل الى التسديدات" button for negative amounts
                 <div className="flex justify-center">
                     <Button
