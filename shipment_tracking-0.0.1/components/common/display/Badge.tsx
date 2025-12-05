@@ -15,12 +15,15 @@ const statusColors: Record<ShipmentStatus, string> = {
     [ShipmentStatus.RETURNED_TO_FLEET]: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     [ShipmentStatus.FINAL]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
     [ShipmentStatus.FINAL_MODIFIED]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    [ShipmentStatus.INSTALLMENTS]: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
 };
 
 const getStatusDisplayText = (status: ShipmentStatus): string => {
   switch (status) {
     case ShipmentStatus.SENT_TO_ADMIN:
       return 'مرسلة للمدير';
+    case ShipmentStatus.INSTALLMENTS:
+      return 'تسديد دين';
     default:
       return status;
   }

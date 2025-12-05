@@ -13,12 +13,13 @@ export enum Role {
  */
 export enum ShipmentStatus {
    FROM_SALES = 'من مسؤول الحركة', // Newly created by Sales, ready for Accountant
-  DRAFT = 'مسودة', // Saved by Accountant, not yet sent to Admin
-  SENT_TO_ADMIN = 'مرسلة للادمن', // Sent by Accountant, awaiting Admin review
-  RETURNED_FOR_EDIT = 'طلب تعديل', // Returned by Admin to Accountant for changes
-  RETURNED_TO_FLEET = 'مرتجعة لمسؤول الحركة', // Returned by Accountant to Fleet for corrections
-  FINAL = 'نهائي', // Approved by Admin
-  FINAL_MODIFIED = 'نهائي معدل', // A final shipment that was later modified by Admin
+   DRAFT = 'مسودة', // Saved by Accountant, not yet sent to Admin
+   SENT_TO_ADMIN = 'مرسلة للادمن', // Sent by Accountant, awaiting Admin review
+   RETURNED_FOR_EDIT = 'طلب تعديل', // Returned by Admin to Accountant for changes
+   RETURNED_TO_FLEET = 'مرتجعة لمسؤول الحركة', // Returned by Accountant to Fleet for corrections
+   FINAL = 'نهائي', // Approved by Admin
+   FINAL_MODIFIED = 'نهائي معدل', // A final shipment that was later modified by Admin
+   INSTALLMENTS = 'تسديد دين', // Transferred to installments for debt collection
 }
 
 /**

@@ -12,7 +12,7 @@ interface AdminInstallmentsProps {
 }
 
 const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
-  const { installments, installmentPayments, addInstallmentPayment, updateInstallment, currentUser } = useAppContext();
+  const { installments, installmentPayments, addInstallmentPayment, updateInstallment, currentUser, shipments } = useAppContext();
   const [selectedInstallment, setSelectedInstallment] = useState<Installment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPaymentAmount, setNewPaymentAmount] = useState('');
@@ -83,6 +83,7 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
     const payments = installmentPaymentsMap.get(installment.id) || [];
     const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
     const isDebtCollection = installment.installmentType === 'debt_collection';
+    const relatedShipment = shipments.find(s => s.id === installment.shipmentId);
 
     return (
       <div className={`bg-gradient-to-br from-white via-blue-50 to-indigo-100 dark:from-secondary-800 dark:via-secondary-750 dark:to-secondary-700 shadow-lg hover:shadow-xl transition-all duration-300 rounded-lg overflow-hidden flex flex-col border border-gray-200 dark:border-secondary-600 ${
@@ -92,7 +93,7 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
         <div className="px-4 py-3 bg-blue-200 dark:bg-blue-800 flex justify-between items-center border-b border-secondary-200 dark:border-secondary-700">
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-lg text-primary-600 dark:text-primary-400">
-              شحنة #{installment.shipmentId.slice(-8)}
+              {relatedShipment ? `شحنة ${relatedShipment.salesOrder}` : `شحنة #${installment.shipmentId.slice(-8)}`}
             </h3>
             {isDebtCollection && (
               <span className="px-2 py-0.5 bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 text-xs font-medium rounded-full">
