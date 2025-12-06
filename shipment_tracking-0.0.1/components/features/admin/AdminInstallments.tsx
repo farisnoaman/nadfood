@@ -135,8 +135,15 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
+
+    // Generate filename with Arabic text, month number, and date
+    const now = new Date();
+    const month = now.getMonth() + 1; // getMonth() returns 0-11, so add 1
+    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const filename = `الشحنات تحت التقسيط - ${month} - ${dateStr}.csv`;
+
     link.setAttribute('href', url);
-    link.setAttribute('download', 'installments_shipments_export.csv');
+    link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
