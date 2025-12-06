@@ -11,7 +11,7 @@ type Tab = 'create' | 'returned';
 
 const FleetDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('create');
-  const { shipments, drivers, regions, refreshAllData, isSyncing } = useAppContext();
+  const { shipments, drivers, regions } = useAppContext();
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -110,16 +110,6 @@ const FleetDashboard: React.FC = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="hidden sm:block text-2xl font-bold">لوحة تحكم مسؤول الحركة</h1>
-        
-        {/* Refresh Button */}
-        <button
-          onClick={refreshAllData}
-          disabled={isSyncing}
-          className="flex items-center px-3 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 disabled:text-secondary-400 dark:text-primary-400 dark:hover:text-primary-300 dark:disabled:text-secondary-600"
-        >
-          <IconsWithFallback.RefreshCw className={`ml-1 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-          {isSyncing ? 'جاري التحديث...' : 'تحديث'}
-        </button>
       </div>
       
       {/* Tabs */}
