@@ -276,7 +276,7 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
               onClick={handleExportToCSV}
               className="flex items-center gap-2"
             >
-              <Icons.Download className="h-4 w-4" />
+              <Icons.FileDown className="h-4 w-4" />
               تصدير CSV
             </Button>
           )}
