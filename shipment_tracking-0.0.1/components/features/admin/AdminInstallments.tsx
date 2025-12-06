@@ -307,7 +307,6 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
           </div>
           {installments.length > 0 && (
             <Button
-              variant="secondary"
               size="sm"
               onClick={handleExportToCSV}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
