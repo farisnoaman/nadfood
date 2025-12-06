@@ -109,7 +109,7 @@ const FleetDashboard: React.FC = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">لوحة تحكم مسؤول الحركة</h1>
+        <h1 className="hidden sm:block text-2xl font-bold">لوحة تحكم مسؤول الحركة</h1>
         
         {/* Refresh Button */}
         <button

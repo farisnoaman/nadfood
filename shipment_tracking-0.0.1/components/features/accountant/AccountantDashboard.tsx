@@ -89,7 +89,7 @@ const AccountantDashboard: React.FC = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">لوحة تحكم المحاسب</h1>
+      <h1 className="hidden sm:block text-2xl font-bold mb-6">لوحة تحكم المحاسب</h1>
       <div className="mb-6">
         <div className="flex flex-wrap gap-2 border-b border-secondary-200 dark:border-secondary-700 pb-2">
             <TabButton tabId="received" label="المستلمة" icon={Icons.Bell} />

@@ -39,7 +39,7 @@ const AdminDashboard: React.FC = () => {
 
     return (
         <div>
-            <h1 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-6">لوحة تحكم المدير</h1>
+            <h1 className="hidden sm:block text-lg sm:text-2xl font-bold mb-4 sm:mb-6">لوحة تحكم المدير</h1>
             <div className="mb-6">
                 {/* Mobile: 2x3 grid layout */}
                 <div className="sm:hidden">
