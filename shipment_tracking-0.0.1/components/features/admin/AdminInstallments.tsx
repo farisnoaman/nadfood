@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Installment, InstallmentPayment } from '../../../types';
+import { Installment, InstallmentPayment, Shipment, Driver, Region } from '../../../types';
 import { useAppContext } from '../../../providers/AppContext';
 import { Icons } from '../../Icons';
 import Button from '../../common/ui/Button';
@@ -12,7 +12,7 @@ interface AdminInstallmentsProps {
 }
 
 const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
-  const { installments, installmentPayments, addInstallmentPayment, updateInstallment, currentUser, shipments } = useAppContext();
+  const { installments, installmentPayments, addInstallmentPayment, updateInstallment, currentUser, shipments, drivers, regions } = useAppContext();
   const [selectedInstallment, setSelectedInstallment] = useState<Installment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPaymentAmount, setNewPaymentAmount] = useState('');
@@ -32,6 +32,79 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
   const handleViewDetails = (installment: Installment) => {
     setSelectedInstallment(installment);
     setIsModalOpen(true);
+  };
+
+  // Get shipments that have installments
+  const getInstallmentShipments = () => {
+    const installmentShipmentIds = new Set(installments.map(inst => inst.shipmentId));
+    return shipments.filter(shipment => installmentShipmentIds.has(shipment.id));
+  };
+
+  const handleExportToCSV = () => {
+    const installmentShipments = getInstallmentShipments();
+
+    if (installmentShipments.length === 0) {
+      alert('لا توجد شحنات تسديدات لتصديرها.');
+      return;
+    }
+
+    const headers = [
+      'المعرف', 'تاريخ الأمر', 'أمر المبيعات', 'المنطقة', 'السائق', 'رقم اللوحة', 'الحالة',
+      'المنتجات', 'إجمالي أجر المنتجات', 'إجمالي الديزل', 'خرج الطريق', 'رسوم زعيتري', 'مصروفات إدارية', 'مبالغ أخرى',
+      'المبلغ المستحق', 'قيمة التالف', 'قيمة النقص', 'المبلغ المستحق بعد الخصم',
+      'سندات تحسين', 'ممسى', 'إجمالي المبلغ المستحق النهائي',
+      'رقم الحوالة', 'تاريخ الحوالة'
+    ];
+
+    const csvRows = [headers.join(',')];
+
+    installmentShipments.forEach(shipment => {
+      const regionName = regions.find((r: Region) => r.id === shipment.regionId)?.name || 'غير معروف';
+      const driver = drivers.find((d: Driver) => d.id === shipment.driverId);
+      const driverName = driver?.name || 'غير معروف';
+      const driverPlateNumber = driver?.plateNumber || 'غير معروف';
+      const productsString = shipment.products.map(p => `${p.productName} (${p.cartonCount})`).join('; ');
+
+      const rowData = [
+        shipment.id,
+        shipment.orderDate,
+        shipment.salesOrder,
+        regionName,
+        driverName,
+        driverPlateNumber,
+        shipment.status,
+        productsString,
+        shipment.totalWage ?? 0,
+        shipment.totalDiesel ?? 0,
+        shipment.roadExpenses ?? 0,
+        shipment.zaitriFee ?? 0,
+        shipment.adminExpenses ?? 0,
+        shipment.otherAmounts ?? 0,
+        shipment.dueAmount ?? 0,
+        shipment.damagedValue ?? 0,
+        shipment.shortageValue ?? 0,
+        shipment.dueAmountAfterDiscount ?? 0,
+        shipment.improvementBonds ?? 0,
+        shipment.eveningAllowance ?? 0,
+        shipment.totalDueAmount ?? 0,
+        shipment.transferNumber ?? '',
+        shipment.transferDate ?? '',
+      ];
+
+      const row = rowData.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`);
+      csvRows.push(row.join(','));
+    });
+
+    const csvString = '\uFEFF' + csvRows.join('\n'); // BOM for UTF-8 Excel compatibility
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'installments_shipments_export.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleAddPayment = async () => {
@@ -189,10 +262,25 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2">التسديدات</h2>
-        <p className="text-sm text-secondary-600 dark:text-secondary-400">
-          إدارة التسديدات والمدفوعات للشحنات
-        </p>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-xl font-bold mb-2">التسديدات</h2>
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">
+              إدارة التسديدات والمدفوعات للشحنات
+            </p>
+          </div>
+          {installments.length > 0 && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleExportToCSV}
+              className="flex items-center gap-2"
+            >
+              <Icons.Download className="h-4 w-4" />
+              تصدير CSV
+            </Button>
+          )}
+        </div>
       </div>
 
       {installments.length === 0 ? (
