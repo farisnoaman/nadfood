@@ -163,20 +163,31 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
     setCurrentShipment({ ...currentShipment, [field]: processedValue });
   };
 
-   const handleSaveAsDraft = async () => {
-     setIsSubmitting(true);
-     try {
-         const draftShipment = { ...currentShipment, status: ShipmentStatus.DRAFT };
-         await updateShipment(draftShipment.id, draftShipment);
-         await addNotification({ message: `تم حفظ الشحنة (${draftShipment.salesOrder}) كمسودة.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ADMIN] });
-         onClose();
-     } catch(err) {
-         console.error(err);
-         alert("فشل حفظ المسودة");
-     } finally {
-         setIsSubmitting(false);
-     }
-   };
+    const handleSaveAsDraft = async () => {
+      setIsSubmitting(true);
+      try {
+          const draftShipment = { ...currentShipment, status: ShipmentStatus.DRAFT };
+          await updateShipment(draftShipment.id, draftShipment);
+          await addNotification({ message: `تم حفظ الشحنة (${draftShipment.salesOrder}) كمسودة.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ADMIN] });
+          onClose();
+      } catch(err) {
+          console.error('Save as draft failed:', err);
+
+          // Check if it's a network/CORS error and offer retry
+          if (err.message && (err.message.includes('NetworkError') || err.message.includes('CORS') || err.message.includes('fetch'))) {
+              const retry = confirm("فشل الاتصال بالخادم. هل تريد المحاولة مرة أخرى؟");
+              if (retry) {
+                  // Retry after a short delay
+                  setTimeout(() => handleSaveAsDraft(), 1000);
+                  return;
+              }
+          }
+
+          alert("فشل حفظ المسودة: " + (err.message || "خطأ غير معروف"));
+      } finally {
+          setIsSubmitting(false);
+      }
+    };
 
    const handleFinalize = async () => {
     // Validate transfer number before finalizing

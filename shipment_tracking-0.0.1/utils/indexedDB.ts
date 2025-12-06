@@ -286,7 +286,24 @@ export const getMutationQueue = async (): Promise<any[]> => {
     const decryptedMutations = await Promise.all(
       encryptedMutations.map(async (encryptedMutation: any) => {
         try {
-          return await decryptData(encryptedMutation);
+          // Handle different storage formats
+          if (typeof encryptedMutation === 'string') {
+            // Check if this is unencrypted data (fallback format)
+            if (encryptedMutation.startsWith('{"unencrypted":true')) {
+              const parsed = JSON.parse(encryptedMutation);
+              if (parsed.unencrypted && parsed.data) {
+                return parsed.data;
+              }
+            }
+            // Try to decrypt encrypted data
+            return await decryptData(encryptedMutation);
+          } else if (typeof encryptedMutation === 'object' && encryptedMutation !== null) {
+            // Handle case where mutation is stored as object
+            console.warn('Found mutation stored as object instead of string, using as-is');
+            return encryptedMutation;
+          }
+          // Invalid type - skip
+          return null;
         } catch (error) {
           console.error('Error decrypting mutation, skipping:', error);
           return null; // Skip corrupted data
@@ -541,6 +558,86 @@ export const migrateFromLocalStorage = async (): Promise<void> => {
     console.log('Migration from localStorage to IndexedDB completed successfully');
   } catch (error) {
     console.error('Error during migration:', error);
+  }
+};
+
+/**
+ * Clean up orphaned mutations that reference non-existent shipments
+ * This prevents sync failures on mutations that can never succeed
+ */
+export const cleanupOrphanedMutations = async (supabase: any): Promise<number> => {
+  try {
+    const mutations = await getMutationQueue();
+    const validMutations: any[] = [];
+    let orphanedCount = 0;
+
+    for (const mutation of mutations) {
+      try {
+        if (mutation.type === 'updateShipment' || mutation.type === 'deleteShipment') {
+          const shipmentId = mutation.type === 'updateShipment' ? mutation.payload.shipmentId : mutation.payload.id;
+
+          // Check if shipment exists
+          const { data, error } = await supabase
+            .from('shipments')
+            .select('id')
+            .eq('id', shipmentId)
+            .single();
+
+          if (error && error.code === 'PGRST116') { // Not found
+            console.warn(`Removing orphaned mutation for non-existent shipment ${shipmentId}`);
+            orphanedCount++;
+            continue; // Skip this mutation
+          }
+        }
+
+        // Keep valid mutations
+        validMutations.push(mutation);
+      } catch (error) {
+        console.error('Error checking mutation validity:', error);
+        // Keep mutations we can't validate
+        validMutations.push(mutation);
+      }
+    }
+
+    if (orphanedCount > 0) {
+      await setMutationQueue(validMutations);
+      console.log(`Cleaned up ${orphanedCount} orphaned mutations`);
+    }
+
+    return orphanedCount;
+  } catch (error) {
+    console.error('Error cleaning up orphaned mutations:', error);
+    return 0;
+  }
+};
+
+/**
+ * Clean up old mutations that are older than a specified age
+ * This helps prevent accumulation of stale mutations
+ */
+export const cleanupOldMutations = async (maxAgeHours: number = 168): Promise<number> => {
+  try {
+    const mutations = await getMutationQueue();
+    const cutoffTime = new Date();
+    cutoffTime.setHours(cutoffTime.getHours() - maxAgeHours);
+
+    const validMutations = mutations.filter(mutation => {
+      if (!mutation.timestamp) return true; // Keep mutations without timestamp
+      const mutationTime = new Date(mutation.timestamp);
+      return mutationTime > cutoffTime;
+    });
+
+    const removedCount = mutations.length - validMutations.length;
+
+    if (removedCount > 0) {
+      await setMutationQueue(validMutations);
+      console.log(`Cleaned up ${removedCount} old mutations older than ${maxAgeHours} hours`);
+    }
+
+    return removedCount;
+  } catch (error) {
+    console.error('Error cleaning up old mutations:', error);
+    return 0;
   }
 };
 

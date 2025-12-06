@@ -473,12 +473,11 @@ export const initSyncService = (): void => {
   
   // Listen for online/offline events
   window.addEventListener('online', async () => {
-    console.log('Back online - triggering sync');
+    console.log('Back online');
     currentSyncStatus.isOnline = true;
     notifySyncStatusChange();
-    
-    // Delay sync to ensure connection is stable
-    setTimeout(() => processSyncQueue(), 2000);
+
+    // No automatic sync - user must manually sync
   });
   
   window.addEventListener('offline', () => {
