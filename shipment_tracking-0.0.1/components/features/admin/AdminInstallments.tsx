@@ -1,10 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Installment, InstallmentPayment, Shipment, Driver, Region } from '../../../types';
+import { Installment, InstallmentPayment, Driver, Region } from '../../../types';
 import { useAppContext } from '../../../providers/AppContext';
 import { Icons } from '../../Icons';
 import Button from '../../common/ui/Button';
 import Modal from '../../common/ui/Modal';
-import FieldValue from '../../common/components/FieldValue';
 import Input from '../../common/ui/Input';
 
 interface AdminInstallmentsProps {
@@ -264,7 +263,7 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
             <div className="pt-3 border-t border-dashed border-secondary-200 dark:border-secondary-700">
               <p className="text-sm font-semibold mb-2">آخر المدفوعات:</p>
               <div className="space-y-1 text-sm max-h-20 overflow-y-auto">
-                {payments.slice(-3).map((payment, index) => (
+                {payments.slice(-3).map((payment) => (
                   <div key={payment.id} className="flex justify-between items-center text-secondary-700 dark:text-secondary-300 bg-secondary-50 dark:bg-secondary-800/50 px-2 py-1 rounded">
                     <span>{new Date(payment.receivedDate).toLocaleDateString('ar-EG')}</span>
                     <span className="font-mono bg-secondary-100 dark:bg-secondary-700 px-2 py-0.5 rounded text-xs">
@@ -289,7 +288,7 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
             </p>
           </div>
           <Button
-            variant={isDebtCollection ? "warning" : "primary"}
+            variant={isDebtCollection ? "destructive" : "primary"}
             size="sm"
             onClick={() => handleViewDetails(installment)}
             className="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white"
