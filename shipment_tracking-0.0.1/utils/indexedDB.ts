@@ -577,7 +577,7 @@ export const cleanupOrphanedMutations = async (supabase: any): Promise<number> =
           const shipmentId = mutation.type === 'updateShipment' ? mutation.payload.shipmentId : mutation.payload.id;
 
           // Check if shipment exists
-          const { data, error } = await supabase
+          const { error } = await supabase
             .from('shipments')
             .select('id')
             .eq('id', shipmentId)

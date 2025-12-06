@@ -20,6 +20,34 @@ type ShipmentProductRow = Database['public']['Tables']['shipment_products']['Row
 type ProductPriceRow = Database['public']['Tables']['product_prices']['Row'];
 type NotificationRow = Database['public']['Tables']['notifications']['Row'];
 
+// Manual type definitions for installments tables (not in generated types)
+type InstallmentRow = {
+    id: string;
+    shipment_id: string;
+    payable_amount: number;
+    remaining_amount: number;
+    status: string;
+    installment_type?: string;
+    original_amount?: number;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+    created_by?: string;
+    updated_by?: string;
+};
+
+type InstallmentPaymentRow = {
+    id: string;
+    installment_id: string;
+    amount: number;
+    received_date: string;
+    payment_method?: string;
+    reference_number?: string;
+    notes?: string;
+    created_at?: string;
+    created_by?: string;
+};
+
 
 // --- Data Mapping Functions ---
 const userFromRow = (row: UserRow): User => ({
@@ -797,7 +825,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 // Continue without session refresh if it fails
             }
 
-            mutationQueue = await IndexedDB.getMutationQueue(currentUser?.id);
+            mutationQueue = await IndexedDB.getMutationQueue();
+            // Filter mutations by current user
+            if (currentUser?.id) {
+                mutationQueue = mutationQueue.filter(mutation => mutation.userId === currentUser.id);
+            }
             if (mutationQueue.length === 0) {
                 logger.info('No pending mutations to sync');
                 return;
@@ -812,7 +844,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 }
 
                 // Re-fetch the queue after cleanup to get the latest valid mutations
-                const cleanedQueue = await IndexedDB.getMutationQueue(currentUser?.id);
+                let cleanedQueue = await IndexedDB.getMutationQueue();
+                // Filter mutations by current user
+                if (currentUser?.id) {
+                    cleanedQueue = cleanedQueue.filter(mutation => mutation.userId === currentUser.id);
+                }
                 if (cleanedQueue.length === 0) {
                     logger.info('No mutations left after cleanup');
                     return;
@@ -967,7 +1003,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         updated_at: new Date().toISOString()
                     };
 
-                    const { data: newInstallmentData, error: installmentError } = await supabase
+                    const { data: newInstallmentData, error: installmentError } = await (supabase as any)
                         .from('installments')
                         .insert(installmentRow)
                         .select()
@@ -994,7 +1030,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     if (updates.notes !== undefined) updateRow.notes = updates.notes;
                     if (updates.updatedBy !== undefined) updateRow.updated_by = updates.updatedBy;
 
-                    const { data, error } = await supabase
+                    const { data, error } = await (supabase as any)
                         .from('installments')
                         .update(updateRow)
                         .eq('id', installmentId)
@@ -1019,7 +1055,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         created_at: new Date().toISOString()
                     };
 
-                    const { data: newPaymentData, error: paymentError } = await supabase
+                    const { data: newPaymentData, error: paymentError } = await (supabase as any)
                         .from('installment_payments')
                         .insert(paymentRow)
                         .select()
@@ -1037,7 +1073,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         ...updates
                     };
 
-                    const { data, error } = await supabase
+                    const { data, error } = await (supabase as any)
                         .from('installment_payments')
                         .update(updateRow)
                         .eq('id', paymentId)
@@ -1728,7 +1764,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         // Check if installment already exists for this shipment
-        const { data: existingInstallment, error: checkError } = await supabase
+        const { data: existingInstallment, error: checkError } = await (supabase as any)
             .from('installments')
             .select('id')
             .eq('shipment_id', installment.shipmentId)
@@ -1766,7 +1802,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (error) throw error;
         await fetchAllData();
-    }, [isOnline, currentUser?.id, fetchAllData, shipments]);
+    }, [isOnline, currentUser?.id, fetchAllData]);
 
     const updateInstallment = useCallback(async (installmentId: string, updates: Partial<Installment>) => {
         if (!isOnline) {
@@ -1775,7 +1811,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return;
         }
 
-        const updateData: Partial<Database['public']['Tables']['installments']['Update']> = {};
+        const updateData: any = {};
         if (updates.payableAmount !== undefined) updateData.payable_amount = updates.payableAmount;
         if (updates.remainingAmount !== undefined) updateData.remaining_amount = updates.remainingAmount;
         if (updates.status !== undefined) updateData.status = updates.status;
@@ -1816,7 +1852,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return;
         }
 
-        const updateData: Partial<Database['public']['Tables']['installment_payments']['Update']> = {};
+        const updateData: any = {};
         if (updates.amount !== undefined) updateData.amount = updates.amount;
         if (updates.receivedDate !== undefined) updateData.received_date = updates.receivedDate;
         if (updates.paymentMethod !== undefined) updateData.payment_method = updates.paymentMethod;

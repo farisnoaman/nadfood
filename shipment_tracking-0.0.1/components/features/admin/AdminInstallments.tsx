@@ -176,7 +176,7 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
             variant={isDebtCollection ? "warning" : "primary"}
             size="sm"
             onClick={() => handleViewDetails(installment)}
-            className="text-xs px-3 py-1"
+            className="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Icons.Eye className="ml-1 h-3 w-3" />
             عرض التفاصيل
