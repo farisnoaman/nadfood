@@ -48,12 +48,25 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
       return;
     }
 
+    // Find the maximum number of payments across all installments
+    const maxPayments = Math.max(...installments.map(installment =>
+      installmentPaymentsMap.get(installment.id)?.length || 0
+    ));
+
+    // Generate dynamic headers for payments
+    const paymentHeaders = [];
+    for (let i = 1; i <= maxPayments; i++) {
+      paymentHeaders.push(`تاريخ الدفعة ${i}`, `مبلغ الدفعة ${i}`);
+    }
+
     const headers = [
       'المعرف', 'تاريخ الأمر', 'أمر المبيعات', 'المنطقة', 'السائق', 'رقم اللوحة', 'الحالة',
       'المنتجات', 'إجمالي أجر المنتجات', 'إجمالي الديزل', 'خرج الطريق', 'رسوم زعيتري', 'مصروفات إدارية', 'مبالغ أخرى',
       'المبلغ المستحق', 'قيمة التالف', 'قيمة النقص', 'المبلغ المستحق بعد الخصم',
       'سندات تحسين', 'ممسى', 'إجمالي المبلغ المستحق النهائي',
-      'رقم الحوالة', 'تاريخ الحوالة'
+      'رقم الحوالة', 'تاريخ الحوالة',
+      ...paymentHeaders,
+      'المبلغ المتبقي بعد الدفعات'
     ];
 
     const csvRows = [headers.join(',')];
@@ -64,6 +77,27 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
       const driverName = driver?.name || 'غير معروف';
       const driverPlateNumber = driver?.plateNumber || 'غير معروف';
       const productsString = shipment.products.map(p => `${p.productName} (${p.cartonCount})`).join('; ');
+
+      // Find the installment for this shipment
+      const installment = installments.find(inst => inst.shipmentId === shipment.id);
+      const payments = installment ? installmentPaymentsMap.get(installment.id) || [] : [];
+
+      // Sort payments by date
+      const sortedPayments = payments.sort((a, b) => new Date(a.receivedDate).getTime() - new Date(b.receivedDate).getTime());
+
+      // Generate payment data (date and amount pairs)
+      const paymentData = [];
+      for (let i = 0; i < maxPayments; i++) {
+        if (i < sortedPayments.length) {
+          paymentData.push(sortedPayments[i].receivedDate, sortedPayments[i].amount);
+        } else {
+          paymentData.push('', ''); // Empty cells for installments with fewer payments
+        }
+      }
+
+      // Calculate remaining amount after payments
+      const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
+      const remainingAmount = installment ? installment.payableAmount - totalPaid : 0;
 
       const rowData = [
         shipment.id,
@@ -89,6 +123,8 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
         shipment.totalDueAmount ?? 0,
         shipment.transferNumber ?? '',
         shipment.transferDate ?? '',
+        ...paymentData,
+        remainingAmount
       ];
 
       const row = rowData.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`);
@@ -274,7 +310,7 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
               variant="secondary"
               size="sm"
               onClick={handleExportToCSV}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Icons.FileDown className="h-4 w-4" />
               تصدير CSV
