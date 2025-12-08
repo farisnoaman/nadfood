@@ -124,11 +124,20 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
 
-    // Generate filename with Arabic text, month number, and year
-    const now = new Date();
-    const month = now.getMonth() + 1; // getMonth() returns 0-11, so add 1
-    const year = now.getFullYear();
-    const filename = `تقرير الشحنات العادية - لشهر ${month} - ${year}.csv`;
+    // Generate filename based on date filters
+    let filename: string;
+    if (fromDate && toDate) {
+      // Use date range format when filters are applied
+      const formattedFromDate = formatDateForDisplay(fromDate);
+      const formattedToDate = formatDateForDisplay(toDate);
+      filename = `تقرير الشحنات العادية من تاريخ ${formattedFromDate} - الى - ${formattedToDate}.csv`;
+    } else {
+      // Use month/year format when no date filters
+      const now = new Date();
+      const month = now.getMonth() + 1; // getMonth() returns 0-11, so add 1
+      const year = now.getFullYear();
+      filename = `تقرير الشحنات العادية - لشهر ${month} - ${year}.csv`;
+    }
 
     link.setAttribute('href', url);
     link.setAttribute('download', filename);
