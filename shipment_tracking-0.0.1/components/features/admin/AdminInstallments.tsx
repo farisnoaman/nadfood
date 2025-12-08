@@ -61,7 +61,6 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
     const headers = [
       'تاريخ الأمر', 'أمر المبيعات', 'المنطقة', 'السائق', 'رقم اللوحة', 'الحالة',
       'الكمية - حليب بقري كبير 500 مل * 20', 'الكمية - حليب بقري صغير 250 مل * 28', 'الكمية - حليب أثمان 125 مل * 44',
-      'الاجر - حليب بقري كبير 500 مل * 20', 'الاجر - حليب بقري صغير 250 مل * 28', 'الاجر - حليب أثمان 125 مل * 44',
       'إجمالي أجر المنتجات', 'إجمالي الديزل', 'خرج الطريق', 'رسوم زعيتري', 'مصروفات إدارية', 'مبالغ أخرى',
       'المبلغ المستحق', 'قيمة التالف', 'قيمة النقص', 'المبلغ المستحق بعد الخصم',
       'سندات تحسين', 'ممسى', 'رسوم التحويل', 'إجمالي المبلغ المستحق النهائي',
@@ -78,23 +77,15 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
       const driverName = driver?.name || 'غير معروف';
       const driverPlateNumber = driver?.plateNumber || 'غير معروف';
 
-      // Extract carton counts and calculate prices for specific products
-      const getProductData = (productName: string) => {
+      // Extract carton counts for specific products
+      const getProductCartonCount = (productName: string): number => {
         const product = shipment.products.find(p => p.productName === productName);
-        const cartonCount = product ? product.cartonCount : 0;
-
-        // Find product ID and price for this region
-        const productInfo = allProducts.find(p => p.name === productName);
-        const productPrice = productInfo ? productPrices.find(pp => pp.productId === productInfo.id && pp.regionId === shipment.regionId) : null;
-        const price = productPrice ? productPrice.price : 0;
-        const totalPrice = cartonCount * price;
-
-        return { cartonCount, totalPrice };
+        return product ? product.cartonCount : 0;
       };
 
-      const cowMilkLargeData = getProductData('حليب بقري كبير 500 مل * 20');
-      const cowMilkSmallData = getProductData('حليب بقري صغير 250 مل * 28');
-      const athmanMilkData = getProductData('حليب أثمان 125 مل * 44');
+      const cowMilkLargeCount = getProductCartonCount('حليب بقري كبير 500 مل * 20');
+      const cowMilkSmallCount = getProductCartonCount('حليب بقري صغير 250 مل * 28');
+      const athmanMilkCount = getProductCartonCount('حليب أثمان 125 مل * 44');
 
       // Find the installment for this shipment
       const installment = installments.find(inst => inst.shipmentId === shipment.id);
@@ -124,12 +115,9 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
         driverName,
         driverPlateNumber,
         shipment.status,
-        cowMilkLargeData.cartonCount,
-        cowMilkSmallData.cartonCount,
-        athmanMilkData.cartonCount,
-        cowMilkLargeData.totalPrice,
-        cowMilkSmallData.totalPrice,
-        athmanMilkData.totalPrice,
+        cowMilkLargeCount,
+        cowMilkSmallCount,
+        athmanMilkCount,
         shipment.totalWage ?? 0,
         shipment.totalDiesel ?? 0,
         shipment.roadExpenses ?? 0,
