@@ -115,6 +115,7 @@ export interface Shipment {
   otherAmounts?: number; // Additional deductions
   improvementBonds?: number; // Addition
   eveningAllowance?: number; // Addition
+  transferFee?: number; // Addition - Transfer fees
   totalDueAmount?: number; // The final calculated amount
   taxRate?: number; // Tax percentage
   totalTax?: number; // Calculated tax amount

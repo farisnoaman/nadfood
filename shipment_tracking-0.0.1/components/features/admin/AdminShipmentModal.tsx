@@ -57,9 +57,10 @@ const DeductionsSection: React.FC<{
 const AdditionsSection: React.FC<{ shipment: Shipment; onValueChange: (field: keyof Shipment, value: string) => void; disabled?: boolean; }> = ({ shipment, onValueChange, disabled = false }) => (
     <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
         <h4 className="font-bold text-lg">قسم الإضافات</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
             <Input label="سندات تحسين" type="number" min="0" value={shipment.improvementBonds || ''} onChange={e => onValueChange('improvementBonds', e.target.value)} disabled={disabled} />
             <Input label="ممسى" type="number" min="0" value={shipment.eveningAllowance || ''} onChange={e => onValueChange('eveningAllowance', e.target.value)} disabled={disabled} />
+            <Input label="رسوم التحويل" type="number" min="0" value={shipment.transferFee || ''} onChange={e => onValueChange('transferFee', e.target.value)} disabled={disabled} />
         </div>
     </div>
 );
@@ -141,7 +142,8 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
     const amountAfterDeductions = calculateAmountAfterDeductions(ship);
     const improvementBonds = ship.improvementBonds || 0;
     const eveningAllowance = ship.eveningAllowance || 0;
-    return amountAfterDeductions + improvementBonds + eveningAllowance;
+    const transferFee = ship.transferFee || 0;
+    return amountAfterDeductions + improvementBonds + eveningAllowance + transferFee;
   };
 
   useEffect(() => {
@@ -151,7 +153,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
 
   const handleValueChange = (field: keyof Shipment, value: string) => {
     let processedValue: string | number = value;
-    const additionFields: (keyof Shipment)[] = ['improvementBonds', 'eveningAllowance'];
+    const additionFields: (keyof Shipment)[] = ['improvementBonds', 'eveningAllowance', 'transferFee'];
     const deductionFields: (keyof Shipment)[] = ['damagedValue', 'shortageValue', 'otherAmounts'];
 
     if (additionFields.includes(field)) {

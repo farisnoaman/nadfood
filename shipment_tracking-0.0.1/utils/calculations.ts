@@ -79,11 +79,12 @@ export const calculateAdminValues = (shipment: Shipment): Partial<Shipment> => {
         shortageValue = 0,
         otherAmounts = 0,
         improvementBonds = 0,
-        eveningAllowance = 0
+        eveningAllowance = 0,
+        transferFee = 0
     } = shipment;
 
-    // Formula: المبلغ المستحق + سندات تحسين + ممسى - التالف - النقص - مبالغ أخرى
-    const totalDueAmount = dueAmount + improvementBonds + eveningAllowance - damagedValue - shortageValue - otherAmounts;
+    // Formula: المبلغ المستحق + سندات تحسين + ممسى + رسوم التحويل - التالف - النقص - مبالغ أخرى
+    const totalDueAmount = dueAmount + improvementBonds + eveningAllowance + transferFee - damagedValue - shortageValue - otherAmounts;
 
     return { totalDueAmount };
 };

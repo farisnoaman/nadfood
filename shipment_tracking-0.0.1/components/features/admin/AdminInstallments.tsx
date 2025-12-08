@@ -11,7 +11,7 @@ interface AdminInstallmentsProps {
 }
 
 const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
-  const { installments, installmentPayments, addInstallmentPayment, updateInstallment, currentUser, shipments, drivers, regions } = useAppContext();
+  const { installments, installmentPayments, addInstallmentPayment, updateInstallment, currentUser, shipments, drivers, regions, productPrices, products: allProducts } = useAppContext();
   const [selectedInstallment, setSelectedInstallment] = useState<Installment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPaymentAmount, setNewPaymentAmount] = useState('');
@@ -59,10 +59,12 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
     }
 
     const headers = [
-      'المعرف', 'تاريخ الأمر', 'أمر المبيعات', 'المنطقة', 'السائق', 'رقم اللوحة', 'الحالة',
-      'المنتجات', 'إجمالي أجر المنتجات', 'إجمالي الديزل', 'خرج الطريق', 'رسوم زعيتري', 'مصروفات إدارية', 'مبالغ أخرى',
+      'تاريخ الأمر', 'أمر المبيعات', 'المنطقة', 'السائق', 'رقم اللوحة', 'الحالة',
+      'الكمية - حليب بقري كبير 500 مل * 20', 'الكمية - حليب بقري صغير 250 مل * 28', 'الكمية - حليب أثمان 125 مل * 44',
+      'الاجر - حليب بقري كبير 500 مل * 20', 'الاجر - حليب بقري صغير 250 مل * 28', 'الاجر - حليب أثمان 125 مل * 44',
+      'إجمالي أجر المنتجات', 'إجمالي الديزل', 'خرج الطريق', 'رسوم زعيتري', 'مصروفات إدارية', 'مبالغ أخرى',
       'المبلغ المستحق', 'قيمة التالف', 'قيمة النقص', 'المبلغ المستحق بعد الخصم',
-      'سندات تحسين', 'ممسى', 'إجمالي المبلغ المستحق النهائي',
+      'سندات تحسين', 'ممسى', 'رسوم التحويل', 'إجمالي المبلغ المستحق النهائي',
       'رقم الحوالة', 'تاريخ الحوالة',
       ...paymentHeaders,
       'المبلغ المتبقي بعد الدفعات'
@@ -75,7 +77,24 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
       const driver = drivers.find((d: Driver) => d.id === shipment.driverId);
       const driverName = driver?.name || 'غير معروف';
       const driverPlateNumber = driver?.plateNumber || 'غير معروف';
-      const productsString = shipment.products.map(p => `${p.productName} (${p.cartonCount})`).join('; ');
+
+      // Extract carton counts and calculate prices for specific products
+      const getProductData = (productName: string) => {
+        const product = shipment.products.find(p => p.productName === productName);
+        const cartonCount = product ? product.cartonCount : 0;
+
+        // Find product ID and price for this region
+        const productInfo = allProducts.find(p => p.name === productName);
+        const productPrice = productInfo ? productPrices.find(pp => pp.productId === productInfo.id && pp.regionId === shipment.regionId) : null;
+        const price = productPrice ? productPrice.price : 0;
+        const totalPrice = cartonCount * price;
+
+        return { cartonCount, totalPrice };
+      };
+
+      const cowMilkLargeData = getProductData('حليب بقري كبير 500 مل * 20');
+      const cowMilkSmallData = getProductData('حليب بقري صغير 250 مل * 28');
+      const athmanMilkData = getProductData('حليب أثمان 125 مل * 44');
 
       // Find the installment for this shipment
       const installment = installments.find(inst => inst.shipmentId === shipment.id);
@@ -99,14 +118,18 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
       const remainingAmount = installment ? installment.payableAmount - totalPaid : 0;
 
       const rowData = [
-        shipment.id,
         shipment.orderDate,
         shipment.salesOrder,
         regionName,
         driverName,
         driverPlateNumber,
         shipment.status,
-        productsString,
+        cowMilkLargeData.cartonCount,
+        cowMilkSmallData.cartonCount,
+        athmanMilkData.cartonCount,
+        cowMilkLargeData.totalPrice,
+        cowMilkSmallData.totalPrice,
+        athmanMilkData.totalPrice,
         shipment.totalWage ?? 0,
         shipment.totalDiesel ?? 0,
         shipment.roadExpenses ?? 0,
@@ -119,6 +142,7 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
         shipment.dueAmountAfterDiscount ?? 0,
         shipment.improvementBonds ?? 0,
         shipment.eveningAllowance ?? 0,
+        shipment.transferFee ?? 0,
         shipment.totalDueAmount ?? 0,
         shipment.transferNumber ?? '',
         shipment.transferDate ?? '',
