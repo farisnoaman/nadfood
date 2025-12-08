@@ -123,8 +123,15 @@ const AdminShipmentList: React.FC<AdminShipmentListProps> = ({ shipments, defaul
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
+
+    // Generate filename with Arabic text, month number, and year
+    const now = new Date();
+    const month = now.getMonth() + 1; // getMonth() returns 0-11, so add 1
+    const year = now.getFullYear();
+    const filename = `تقرير الشحنات العادية - لشهر ${month} - ${year}.csv`;
+
     link.setAttribute('href', url);
-    link.setAttribute('download', 'shipments_export.csv');
+    link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
