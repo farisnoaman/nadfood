@@ -160,6 +160,7 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
             {Object.entries({
               'سندات تحسين': shipment.improvementBonds,
               'بدل مسائي': shipment.eveningAllowance,
+              'رسوم التحويل': shipment.transferFee,
               'معدل الضريبة': shipment.taxRate ? `${shipment.taxRate}%` : null,
             }).map(([label, value]) => (
               value !== undefined && value !== null && (

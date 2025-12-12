@@ -139,7 +139,7 @@ const DriverManager: React.FC = () => {
                         </div>
                         <div className="flex items-center space-x-1 rtl:space-x-reverse">
                              <Button size="sm" variant="ghost" onClick={() => handleEditDriver(d)} title="تعديل" disabled={!isOnline}>
-                                 <Icons.Edit className="h-4 w-4" />
+                                 <Icons.Edit className="h-5 w-5 text-blue-500" />
                              </Button>
                              <Button size="sm" variant="ghost" onClick={() => setDriverToToggleStatus(d)} title={d.isActive ?? true ? 'تعطيل' : 'تفعيل'} disabled={!isOnline}>
                                  {d.isActive ?? true
