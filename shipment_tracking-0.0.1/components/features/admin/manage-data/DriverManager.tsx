@@ -12,6 +12,10 @@ const DriverManager: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [newDriverName, setNewDriverName] = useState('');
     const [newDriverPlate, setNewDriverPlate] = useState('');
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [driverToEdit, setDriverToEdit] = useState<Driver | null>(null);
+    const [editDriverName, setEditDriverName] = useState('');
+    const [editDriverPlate, setEditDriverPlate] = useState('');
     const [driverToDelete, setDriverToDelete] = useState<Driver | null>(null);
     const [driverToToggleStatus, setDriverToToggleStatus] = useState<Driver | null>(null);
     const [error, setError] = useState('');
@@ -22,6 +26,21 @@ const DriverManager: React.FC = () => {
         setError('');
         setNewDriverName('');
         setNewDriverPlate('');
+    };
+
+    const handleCloseEditModal = () => {
+        setIsEditModalOpen(false);
+        setError('');
+        setDriverToEdit(null);
+        setEditDriverName('');
+        setEditDriverPlate('');
+    };
+
+    const handleEditDriver = (driver: Driver) => {
+        setDriverToEdit(driver);
+        setEditDriverName(driver.name);
+        setEditDriverPlate(driver.plateNumber);
+        setIsEditModalOpen(true);
     };
     
     const handleAddNewDriver = async () => {
@@ -39,6 +58,29 @@ const DriverManager: React.FC = () => {
                 setError('اسم السائق هذا موجود بالفعل.');
             } else {
                 setError(`فشل إضافة السائق: ${err.message}`);
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleUpdateDriver = async () => {
+        if (!driverToEdit || !editDriverName.trim() || !editDriverPlate.trim()) {
+            setError('يرجى ملء جميع الحقول.');
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            await updateDriver(driverToEdit.id, {
+                name: editDriverName.trim(),
+                plateNumber: editDriverPlate.trim()
+            });
+            handleCloseEditModal();
+        } catch (err: any) {
+            if (err.message.includes('duplicate key')) {
+                setError('اسم السائق هذا موجود بالفعل.');
+            } else {
+                setError(`فشل تحديث السائق: ${err.message}`);
             }
         } finally {
             setIsSubmitting(false);
@@ -96,16 +138,19 @@ const DriverManager: React.FC = () => {
                             </span>
                         </div>
                         <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                            <Button size="sm" variant="ghost" onClick={() => setDriverToToggleStatus(d)} title={d.isActive ?? true ? 'تعطيل' : 'تفعيل'} disabled={!isOnline}>
-                                {d.isActive ?? true
-                                    ? <Icons.CircleX className="h-5 w-5 text-red-500" />
-                                    : <Icons.CircleCheck className="h-5 w-5 text-green-500" />
-                                }
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => setDriverToDelete(d)} title="حذف" disabled={!isOnline}>
-                                <Icons.Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
+                             <Button size="sm" variant="ghost" onClick={() => handleEditDriver(d)} title="تعديل" disabled={!isOnline}>
+                                 <Icons.Edit className="h-4 w-4" />
+                             </Button>
+                             <Button size="sm" variant="ghost" onClick={() => setDriverToToggleStatus(d)} title={d.isActive ?? true ? 'تعطيل' : 'تفعيل'} disabled={!isOnline}>
+                                 {d.isActive ?? true
+                                     ? <Icons.CircleX className="h-5 w-5 text-red-500" />
+                                     : <Icons.CircleCheck className="h-5 w-5 text-green-500" />
+                                 }
+                             </Button>
+                             <Button size="sm" variant="destructive" onClick={() => setDriverToDelete(d)} title="حذف" disabled={!isOnline}>
+                                 <Icons.Trash2 className="h-4 w-4" />
+                             </Button>
+                         </div>
                     </div>
                 ))}
                 {hasMore && (
@@ -122,16 +167,28 @@ const DriverManager: React.FC = () => {
         </div>
             
             <Modal isOpen={isAddModalOpen} onClose={handleCloseAddModal} title="إضافة سائق جديد">
-                <div className="space-y-4">
-                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-                    <Input label="اسم السائق" value={newDriverName} onChange={e => setNewDriverName(e.target.value)} required />
-                    <Input label="رقم اللوحة" value={newDriverPlate} onChange={e => setNewDriverPlate(e.target.value)} required />
-                    <div className="flex justify-end gap-3 pt-4">
-                        <Button variant="secondary" onClick={handleCloseAddModal} disabled={isSubmitting}>إلغاء</Button>
-                        <Button onClick={handleAddNewDriver} disabled={isSubmitting}>{isSubmitting ? 'جاري الإضافة...' : 'إضافة'}</Button>
-                    </div>
-                </div>
-            </Modal>
+                 <div className="space-y-4">
+                     {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                     <Input label="اسم السائق" value={newDriverName} onChange={e => setNewDriverName(e.target.value)} required />
+                     <Input label="رقم اللوحة" value={newDriverPlate} onChange={e => setNewDriverPlate(e.target.value)} required />
+                     <div className="flex justify-end gap-3 pt-4">
+                         <Button variant="secondary" onClick={handleCloseAddModal} disabled={isSubmitting}>إلغاء</Button>
+                         <Button onClick={handleAddNewDriver} disabled={isSubmitting}>{isSubmitting ? 'جاري الإضافة...' : 'إضافة'}</Button>
+                     </div>
+                 </div>
+             </Modal>
+
+             <Modal isOpen={isEditModalOpen} onClose={handleCloseEditModal} title="تعديل السائق">
+                 <div className="space-y-4">
+                     {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                     <Input label="اسم السائق" value={editDriverName} onChange={e => setEditDriverName(e.target.value)} required />
+                     <Input label="رقم اللوحة" value={editDriverPlate} onChange={e => setEditDriverPlate(e.target.value)} required />
+                     <div className="flex justify-end gap-3 pt-4">
+                         <Button variant="secondary" onClick={handleCloseEditModal} disabled={isSubmitting}>إلغاء</Button>
+                         <Button onClick={handleUpdateDriver} disabled={isSubmitting}>{isSubmitting ? 'جاري التحديث...' : 'تحديث'}</Button>
+                     </div>
+                 </div>
+             </Modal>
             
             <Modal isOpen={!!driverToDelete} onClose={() => setDriverToDelete(null)} title="تأكيد الحذف">
                 <div className="text-center">
