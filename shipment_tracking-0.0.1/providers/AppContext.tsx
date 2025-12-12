@@ -9,6 +9,7 @@ import { STORES } from '../utils/constants';
 import { clearOfflineSession, getOfflineSession, shouldClearOfflineSessionOnLaunch } from '../utils/offlineAuth';
 import { updateSyncStatus, getSyncQueueCount } from '../utils/syncQueue';
 import logger from '../utils/logger';
+import SupabaseService from '../utils/supabaseService';
 
 // Type alias for Supabase row types
 type UserRow = Database['public']['Tables']['users']['Row'];
@@ -373,17 +374,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 if (cachedPrices.length > 0) setProductPrices(cachedPrices);
                 if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
 
-                // Update settings
-                setAccountantPrintAccess(cachedAccountantPrintAccess);
-                setIsPrintHeaderEnabled(cachedIsPrintHeaderEnabled);
-                setAppName(cachedAppName);
-                setCompanyName(cachedCompanyName);
-                setCompanyAddress(cachedCompanyAddress);
-                setCompanyPhone(cachedCompanyPhone);
-                setCompanyLogo(cachedCompanyLogo);
-                setIsTimeWidgetVisible(cachedIsTimeWidgetVisible);
+                 // Update settings
+                 setAccountantPrintAccess(cachedAccountantPrintAccess);
+                 setIsPrintHeaderEnabled(cachedIsPrintHeaderEnabled);
+                 setAppName(cachedAppName);
+                 setCompanyName(cachedCompanyName);
+                 setCompanyAddress(cachedCompanyAddress);
+                 setCompanyPhone(cachedCompanyPhone);
+                 setCompanyLogo(cachedCompanyLogo);
+                 setIsTimeWidgetVisible(cachedIsTimeWidgetVisible);
 
-                logger.info('IndexedDB data loaded successfully');
+                 // Load global settings from database to sync across users
+                 try {
+                     const settingsData = await SupabaseService.getSettings();
+                     const settingsMap = settingsData.reduce((acc, setting) => {
+                         acc[setting.setting_key] = setting.setting_value || '';
+                         return acc;
+                     }, {} as Record<string, string>);
+
+                     // Update state with DB values, falling back to cached
+                     setAppName(settingsMap['appName'] || cachedAppName);
+                     setCompanyName(settingsMap['companyName'] || cachedCompanyName);
+                     setCompanyAddress(settingsMap['companyAddress'] || cachedCompanyAddress);
+                     setCompanyPhone(settingsMap['companyPhone'] || cachedCompanyPhone);
+                     setCompanyLogo(settingsMap['companyLogo'] || cachedCompanyLogo);
+                     setIsPrintHeaderEnabled(settingsMap['isPrintHeaderEnabled'] === 'true');
+                     setAccountantPrintAccess(settingsMap['accountantPrintAccess'] === 'true');
+                     setIsTimeWidgetVisible(settingsMap['isTimeWidgetVisible'] !== 'false');
+
+                     logger.info('Global settings loaded from database');
+                 } catch (error) {
+                     console.error('Failed to load global settings from database:', error);
+                     // Keep cached values
+                 }
+
+                 logger.info('IndexedDB data loaded successfully');
 
                 // Check for pending mutations that need sync
         mutationQueue = await IndexedDB.getMutationQueue();
