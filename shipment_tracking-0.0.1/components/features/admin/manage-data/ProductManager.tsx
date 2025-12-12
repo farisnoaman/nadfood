@@ -7,7 +7,7 @@ import { Icons } from '../../../Icons';
 import { useAppContext } from '../../../../providers/AppContext';
 
 const ProductManager: React.FC = () => {
-  const { products, addProduct, updateProduct, isOnline } = useAppContext();
+  const { products, addProduct, updateProduct, deleteProduct, isOnline } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleCount, setVisibleCount] = useState(20);
   
@@ -15,9 +15,10 @@ const ProductManager: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productName, setProductName] = useState('');
   
-  const [productToToggleStatus, setProductToToggleStatus] = useState<Product | null>(null);
-  const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+   const [productToToggleStatus, setProductToToggleStatus] = useState<Product | null>(null);
+   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+   const [error, setError] = useState('');
+   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) return products;
@@ -80,18 +81,31 @@ const ProductManager: React.FC = () => {
     }
   };
   
-  const confirmToggleProductStatus = async () => {
-    if (!productToToggleStatus) return;
-    setIsSubmitting(true);
-    try {
-        await updateProduct(productToToggleStatus.id, { isActive: !(productToToggleStatus.isActive ?? true) });
-        setProductToToggleStatus(null);
-    } catch (err: any) {
-        alert(`فشل تحديث المنتج: ${err.message}`);
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
+   const confirmToggleProductStatus = async () => {
+     if (!productToToggleStatus) return;
+     setIsSubmitting(true);
+     try {
+         await updateProduct(productToToggleStatus.id, { isActive: !(productToToggleStatus.isActive ?? true) });
+         setProductToToggleStatus(null);
+     } catch (err: any) {
+         alert(`فشل تحديث المنتج: ${err.message}`);
+     } finally {
+         setIsSubmitting(false);
+     }
+   };
+
+   const confirmDeleteProduct = async () => {
+     if (!productToDelete) return;
+     setIsSubmitting(true);
+     try {
+         await deleteProduct(productToDelete.id);
+         setProductToDelete(null);
+     } catch (err: any) {
+         alert(`فشل حذف المنتج: ${err.message}`);
+     } finally {
+         setIsSubmitting(false);
+     }
+   };
 
   return (
     <>
@@ -122,17 +136,20 @@ const ProductManager: React.FC = () => {
                   {p.isActive ?? true ? 'نشط' : 'غير نشط'}
                 </span>
               </div>
-              <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                <Button size="sm" variant="ghost" onClick={() => handleOpenEditModal(p)} title="تعديل" disabled={!isOnline}>
-                  <Icons.Edit className="h-5 w-5 text-blue-500" />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setProductToToggleStatus(p)} title={p.isActive ?? true ? 'تعطيل' : 'تفعيل'} disabled={!isOnline}>
-                  {p.isActive ?? true
-                    ? <Icons.CircleX className="h-5 w-5 text-red-500" />
-                    : <Icons.CircleCheck className="h-5 w-5 text-green-500" />
-                  }
-                </Button>
-              </div>
+               <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                 <Button size="sm" variant="ghost" onClick={() => handleOpenEditModal(p)} title="تعديل" disabled={!isOnline}>
+                   <Icons.Edit className="h-5 w-5 text-blue-500" />
+                 </Button>
+                 <Button size="sm" variant="ghost" onClick={() => setProductToToggleStatus(p)} title={p.isActive ?? true ? 'تعطيل' : 'تفعيل'} disabled={!isOnline}>
+                   {p.isActive ?? true
+                     ? <Icons.CircleX className="h-5 w-5 text-red-500" />
+                     : <Icons.CircleCheck className="h-5 w-5 text-green-500" />
+                   }
+                 </Button>
+                 <Button size="sm" variant="destructive" onClick={() => setProductToDelete(p)} title="حذف" disabled={!isOnline}>
+                   <Icons.Trash2 className="h-4 w-4" />
+                 </Button>
+               </div>
             </div>
           )}
           {hasMore && (
@@ -161,26 +178,43 @@ const ProductManager: React.FC = () => {
         </div>
       </Modal>
 
-      <Modal isOpen={!!productToToggleStatus} onClose={() => setProductToToggleStatus(null)} title="تأكيد تغيير الحالة">
-        <div className="text-center">
-          <Icons.AlertTriangle className="mx-auto h-12 w-12 text-yellow-500" />
-          <p className="mt-4">
-            هل أنت متأكد من رغبتك في
-            {productToToggleStatus?.isActive ? ' تعطيل ' : ' تفعيل '}
-            المنتج
-            <span className="font-bold"> {productToToggleStatus?.name}</span>؟
-          </p>
-          <p className="text-sm text-secondary-500">
-            {productToToggleStatus?.isActive
-              ? 'لن يظهر المنتج في قائمة المبيعات بعد التعطيل.'
-              : 'سيظهر المنتج في قائمة المبيعات بعد التفعيل.'}
-          </p>
-          <div className="mt-6 flex justify-center gap-4">
-            <Button variant="secondary" onClick={() => setProductToToggleStatus(null)} disabled={isSubmitting}>إلغاء</Button>
-            <Button variant="primary" onClick={confirmToggleProductStatus} disabled={isSubmitting}>{isSubmitting ? 'جاري التغيير...' : 'نعم، تأكيد'}</Button>
-          </div>
-        </div>
-      </Modal>
+       <Modal isOpen={!!productToToggleStatus} onClose={() => setProductToToggleStatus(null)} title="تأكيد تغيير الحالة">
+         <div className="text-center">
+           <Icons.AlertTriangle className="mx-auto h-12 w-12 text-yellow-500" />
+           <p className="mt-4">
+             هل أنت متأكد من رغبتك في
+             {productToToggleStatus?.isActive ? ' تعطيل ' : ' تفعيل '}
+             المنتج
+             <span className="font-bold"> {productToToggleStatus?.name}</span>؟
+           </p>
+           <p className="text-sm text-secondary-500">
+             {productToToggleStatus?.isActive
+               ? 'لن يظهر المنتج في قائمة المبيعات بعد التعطيل.'
+               : 'سيظهر المنتج في قائمة المبيعات بعد التفعيل.'}
+           </p>
+           <div className="mt-6 flex justify-center gap-4">
+             <Button variant="secondary" onClick={() => setProductToToggleStatus(null)} disabled={isSubmitting}>إلغاء</Button>
+             <Button variant="primary" onClick={confirmToggleProductStatus} disabled={isSubmitting}>{isSubmitting ? 'جاري التغيير...' : 'نعم، تأكيد'}</Button>
+           </div>
+         </div>
+       </Modal>
+
+       <Modal isOpen={!!productToDelete} onClose={() => setProductToDelete(null)} title="تأكيد الحذف">
+         <div className="text-center">
+           <Icons.AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
+           <p className="mt-4">
+             هل أنت متأكد من رغبتك في حذف المنتج
+             <span className="font-bold"> {productToDelete?.name}</span>؟
+           </p>
+           <p className="text-sm text-secondary-500">
+             هذا الإجراء لا يمكن التراجع عنه. سيتم حذف المنتج نهائياً.
+           </p>
+           <div className="mt-6 flex justify-center gap-4">
+             <Button variant="secondary" onClick={() => setProductToDelete(null)} disabled={isSubmitting}>إلغاء</Button>
+             <Button variant="destructive" onClick={confirmDeleteProduct} disabled={isSubmitting}>{isSubmitting ? 'جاري الحذف...' : 'نعم، حذف'}</Button>
+           </div>
+         </div>
+       </Modal>
     </>
   );
 };

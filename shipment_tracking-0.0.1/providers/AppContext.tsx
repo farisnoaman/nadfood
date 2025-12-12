@@ -225,6 +225,7 @@ interface AppContextType {
     products: Product[];
     addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
     updateProduct: (productId: string, updates: Partial<Product>) => Promise<void>;
+    deleteProduct: (productId: string) => Promise<void>;
     drivers: Driver[];
     addDriver: (driver: Omit<Driver, 'id'>) => Promise<void>;
     updateDriver: (driverId: number, updates: Partial<Driver>) => Promise<void>;
@@ -1485,6 +1486,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await fetchAllData();
     }, [fetchAllData]);
 
+    const deleteProduct = useCallback(async (productId: string) => {
+        const { error } = await supabase.from('products').delete().eq('id', productId);
+        if (error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
     const addDriver = useCallback(async (driver: Omit<Driver, 'id'>) => {
         const { error } = await supabase.from('drivers').insert({ name: driver.name, plate_number: driver.plateNumber, is_active: driver.isActive });
         if(error) throw error;
@@ -1869,7 +1876,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const value = useMemo(() => ({
         currentUser, handleLogout, loadOfflineUser, users, addUser, updateUser,
-        products, addProduct, updateProduct,
+        products, addProduct, updateProduct, deleteProduct,
         drivers, addDriver, updateDriver, deleteDriver,
         regions, addRegion, updateRegion, deleteRegion,
         shipments, addShipment, updateShipment,
@@ -1884,7 +1891,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         syncOfflineMutations,
     }), [
         currentUser, handleLogout, loadOfflineUser, users, addUser, updateUser,
-        products, addProduct, updateProduct,
+        products, addProduct, updateProduct, deleteProduct,
         drivers, addDriver, updateDriver, deleteDriver,
         regions, addRegion, updateRegion, deleteRegion,
         shipments, addShipment, updateShipment,
