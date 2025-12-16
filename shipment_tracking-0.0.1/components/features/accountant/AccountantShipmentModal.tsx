@@ -173,6 +173,9 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
     <>
       <Modal isOpen={isOpen} onClose={onClose} title={`تفاصيل الشحنة: ${shipment.salesOrder}`} size="lg">
         <div className="space-y-4 p-1">
+          <div className="text-sm text-secondary-500 dark:text-secondary-400">
+            تاريخ الطلب: {formatDateForDisplay(shipment.orderDate)}
+          </div>
           <ShipmentStepper status={currentShipment.status} />
 
           <ProductDetails
