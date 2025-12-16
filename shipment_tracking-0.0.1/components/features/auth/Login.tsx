@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Button from '../../common/ui/Button';
 import Input from '../../common/ui/Input';
 import Card from '../../common/display/Card';
@@ -16,7 +16,7 @@ import logger from '../../../utils/logger';
 import { checkLoginRateLimit, recordLoginAttempt, getBlockMessage } from '../../../utils/authProtection';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -33,24 +33,49 @@ const Login: React.FC = () => {
     createSession,
   } = useOfflineAuth();
 
-  // Pre-cache auth resources when online
-  useEffect(() => {
-    if (!isOffline && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'CACHE_AUTH_RESOURCES',
-        supabaseUrl: import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co',
-        supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
-      });
-    }
-  }, [isOffline]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
+    // Check if username/email is provided
+    if (!usernameOrEmail) {
+      setError('يرجى إدخال اسم المستخدم أو البريد الإلكتروني');
+      setLoading(false);
+      return;
+    }
+
+    let emailToUse = usernameOrEmail;
+
+    // Check if input looks like a username (no @ symbol) and try to find the email
+    if (!usernameOrEmail.includes('@')) {
+      try {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('email')
+          .eq('username', usernameOrEmail)
+          .eq('is_active', true)
+          .single();
+
+        if (userError || !userData) {
+          setError('اسم المستخدم غير صحيح');
+          setLoading(false);
+          return;
+        }
+
+        emailToUse = userData.email;
+      } catch (err) {
+        console.error('Error looking up user:', err);
+        setError('حدث خطأ في البحث عن المستخدم');
+        setLoading(false);
+        return;
+      }
+    }
+
     // Check rate limiting
-    const rateLimit = checkLoginRateLimit(email);
+    const rateLimit = checkLoginRateLimit(emailToUse);
     setRateLimitStatus(rateLimit);
 
     if (!rateLimit.allowed) {
@@ -69,7 +94,7 @@ const Login: React.FC = () => {
           return;
         }
 
-        const validation = await validateCredentials(email, password);
+        const validation = await validateCredentials(emailToUse, password);
 
         if (!validation.valid) {
           recordLoginAttempt(email, false); // Record failed login attempt
@@ -83,11 +108,11 @@ const Login: React.FC = () => {
         }
 
         // Create offline session
-        await createSession(validation.userId!, email);
+        await createSession(validation.userId!, emailToUse);
 
         // Load offline user manually since no Supabase auth state change
         await loadOfflineUser();
-        recordLoginAttempt(email, true); // Record successful login
+        recordLoginAttempt(selectedEmail, true); // Record successful login
         logger.info('Offline login successful');
         setLoading(false);
         return;
@@ -98,7 +123,7 @@ const Login: React.FC = () => {
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: emailToUse,
         password,
       });
 
@@ -106,7 +131,7 @@ const Login: React.FC = () => {
 
       if (authError) {
         // Record failed login attempt
-        recordLoginAttempt(email, false);
+        recordLoginAttempt(emailToUse, false);
 
         // Handle specific error cases
         if (authError.message.includes("Invalid login credentials")) {
@@ -132,13 +157,13 @@ const Login: React.FC = () => {
 
         if (!profileError && userProfile) {
           // Store credentials for offline use
-          await storeOfflineCredentials(email, password, data.user.id, userProfile);
-          recordLoginAttempt(email, true); // Record successful login
+          await storeOfflineCredentials(emailToUse, password, data.user.id, userProfile);
+          recordLoginAttempt(emailToUse, true); // Record successful login
           logger.info('Online login successful - credentials stored for offline use');
         } else {
           // Even if profile fetch failed, refresh existing credentials expiry
           await refreshOfflineCredentials();
-          recordLoginAttempt(email, true); // Still record as successful login
+          recordLoginAttempt(emailToUse, true); // Still record as successful login
         }
       }
 
@@ -216,15 +241,21 @@ const Login: React.FC = () => {
               
               <form onSubmit={handleSubmit} className="space-y-6">
               {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-              <Input
-                  id="email"
-                  label="البريد الإلكتروني"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+              <div>
+                <Input
+                  id="usernameOrEmail"
+                  label="اسم المستخدم أو البريد الإلكتروني"
+                  type="text"
+                  value={usernameOrEmail}
+                  onChange={(e) => setUsernameOrEmail(e.target.value)}
                   required
                   Icon={Icons.User}
-              />
+                  placeholder="أدخل اسم المستخدم أو البريد الإلكتروني"
+                />
+                <p className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 text-right">
+                  يمكنك تسجيل الدخول باستخدام اسم المستخدم أو البريد الإلكتروني الكامل
+                </p>
+              </div>
               <Input
                   id="password"
                   label="كلمة المرور"
@@ -237,11 +268,11 @@ const Login: React.FC = () => {
                   onActionClick={() => setShowPassword(!showPassword)}
               />
               <Button
-                type="submit"
-                className="w-full"
-                size="lg"
-                disabled={loading || (rateLimitStatus && !rateLimitStatus.allowed)}
-              >
+                 type="submit"
+                 className="w-full"
+                 size="lg"
+                 disabled={loading || !usernameOrEmail || (rateLimitStatus && !rateLimitStatus.allowed)}
+               >
                   {loading ? 'جاري الدخول...' : (
                       <>
                         <Icons.LogIn className="ml-2 h-5 w-5" />
@@ -254,10 +285,11 @@ const Login: React.FC = () => {
           </Card>
         </div>
       </div>
-      <footer className="py-4 px-4 text-center text-sm text-secondary-500 dark:text-secondary-400">
-        <p>Copyright Reserved @ {new Date().getFullYear()}</p>
-        <p>Designed with ❤️ by Faris Alsolmi</p>
-      </footer>
+       <footer className="py-4 px-4 text-center text-sm text-secondary-500 dark:text-secondary-400">
+         <p>Copyright Reserved @ {new Date().getFullYear()}</p>
+         <p>Designed with ❤️ by Faris Alsolmi</p>
+         <p>Tel: 774485307</p>
+       </footer>
     </div>
   );
 };

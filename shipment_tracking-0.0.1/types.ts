@@ -28,6 +28,7 @@ export enum ShipmentStatus {
 export interface User {
   id: string; // Corresponds to Supabase Auth user UUID
   username: string;
+  email: string;
   role: Role;
   isActive?: boolean;
   createdAt?: string;
