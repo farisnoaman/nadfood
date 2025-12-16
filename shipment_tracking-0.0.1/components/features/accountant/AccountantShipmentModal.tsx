@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shipment, ShipmentStatus, Role, NotificationCategory, Driver } from '../../../types';
 import { printShipmentDetails } from '../../../utils/print';
+import { formatDateForDisplay } from '../../../utils/dateFormatter';
 import { useAppContext } from '../../../providers/AppContext';
 import Modal from '../../common/ui/Modal';
 import Button from '../../common/ui/Button';

@@ -167,15 +167,15 @@ const ReturnedShipmentsTab: React.FC<ReturnedShipmentsTabProps> = ({
           })}
       </div>
 
-      {/* Editable Fields Info */}
-      <Card className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-        <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
-          الحقول القابلة للتعديل
-        </h4>
-        <p className="text-sm text-blue-600 dark:text-blue-300">
-          يمكنك تعديل: رقم الطلب، المنطقة، السائق، والمنتجات
-        </p>
-      </Card>
+       {/* Editable Fields Info */}
+       <Card className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+         <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
+           الحقول القابلة للتعديل
+         </h4>
+         <p className="text-sm text-blue-600 dark:text-blue-300">
+           يمكنك تعديل: رقم الطلب، تاريخ الأمر، المنطقة، السائق، والمنتجات
+         </p>
+       </Card>
     </div>
   );
 };

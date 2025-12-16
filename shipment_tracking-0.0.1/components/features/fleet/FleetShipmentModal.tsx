@@ -5,6 +5,7 @@ import Modal from '../../common/ui/Modal';
 import Button from '../../common/ui/Button';
 import Input from '../../common/ui/Input';
 import SearchableSelect from '../../common/forms/SearchableSelect';
+import ArabicDatePicker from '../../common/ui/ArabicDatePicker';
 import { Icons } from '../../Icons';
 import { useAppContext } from '../../../providers/AppContext';
 import { checkDuplicateSalesOrder } from '../../../utils/validation';
@@ -117,6 +118,11 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
       return false;
     }
 
+    if (isReturnedShipment && !currentShipment.orderDate) {
+      alert('يرجى إدخال تاريخ الأمر');
+      return false;
+    }
+
     if (!currentShipment.products || currentShipment.products.length === 0) {
       alert('يرجى إضافة منتج واحد على الأقل');
       return false;
@@ -216,16 +222,24 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Sales Order - Always editable */}
-            <Input
-              label="رقم أمر البيع (اختياري)"
-              placeholder="أدخل رقم أمر البيع"
-              value={currentShipment.salesOrder || ''}
-              onChange={e => handleValueChange('salesOrder', e.target.value)}
-            />
-            
+             {/* Sales Order - Always editable */}
+             <Input
+               label="رقم أمر البيع (اختياري)"
+               placeholder="أدخل رقم أمر البيع"
+               value={currentShipment.salesOrder || ''}
+               onChange={e => handleValueChange('salesOrder', e.target.value)}
+             />
 
-          </div>
+             {/* Order Date - Only for returned shipments */}
+             {isReturnedShipment && (
+               <ArabicDatePicker
+                 label="تاريخ الأمر *"
+                 value={currentShipment.orderDate || ''}
+                 onChange={(value) => handleValueChange('orderDate', value)}
+                 required
+               />
+             )}
+           </div>
 
           {/* Region - Always editable */}
           <SearchableSelect
