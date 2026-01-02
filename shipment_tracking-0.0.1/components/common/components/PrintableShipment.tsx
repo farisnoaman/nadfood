@@ -80,10 +80,10 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>رقم اللوحة:</td>
                 <td style={{ padding: '4px 0' }}>{plateNumber}</td>
               </tr>
-               <tr>
-                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>المنطقة:</td>
-                 <td style={{ padding: '4px 0' }}>{regionName}</td>
-               </tr>
+              <tr>
+                <td style={{ padding: '4px 0', fontWeight: 'bold' }}>المنطقة:</td>
+                <td style={{ padding: '4px 0' }}>{regionName}</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -133,46 +133,43 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
 
 
 
-      {shipment.damagedValue || shipment.shortageValue || shipment.otherAmounts ? (
-        <div style={{ marginBottom: '15px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #d32f2f', paddingBottom: '3px', color: '#d32f2f' }}>الخصومات</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '6px' }}>
-            {Object.entries({
-              'قيمة التالف': shipment.damagedValue,
-              'قيمة النقص': shipment.shortageValue,
-              'مبالغ أخرى': shipment.otherAmounts,
-            }).map(([label, value]) => (
-              value !== undefined && value !== null && (
-                <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#ffebee', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#d32f2f' }}>{label}:</div>
-                  <div style={{ fontSize: '12px', color: '#d32f2f', fontWeight: 'bold' }}>{value.toLocaleString()} ر.ي</div>
-                </div>
-              )
-            ))}
-          </div>
+      <div style={{ marginBottom: '15px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #d32f2f', paddingBottom: '3px', color: '#d32f2f' }}>الخصومات</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '6px' }}>
+          {Object.entries({
+            'قيمة التالف': shipment.damagedValue,
+            'قيمة النقص': shipment.shortageValue,
+            'مبالغ أخرى': shipment.otherAmounts,
+          }).map(([label, value]) => (
+            <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#ffebee', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#d32f2f' }}>{label}:</div>
+              <div style={{ fontSize: '12px', color: '#d32f2f', fontWeight: 'bold' }}>{(value ?? 0).toLocaleString()} ر.ي</div>
+            </div>
+          ))}
         </div>
-      ) : null}
+      </div>
 
-      {shipment.improvementBonds || shipment.eveningAllowance || shipment.taxRate ? (
-        <div style={{ marginBottom: '15px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #2e7d32', paddingBottom: '3px', color: '#2e7d32' }}>الإضافات</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '6px' }}>
-            {Object.entries({
-              'سندات تحسين': shipment.improvementBonds,
-              'بدل مسائي': shipment.eveningAllowance,
-              'رسوم التحويل': shipment.transferFee,
-              'معدل الضريبة': shipment.taxRate ? `${shipment.taxRate}%` : null,
-            }).map(([label, value]) => (
-              value !== undefined && value !== null && (
-                <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#e8f5e8', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#2e7d32' }}>{label}:</div>
-                  <div style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold' }}>{typeof value === 'string' ? value : value.toLocaleString()} ر.ي</div>
-                </div>
-              )
-            ))}
-          </div>
+      <div style={{ marginBottom: '15px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #2e7d32', paddingBottom: '3px', color: '#2e7d32' }}>الإضافات</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '6px' }}>
+          {Object.entries({
+            'سندات تحسين': shipment.improvementBonds,
+            'بدل مسائي': shipment.eveningAllowance,
+            'رسوم التحويل': shipment.transferFee,
+            'معدل الضريبة': shipment.taxRate ? `${shipment.taxRate}%` : null,
+          }).map(([label, value]) => (
+            <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#e8f5e8', textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#2e7d32' }}>{label}:</div>
+              <div style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold' }}>
+                {label === 'معدل الضريبة'
+                  ? (value ? value : '0%')
+                  : `${(typeof value === 'number' ? value : 0).toLocaleString()} ر.ي`
+                }
+              </div>
+            </div>
+          ))}
         </div>
-      ) : null}
+      </div>
 
       <div style={{ marginBottom: '15px' }}>
         <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #007bff', paddingBottom: '3px', color: '#007bff' }}>ملخص الدفع</h3>
@@ -218,11 +215,18 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
         )}
       </div>
 
-       <footer style={{ marginTop: '20px', paddingTop: '10px', borderTop: '2px solid #007bff', textAlign: 'center', fontSize: '10px', color: '#666', background: '#f9f9f9', padding: '8px', borderRadius: '4px' }}>
-         <p>تم إصدار هذا الإيصال بواسطة نظام إدارة الشحنات</p>
-         <p>طُبع بواسطة: {printedBy}</p>
-         <p>تاريخ الطباعة: {printTimestamp}</p>
-       </footer>
+      <div style={{ marginBottom: '15px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #007bff', paddingBottom: '3px', color: '#007bff' }}>الملاحظات</h3>
+        <div style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', background: '#f8f9fa', fontSize: '12px' }}>
+          {shipment.notes ? shipment.notes : 'لا توجد اي ملاحظات'}
+        </div>
+      </div>
+
+      <footer style={{ marginTop: '20px', paddingTop: '10px', borderTop: '2px solid #007bff', textAlign: 'center', fontSize: '10px', color: '#666', background: '#f9f9f9', padding: '8px', borderRadius: '4px' }}>
+        <p>تم إصدار هذا الإيصال بواسطة نظام إدارة الشحنات</p>
+        <p>طُبع بواسطة: {printedBy}</p>
+        <p>تاريخ الطباعة: {printTimestamp}</p>
+      </footer>
     </div>
   );
 };

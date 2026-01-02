@@ -8,11 +8,25 @@ import html2canvas from 'html2canvas';
 import { TIMEOUTS, PDF, MESSAGES } from './constants';
 
 interface CompanyPrintDetails {
-    companyName: string;
-    companyAddress: string;
-    companyPhone: string;
-    companyLogo: string;
-    isPrintHeaderEnabled: boolean;
+  companyName: string;
+  companyAddress: string;
+  companyPhone: string;
+  companyLogo: string;
+  isPrintHeaderEnabled: boolean;
+}
+
+// Helper to convert URL to Base64
+const getBase64FromUrl = async (url: string): Promise<string> => {
+  const data = await fetch(url);
+  const blob = await data.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onloadend = () => {
+      const base64data = reader.result;
+      resolve(base64data as string);
+    }
+  });
 }
 
 /**
@@ -52,6 +66,16 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
   };
 
   try {
+    // Pre-process logo to base64 if it exists
+    let logoBase64 = '';
+    if (companyDetails.companyLogo) {
+      try {
+        logoBase64 = await getBase64FromUrl(companyDetails.companyLogo);
+      } catch (err) {
+        console.warn('Failed to load logo:', err);
+      }
+    }
+
     // Step 1: Create a temporary container for rendering the printable component.
     printContainer = document.createElement('div');
     printContainer.id = 'pdf-container';
@@ -82,27 +106,30 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
         printedBy: currentUser.username,
         printTimestamp: printTimestamp,
         ...companyDetails,
+        companyLogo: logoBase64 || companyDetails.companyLogo, // Use base64 if available, fallback to URL
       })
     );
 
     // Step 3: Wait for render completion with timeout protection
-    await new Promise<void>((resolve, reject) => {
-      const renderTimeout = setTimeout(() => {
-        reject(new Error('Render timeout: Component took too long to render'));
-      }, TIMEOUTS.PDF_GENERATION_TIMEOUT);
+    // Step 3: Wait for images to load
+    const images = Array.from(printContainer.querySelectorAll('img'));
+    await Promise.all(images.map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve; // Don't fail the whole print if one image fails
+      });
+    }));
 
-      setTimeout(() => {
-        clearTimeout(renderTimeout);
-        resolve();
-      }, TIMEOUTS.PDF_RENDER);
-    });
+    // Small buffer after images load to ensure layout stability
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     if (!printContainer) {
       throw new Error('Print container was removed unexpectedly');
     }
 
     // Step 4: Use html2canvas to capture the rendered component.
-    const canvas = await html2canvas(printContainer, { 
+    const canvas = await html2canvas(printContainer, {
       scale: 2, // Higher scale for better quality PDF output
       useCORS: true, // Important for loading external logo images
       backgroundColor: '#ffffff',
@@ -151,11 +178,11 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
 
   } catch (err) {
     cleanup();
-    
+
     // Provide user-friendly error messages using centralized constants
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     console.error('PDF generation failed:', err);
-    
+
     if (errorMessage.includes('timeout')) {
       alert(MESSAGES.ERROR.PDF_TIMEOUT);
     } else if (errorMessage.includes('Canvas')) {
@@ -163,7 +190,7 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
     } else {
       alert(`${MESSAGES.ERROR.PDF_GENERATION}: ${errorMessage}`);
     }
-    
+
     throw err; // Re-throw for potential handling by caller
   }
 };

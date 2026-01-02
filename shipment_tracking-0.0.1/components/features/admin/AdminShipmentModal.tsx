@@ -15,96 +15,115 @@ import ShipmentStepper from '../../common/components/ShipmentStepper';
 // --- Helper Functions and Sub-components ---
 
 /** Basic Information Section - Read-only display of initial calculated values */
-const BasicInformationSection: React.FC<{ shipment: Shipment; regionRoadExpenses: number }> = ({ shipment, regionRoadExpenses }) => (
-    <div className="space-y-2 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
-        <h4 className="font-bold text-lg">المعلومات الأساسية</h4>
-        <div className="pt-2 border-t dark:border-secondary-700 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
-            <FieldValue label="إجمالي الأجر" value={shipment.totalWage} />
-            <FieldValue label="إجمالي الديزل" value={shipment.totalDiesel} />
-            <FieldValue label="خرج الطريق" value={regionRoadExpenses} />
-            <FieldValue label="رسوم زعيتري" value={shipment.zaitriFee} />
-            <FieldValue label="مصروفات إدارية" value={shipment.adminExpenses} />
-            <div className="md:col-span-2 pt-2 border-t dark:border-secondary-700">
-                <FieldValue label="المبلغ المستحق" value={shipment.dueAmount} />
-            </div>
-        </div>
+const BasicInformationSection: React.FC<{ shipment: Shipment; regionRoadExpenses: number; totalWeight: number }> = ({ shipment, regionRoadExpenses, totalWeight }) => (
+  <div className="space-y-2 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
+    <h4 className="font-bold text-lg">المعلومات الأساسية</h4>
+    <div className="font-bold mb-2 text-primary-700 dark:text-primary-300">
+      <FieldValue label="إجمالي الوزن" value={`${totalWeight.toLocaleString('en-US', { minimumFractionDigits: 3 })} طن`} currency="" />
     </div>
+    <div className="pt-2 border-t dark:border-secondary-700 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+      <FieldValue label="إجمالي الأجر" value={shipment.totalWage} />
+      <FieldValue label="إجمالي الديزل" value={shipment.totalDiesel} />
+      <FieldValue label="خرج الطريق" value={regionRoadExpenses} />
+      <FieldValue label="رسوم زعيتري" value={shipment.zaitriFee} />
+      <FieldValue label="مصروفات إدارية" value={shipment.adminExpenses} />
+      <div className="md:col-span-2 pt-2 border-t dark:border-secondary-700">
+        <FieldValue label="المبلغ المستحق" value={shipment.dueAmount} />
+      </div>
+    </div>
+  </div>
 );
 
 /** Deductions Section - Editable form for all deductions */
 const DeductionsSection: React.FC<{
-    shipment: Shipment;
-    onValueChange: (field: keyof Shipment, value: string) => void;
-    amountAfterDeductions: number;
-    disabled?: boolean;
+  shipment: Shipment;
+  onValueChange: (field: keyof Shipment, value: string) => void;
+  amountAfterDeductions: number;
+  disabled?: boolean;
 }> = ({ shipment, onValueChange, amountAfterDeductions, disabled = false }) => (
-    <div className="space-y-2 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
-        <h4 className="font-bold text-lg">قسم الخصميات</h4>
-        <div className="pt-2 border-t dark:border-secondary-700">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
-                <Input label="التالف" type="number" min="1" value={shipment.damagedValue || ''} onChange={e => onValueChange('damagedValue', e.target.value)} disabled={disabled} />
-                <Input label="النقص" type="number" min="1" value={shipment.shortageValue || ''} onChange={e => onValueChange('shortageValue', e.target.value)} disabled={disabled} />
-                <Input label="مبالغ أخرى" type="number" min="1" value={shipment.otherAmounts || ''} onChange={e => onValueChange('otherAmounts', e.target.value)} disabled={disabled} />
-            </div>
-            <div className="font-bold pt-2 mt-2 border-t dark:border-secondary-700">
-                <FieldValue label="المبلغ بعد الخصم" value={amountAfterDeductions} />
-            </div>
-        </div>
+  <div className="space-y-2 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
+    <h4 className="font-bold text-lg">قسم الخصميات</h4>
+    <div className="pt-2 border-t dark:border-secondary-700">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
+        <Input label="التالف" type="number" min="1" value={shipment.damagedValue || ''} onChange={e => onValueChange('damagedValue', e.target.value)} disabled={disabled} />
+        <Input label="النقص" type="number" min="1" value={shipment.shortageValue || ''} onChange={e => onValueChange('shortageValue', e.target.value)} disabled={disabled} />
+        <Input label="مبالغ أخرى" type="number" min="1" value={shipment.otherAmounts || ''} onChange={e => onValueChange('otherAmounts', e.target.value)} disabled={disabled} />
+      </div>
+      <div className="font-bold pt-2 mt-2 border-t dark:border-secondary-700">
+        <FieldValue label="المبلغ بعد الخصم" value={amountAfterDeductions} />
+      </div>
     </div>
+  </div>
 );
 
 /** Additions Section */
 const AdditionsSection: React.FC<{ shipment: Shipment; onValueChange: (field: keyof Shipment, value: string) => void; disabled?: boolean; }> = ({ shipment, onValueChange, disabled = false }) => (
-    <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
-        <h4 className="font-bold text-lg">قسم الإضافات</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-            <Input label="سندات تحسين" type="number" min="0" value={shipment.improvementBonds || ''} onChange={e => onValueChange('improvementBonds', e.target.value)} disabled={disabled} />
-            <Input label="ممسى" type="number" min="0" value={shipment.eveningAllowance || ''} onChange={e => onValueChange('eveningAllowance', e.target.value)} disabled={disabled} />
-            <Input label="رسوم التحويل" type="number" min="0" value={shipment.transferFee || ''} onChange={e => onValueChange('transferFee', e.target.value)} disabled={disabled} />
-        </div>
+  <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
+    <h4 className="font-bold text-lg">قسم الإضافات</h4>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+      <Input label="سندات تحسين" type="number" min="0" value={shipment.improvementBonds || ''} onChange={e => onValueChange('improvementBonds', e.target.value)} disabled={disabled} />
+      <Input label="ممسى" type="number" min="0" value={shipment.eveningAllowance || ''} onChange={e => onValueChange('eveningAllowance', e.target.value)} disabled={disabled} />
+      <Input label="رسوم التحويل" type="number" min="0" value={shipment.transferFee || ''} onChange={e => onValueChange('transferFee', e.target.value)} disabled={disabled} />
     </div>
+  </div>
 );
 
 /** Final Calculation Section */
 const FinalCalculationSection: React.FC<{ finalAmount: number; shipment: Shipment }> = ({ finalAmount, shipment }) => (
-    <div className="space-y-3 bg-green-50 dark:bg-green-900/20 p-3 rounded-md border-2 border-green-200 dark:border-green-800">
-        <div className="flex flex-col sm:flex-row justify-between items-center text-center sm:text-right gap-2">
-            <span className="font-bold text-xl text-secondary-800 dark:text-secondary-100">إجمالي المبلغ المستحق النهائي</span>
-            <span className="font-extrabold text-3xl text-green-700 dark:text-green-400">
-                {finalAmount.toLocaleString('en-US')} ر.ي
-            </span>
-        </div>
-        {((shipment.modifiedBy && shipment.modifiedAt)) && (
-            <div className="pt-2 border-t border-dashed border-green-300 dark:border-green-700 text-xs text-secondary-600 dark:text-secondary-400">
-                <FieldValue label="تم التعديل بواسطة" value={shipment.modifiedBy} currency="" />
-                <FieldValue label="تاريخ التعديل" value={new Date(shipment.modifiedAt).toLocaleString('ar-EG')} currency="" />
-            </div>
-        )}
+  <div className="space-y-3 bg-green-50 dark:bg-green-900/20 p-3 rounded-md border-2 border-green-200 dark:border-green-800">
+    <div className="flex flex-col sm:flex-row justify-between items-center text-center sm:text-right gap-2">
+      <span className="font-bold text-xl text-secondary-800 dark:text-secondary-100">إجمالي المبلغ المستحق النهائي</span>
+      <span className="font-extrabold text-3xl text-green-700 dark:text-green-400">
+        {finalAmount.toLocaleString('en-US')} ر.ي
+      </span>
     </div>
+    {((shipment.modifiedBy && shipment.modifiedAt)) && (
+      <div className="pt-2 border-t border-dashed border-green-300 dark:border-green-700 text-xs text-secondary-600 dark:text-secondary-400">
+        <FieldValue label="تم التعديل بواسطة" value={shipment.modifiedBy} currency="" />
+        <FieldValue label="تاريخ التعديل" value={new Date(shipment.modifiedAt).toLocaleString('ar-EG')} currency="" />
+      </div>
+    )}
+  </div>
+);
+
+/** Notes Section */
+const NotesSection: React.FC<{ shipment: Shipment; onValueChange: (field: keyof Shipment, value: string) => void; disabled?: boolean; }> = ({ shipment, onValueChange, disabled = false }) => (
+  <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
+    <h4 className="font-bold text-lg">الملاحظات</h4>
+    <div className="pt-2">
+      <textarea
+        className="w-full px-3 py-2 border rounded-md dark:bg-secondary-800 dark:border-secondary-600 focus:ring-primary-500 focus:border-primary-500 min-h-[100px]"
+        value={shipment.notes || ''}
+        onChange={e => onValueChange('notes', e.target.value)}
+        disabled={disabled}
+        placeholder="أضف ملاحظات هنا..."
+      />
+    </div>
+  </div>
 );
 
 /** Transfer Section */
 const TransferSection: React.FC<{ shipment: Shipment; onValueChange: (field: keyof Shipment, value: string) => void; disabled?: boolean; }> = ({ shipment, onValueChange, disabled = false }) => (
-    <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
-        <h4 className="font-bold text-lg">قسم الحوالة</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <Input
-                label="رقم الحوالة (8 أرقام على الأقل)"
-                type="text"
-                minLength={8}
-                value={shipment.transferNumber || ''}
-                onChange={e => onValueChange('transferNumber', e.target.value)}
-                disabled={disabled}
-                required
-            />
-            <ArabicDatePicker
-                label="تاريخ الحوالة"
-                value={shipment.transferDate || ''}
-                onChange={(value) => onValueChange('transferDate', value)}
-                disabled={disabled}
-            />
-        </div>
+  <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
+    <h4 className="font-bold text-lg">قسم الحوالة</h4>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+      <Input
+        label="رقم الحوالة (8 أرقام على الأقل)"
+        type="text"
+        minLength={8}
+        value={shipment.transferNumber || ''}
+        onChange={e => onValueChange('transferNumber', e.target.value)}
+        disabled={disabled}
+        required
+      />
+      <ArabicDatePicker
+        label="تاريخ الحوالة"
+        value={shipment.transferDate || ''}
+        onChange={(value) => onValueChange('transferDate', value)}
+        disabled={disabled}
+      />
     </div>
+  </div>
 );
 
 // --- Main Modal Component ---
@@ -118,12 +137,12 @@ interface AdminShipmentModalProps {
 const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpen, onClose }) => {
   const {
     updateShipment, createInstallment, currentUser, addNotification, drivers, regions,
-    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, installments
+    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, installments, products
   } = useAppContext();
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Get region to display road expenses in basic info
   const shipmentRegion = regions.find((r: Region) => r.id === shipment.regionId);
   const regionRoadExpenses = currentShipment.roadExpenses ?? (shipmentRegion?.roadExpenses || 0);
@@ -160,38 +179,40 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
       processedValue = value === '' ? '' : Math.max(0, Number(value));
     } else if (deductionFields.includes(field)) {
       processedValue = value === '' ? '' : Math.max(1, Number(value));
+    } else if (field === 'notes') {
+      processedValue = value;
     }
 
     setCurrentShipment({ ...currentShipment, [field]: processedValue });
   };
 
-    const handleSaveAsDraft = async () => {
-      setIsSubmitting(true);
-      try {
-          const draftShipment = { ...currentShipment, status: ShipmentStatus.DRAFT };
-          await updateShipment(draftShipment.id, draftShipment);
-          await addNotification({ message: `تم حفظ الشحنة (${draftShipment.salesOrder}) كمسودة.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ADMIN] });
-          onClose();
-      } catch(err) {
-          console.error('Save as draft failed:', err);
+  const handleSaveAsDraft = async () => {
+    setIsSubmitting(true);
+    try {
+      const draftShipment = { ...currentShipment, status: ShipmentStatus.DRAFT };
+      await updateShipment(draftShipment.id, draftShipment);
+      await addNotification({ message: `تم حفظ الشحنة (${draftShipment.salesOrder}) كمسودة.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ADMIN] });
+      onClose();
+    } catch (err) {
+      console.error('Save as draft failed:', err);
 
-          // Check if it's a network/CORS error and offer retry
-          if (err.message && (err.message.includes('NetworkError') || err.message.includes('CORS') || err.message.includes('fetch'))) {
-              const retry = confirm("فشل الاتصال بالخادم. هل تريد المحاولة مرة أخرى؟");
-              if (retry) {
-                  // Retry after a short delay
-                  setTimeout(() => handleSaveAsDraft(), 1000);
-                  return;
-              }
-          }
-
-          alert("فشل حفظ المسودة: " + (err.message || "خطأ غير معروف"));
-      } finally {
-          setIsSubmitting(false);
+      // Check if it's a network/CORS error and offer retry
+      if (err.message && (err.message.includes('NetworkError') || err.message.includes('CORS') || err.message.includes('fetch'))) {
+        const retry = confirm("فشل الاتصال بالخادم. هل تريد المحاولة مرة أخرى؟");
+        if (retry) {
+          // Retry after a short delay
+          setTimeout(() => handleSaveAsDraft(), 1000);
+          return;
+        }
       }
-    };
 
-   const handleFinalize = async () => {
+      alert("فشل حفظ المسودة: " + (err.message || "خطأ غير معروف"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFinalize = async () => {
     // Validate transfer number before finalizing
     if (!currentShipment.transferNumber || currentShipment.transferNumber.trim().length < 8) {
       alert('رقم الحوالة يجب أن يكون 8 أرقام على الأقل قبل الاعتماد النهائي');
@@ -200,36 +221,36 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
 
     setIsSubmitting(true);
     try {
-        let finalStatus = ShipmentStatus.FINAL;
-        let modifiedFields = {};
-        if (currentUser && (shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED)) {
-            finalStatus = ShipmentStatus.FINAL_MODIFIED;
-            modifiedFields = {
-                modifiedBy: currentUser.username,
-                modifiedAt: new Date().toISOString(),
-            }
+      let finalStatus = ShipmentStatus.FINAL;
+      let modifiedFields = {};
+      if (currentUser && (shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED)) {
+        finalStatus = ShipmentStatus.FINAL_MODIFIED;
+        modifiedFields = {
+          modifiedBy: currentUser.username,
+          modifiedAt: new Date().toISOString(),
         }
-        
-        // Calculate and save the final amount
-        const finalAmount = calculateFinalAmount(currentShipment);
-        const amountAfterDeductions = calculateAmountAfterDeductions(currentShipment);
-        
-        const finalShipment = { 
-            ...currentShipment, 
-            status: finalStatus, 
-            dueAmountAfterDiscount: amountAfterDeductions,
-            totalDueAmount: finalAmount,
-            ...modifiedFields 
-        };
-        
-        await updateShipment(finalShipment.id, finalShipment);
-        await addNotification({ message: `تم اعتماد الشحنة (${finalShipment.salesOrder}) بشكل نهائي.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ACCOUNTANT] });
-        onClose();
-    } catch(err) {
-        console.error(err);
-        alert("فشل اعتماد الشحنة");
+      }
+
+      // Calculate and save the final amount
+      const finalAmount = calculateFinalAmount(currentShipment);
+      const amountAfterDeductions = calculateAmountAfterDeductions(currentShipment);
+
+      const finalShipment = {
+        ...currentShipment,
+        status: finalStatus,
+        dueAmountAfterDiscount: amountAfterDeductions,
+        totalDueAmount: finalAmount,
+        ...modifiedFields
+      };
+
+      await updateShipment(finalShipment.id, finalShipment);
+      await addNotification({ message: `تم اعتماد الشحنة (${finalShipment.salesOrder}) بشكل نهائي.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ACCOUNTANT] });
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert("فشل اعتماد الشحنة");
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -288,22 +309,22 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
   const handleReturnToFleet = async () => {
     setIsSubmitting(true);
     try {
-      const returnedShipment = { 
-        ...currentShipment, 
-        status: ShipmentStatus.RETURNED_TO_FLEET 
+      const returnedShipment = {
+        ...currentShipment,
+        status: ShipmentStatus.RETURNED_TO_FLEET
       };
-      
+
       await updateShipment(returnedShipment.id, returnedShipment);
-      
+
       // Notify the fleet user who created this shipment
       if (currentShipment.createdBy) {
-        await addNotification({ 
-          message: `تم إرجاع الشحنة (${returnedShipment.salesOrder}) من الادمن لإعادة المراجعة.`, 
-          category: NotificationCategory.USER_ACTION, 
+        await addNotification({
+          message: `تم إرجاع الشحنة (${returnedShipment.salesOrder}) من الادمن لإعادة المراجعة.`,
+          category: NotificationCategory.USER_ACTION,
           targetUserIds: [currentShipment.createdBy]
         });
       }
-      
+
       onClose();
     } catch (err) {
       console.error("Failed to return to fleet:", err);
@@ -326,38 +347,48 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
         <ShipmentStepper status={currentShipment.status} />
 
         <ProductDetails
-            products={currentShipment.products}
-            isExpanded={isProductsExpanded}
-            onToggle={() => setIsProductsExpanded(!isProductsExpanded)}
+          products={currentShipment.products}
+          isExpanded={isProductsExpanded}
+          onToggle={() => setIsProductsExpanded(!isProductsExpanded)}
         />
 
         <BasicInformationSection
-            shipment={currentShipment}
-            regionRoadExpenses={regionRoadExpenses}
+          shipment={currentShipment}
+          regionRoadExpenses={regionRoadExpenses}
+          totalWeight={currentShipment.products.reduce((acc, sp) => {
+            const product = products.find(p => p.id === sp.productId);
+            return acc + ((product?.weightKg || 0) * sp.cartonCount);
+          }, 0) / 1000}
         />
 
         <AdditionsSection
-            shipment={currentShipment}
-            onValueChange={handleValueChange}
-            disabled={isViewOnly}
+          shipment={currentShipment}
+          onValueChange={handleValueChange}
+          disabled={isViewOnly}
         />
 
         <DeductionsSection
-            shipment={currentShipment}
-            onValueChange={handleValueChange}
-            amountAfterDeductions={amountAfterDeductions}
-            disabled={isViewOnly}
+          shipment={currentShipment}
+          onValueChange={handleValueChange}
+          amountAfterDeductions={amountAfterDeductions}
+          disabled={isViewOnly}
         />
 
         <FinalCalculationSection
-            finalAmount={finalAmount}
-            shipment={currentShipment}
+          finalAmount={finalAmount}
+          shipment={currentShipment}
+        />
+
+        <NotesSection
+          shipment={currentShipment}
+          onValueChange={handleValueChange}
+          disabled={isViewOnly}
         />
 
         <TransferSection
-            shipment={currentShipment}
-            onValueChange={handleValueChange}
-            disabled={isViewOnly}
+          shipment={currentShipment}
+          onValueChange={handleValueChange}
+          disabled={isViewOnly}
         />
 
         {/* Warning message for negative amounts */}
@@ -370,53 +401,53 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
         )}
 
         <div className="pt-6 border-t dark:border-secondary-600">
-            {isViewOnly ? (
-                // View-only mode: show only close button
-                <div className="flex justify-center">
-                    <Button variant="secondary" onClick={onClose} className="px-8 py-3 text-lg font-semibold">
-                        إغلاق
-                    </Button>
-                </div>
-            ) : finalAmount < 0 ? (
-                // Show only "ترحيل الى التسديدات" button for negative amounts
-                <div className="flex justify-center">
-                    <Button
-                        variant="primary"
-                        onClick={handleMoveToInstallments}
-                        disabled={isSubmitting}
-                        className="px-8 py-3 text-lg font-semibold"
-                    >
-                        {isSubmitting ? 'جاري الترحيل...' : <> <Icons.ArrowRight className="ml-2 h-5 w-5" /> ترحيل الى التسديدات </>}
-                    </Button>
-                </div>
-            ) : (
-                // Show normal buttons for non-negative amounts
-                <div className="grid grid-cols-2 gap-3">
-                    {isFinal && (
-                        <Button variant="secondary" onClick={handlePrint} className="w-full">
-                            <Icons.Printer className="ml-2 h-4 w-4" />
-                            طباعة
-                        </Button>
-                    )}
-                    {!isFinal && <div></div>} {/* Empty space when print button is hidden */}
+          {isViewOnly ? (
+            // View-only mode: show only close button
+            <div className="flex justify-center">
+              <Button variant="secondary" onClick={onClose} className="px-8 py-3 text-lg font-semibold">
+                إغلاق
+              </Button>
+            </div>
+          ) : finalAmount < 0 ? (
+            // Show only "ترحيل الى التسديدات" button for negative amounts
+            <div className="flex justify-center">
+              <Button
+                variant="primary"
+                onClick={handleMoveToInstallments}
+                disabled={isSubmitting}
+                className="px-8 py-3 text-lg font-semibold"
+              >
+                {isSubmitting ? 'جاري الترحيل...' : <> <Icons.ArrowRight className="ml-2 h-5 w-5" /> ترحيل الى التسديدات </>}
+              </Button>
+            </div>
+          ) : (
+            // Show normal buttons for non-negative amounts
+            <div className="grid grid-cols-2 gap-3">
+              {isFinal && (
+                <Button variant="secondary" onClick={handlePrint} className="w-full">
+                  <Icons.Printer className="ml-2 h-4 w-4" />
+                  طباعة
+                </Button>
+              )}
+              {!isFinal && <div></div>} {/* Empty space when print button is hidden */}
 
-                    <Button variant="secondary" onClick={onClose} disabled={isSubmitting} className="w-full">
-                        إغلاق
-                    </Button>
+              <Button variant="secondary" onClick={onClose} disabled={isSubmitting} className="w-full">
+                إغلاق
+              </Button>
 
-                    <Button variant="secondary" onClick={handleSaveAsDraft} disabled={isSubmitting} className="w-full">
-                        {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Save className="ml-2 h-4 w-4" /> حفظ كمسودة </>}
-                    </Button>
+              <Button variant="secondary" onClick={handleSaveAsDraft} disabled={isSubmitting} className="w-full">
+                {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Save className="ml-2 h-4 w-4" /> حفظ كمسودة </>}
+              </Button>
 
-                    <Button variant="secondary" onClick={handleReturnToFleet} disabled={isSubmitting} className="w-full">
-                        {isSubmitting ? 'جاري الإرجاع...' : <> <Icons.ArrowLeft className="ml-2 h-4 w-4" /> إرجاع الى مسؤول الحركة </>}
-                    </Button>
+              <Button variant="secondary" onClick={handleReturnToFleet} disabled={isSubmitting} className="w-full">
+                {isSubmitting ? 'جاري الإرجاع...' : <> <Icons.ArrowLeft className="ml-2 h-4 w-4" /> إرجاع الى مسؤول الحركة </>}
+              </Button>
 
-                    <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting} className="w-full">
-                        {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'إغلاق نهائي'} </>}
-                    </Button>
-                </div>
-            )}
+              <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting} className="w-full">
+                {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'إغلاق نهائي'} </>}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </Modal>

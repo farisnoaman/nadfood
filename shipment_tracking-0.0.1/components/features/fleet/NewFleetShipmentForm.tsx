@@ -40,7 +40,7 @@ const DriverSearchableSelect: React.FC<{
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [wrapperRef]);
-  
+
   // Filter by both name and plate number
   const filteredDrivers = drivers.filter(driver =>
     driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,11 +55,11 @@ const DriverSearchableSelect: React.FC<{
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    if(!isOpen) setIsOpen(true);
+    if (!isOpen) setIsOpen(true);
   };
-  
+
   const displayValue = isOpen ? searchTerm : selectedDriver ? `${selectedDriver.name} - ${selectedDriver.plateNumber}` : '';
-  
+
   const toggleOpen = () => {
     setIsOpen(!isOpen);
   };
@@ -82,7 +82,7 @@ const DriverSearchableSelect: React.FC<{
           placeholder={selectedDriver ? `${selectedDriver.name} - ${selectedDriver.plateNumber}` : "ابحث باسم السائق أو رقم اللوحة"}
         />
         <div className="pointer-events-none absolute inset-y-0 end-0 flex items-center pe-3">
-            <Icons.ChevronDown className={`h-5 w-5 text-secondary-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+          <Icons.ChevronDown className={`h-5 w-5 text-secondary-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
         </div>
         {isOpen && (
           <div className="absolute z-10 mt-1 w-full rounded-md bg-white dark:bg-secondary-700 shadow-lg border dark:border-secondary-600 max-h-60 overflow-auto">
@@ -132,7 +132,7 @@ const ProductInputRow: React.FC<{
   onRemove: (index: number) => void;
   isRemovable: boolean;
 }> = ({ index, product, activeProducts, productPrices, regionId, onProductChange, onRemove, isRemovable }) => {
-    
+
   const priceInfo = productPrices.find((p: ProductPrice) => p.regionId === regionId && p.productId === product.productId);
   const price = priceInfo ? priceInfo.price : null;
 
@@ -147,11 +147,11 @@ const ProductInputRow: React.FC<{
           placeholder="ابحث أو اختر منتج"
         />
         <div className="relative">
-          <Input 
-            label="عدد الكراتين" 
-            type="number" 
-            min="1" 
-            value={product.cartonCount || ''} 
+          <Input
+            label="عدد الكراتين"
+            type="number"
+            min="1"
+            value={product.cartonCount || ''}
             onChange={e => {
               const val = e.target.value;
               onProductChange(index, 'cartonCount', val === '' ? 0 : Math.max(1, Number(val)));
@@ -165,14 +165,22 @@ const ProductInputRow: React.FC<{
           )}
         </div>
       </div>
-      <div className="flex justify-between items-center bg-secondary-100 dark:bg-secondary-800 p-2 rounded-md">
-        <div className="text-sm">
-          <span>السعر للكرتون: </span>
+      <div className="grid grid-cols-2 gap-2 bg-secondary-100 dark:bg-secondary-800 p-2 rounded-md">
+        <div className="text-sm flex justify-between">
+          <span>السعر: </span>
           <span className="font-semibold">{price !== null ? `${price} ر.ي` : 'غير محدد'}</span>
         </div>
-        <div className="text-sm">
-          <span>الإجمالي: </span>
+        <div className="text-sm flex justify-between">
+          <span>الوزن: </span>
+          <span className="font-semibold">{(activeProducts.find(p => p.id === product.productId)?.weightKg || 0)} كجم</span>
+        </div>
+        <div className="text-sm flex justify-between border-t border-secondary-300 dark:border-secondary-600 pt-1 mt-1">
+          <span>إجمالي السعر: </span>
           <span className="font-semibold text-primary-600 dark:text-primary-400">{(price !== null ? price * product.cartonCount : 0).toLocaleString('en-US')} ر.ي</span>
+        </div>
+        <div className="text-sm flex justify-between border-t border-secondary-300 dark:border-secondary-600 pt-1 mt-1">
+          <span>إجمالي الوزن: </span>
+          <span className="font-semibold text-secondary-900 dark:text-secondary-100">{((activeProducts.find(p => p.id === product.productId)?.weightKg || 0) * product.cartonCount / 1000).toLocaleString('en-US', { minimumFractionDigits: 3 })} طن</span>
         </div>
       </div>
       <Button
@@ -193,7 +201,7 @@ const ProductInputRow: React.FC<{
 
 const NewFleetShipmentForm: React.FC = () => {
   const { regions, drivers, products: allProducts, addShipment, productPrices, addNotification, currentUser, shipments } = useAppContext();
-  
+
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
   const [salesOrder, setSalesOrder] = useState('');
   const [regionId, setRegionId] = useState(regions[0]?.id || '');
@@ -204,7 +212,7 @@ const NewFleetShipmentForm: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showMissingPriceModal, setShowMissingPriceModal] = useState(false);
   const [missingPriceProducts, setMissingPriceProducts] = useState<string[]>([]);
-  
+
   const activeProducts = allProducts.filter((p: Product) => p.isActive ?? true);
   const activeDrivers = drivers.filter((d: Driver) => d.isActive ?? true);
 
@@ -226,12 +234,12 @@ const NewFleetShipmentForm: React.FC = () => {
     const newProducts = [...selectedProducts];
     newProducts[index][field] = value;
     if (field === 'productId') {
-        const product = allProducts.find((p: Product) => p.id === value);
-        newProducts[index].productName = product?.name || '';
+      const product = allProducts.find((p: Product) => p.id === value);
+      newProducts[index].productName = product?.name || '';
     }
     setSelectedProducts(newProducts);
   };
-  
+
   const getSelectedDriver = () => activeDrivers.find((d: Driver) => d.id === driverId);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -242,60 +250,60 @@ const NewFleetShipmentForm: React.FC = () => {
     const sanitizedSalesOrder = sanitizeInput(salesOrder);
 
     if (!orderDate || !sanitizedSalesOrder || !regionId || driverId === 0 || selectedProducts.some(p => !p.productId || p.cartonCount <= 0)) {
-        setError('يرجى ملء جميع الحقول المطلوبة والتأكد من أن عدد الكراتين أكبر من صفر.');
-        setSubmitting(false);
-        return;
+      setError('يرجى ملء جميع الحقول المطلوبة والتأكد من أن عدد الكراتين أكبر من صفر.');
+      setSubmitting(false);
+      return;
     }
 
     // Check for duplicate sales order
     const duplicateCheck = checkDuplicateSalesOrder(sanitizedSalesOrder, shipments);
     if (!duplicateCheck.isValid) {
-        setError(duplicateCheck.error);
-        setSubmitting(false);
-        return;
+      setError(duplicateCheck.error);
+      setSubmitting(false);
+      return;
     }
-    
+
     const finalProducts = selectedProducts.filter(p => p.productId && p.cartonCount > 0);
-    
+
     // Check for missing or zero prices
     const productsWithMissingPrice: string[] = [];
     finalProducts.forEach(product => {
-        const priceInfo = productPrices.find((pp: ProductPrice) => pp.regionId === regionId && pp.productId === product.productId);
-        if (!priceInfo || priceInfo.price === 0) {
-            const productDetails = allProducts.find((p: Product) => p.id === product.productId);
-            if (productDetails) {
-                productsWithMissingPrice.push(productDetails.name);
-            }
+      const priceInfo = productPrices.find((pp: ProductPrice) => pp.regionId === regionId && pp.productId === product.productId);
+      if (!priceInfo || priceInfo.price === 0) {
+        const productDetails = allProducts.find((p: Product) => p.id === product.productId);
+        if (productDetails) {
+          productsWithMissingPrice.push(productDetails.name);
         }
+      }
     });
 
     // If any prices are missing or zero, send notifications and show confirmation modal
     if (productsWithMissingPrice.length > 0) {
-        // Send notifications to admins about missing prices for blocked shipment
-        // Use setTimeout to make it non-blocking and avoid React render issues
-        setTimeout(() => {
-            finalProducts.forEach(product => {
-                const priceExists = productPrices.some((pp: ProductPrice) => pp.regionId === regionId && pp.productId === product.productId);
-                if (!priceExists) {
-                    const region = regions.find((r: Region) => r.id === regionId);
-                    const productDetails = allProducts.find((p: Product) => p.id === product.productId);
-                    if (region && productDetails) {
-                        addNotification({
-                            message: `طلب تسعير: مطلوب تحديد سعر للمنتج "<strong style="color:red;">${productDetails.name}</strong>" في منطقة "<strong style="color:green;">${region.name}</strong>". رقم الأمر: ${sanitizedSalesOrder}`,
-                            category: NotificationCategory.PRICE_ALERT,
-                            targetRoles: [Role.ADMIN]
-                        }).catch(error => {
-                            console.error('Failed to send price alert notification:', error);
-                        });
-                    }
-                }
-            });
-        }, 100); // Small delay to ensure modal renders first
+      // Send notifications to admins about missing prices for blocked shipment
+      // Use setTimeout to make it non-blocking and avoid React render issues
+      setTimeout(() => {
+        finalProducts.forEach(product => {
+          const priceExists = productPrices.some((pp: ProductPrice) => pp.regionId === regionId && pp.productId === product.productId);
+          if (!priceExists) {
+            const region = regions.find((r: Region) => r.id === regionId);
+            const productDetails = allProducts.find((p: Product) => p.id === product.productId);
+            if (region && productDetails) {
+              addNotification({
+                message: `طلب تسعير: مطلوب تحديد سعر للمنتج "<strong style="color:red;">${productDetails.name}</strong>" في منطقة "<strong style="color:green;">${region.name}</strong>". رقم الأمر: ${sanitizedSalesOrder}`,
+                category: NotificationCategory.PRICE_ALERT,
+                targetRoles: [Role.ADMIN]
+              }).catch(error => {
+                console.error('Failed to send price alert notification:', error);
+              });
+            }
+          }
+        });
+      }, 100); // Small delay to ensure modal renders first
 
-        setMissingPriceProducts(productsWithMissingPrice);
-        setShowMissingPriceModal(true);
-        setSubmitting(false);
-        return;
+      setMissingPriceProducts(productsWithMissingPrice);
+      setShowMissingPriceModal(true);
+      setSubmitting(false);
+      return;
     }
 
     await proceedWithSubmission(sanitizedSalesOrder, finalProducts);
@@ -306,47 +314,47 @@ const NewFleetShipmentForm: React.FC = () => {
     const notificationPromises: Promise<any>[] = [];
 
     try {
-        const newShipmentBase: Omit<Shipment, 'id' | 'entryTimestamp' | 'status'> = {
-            orderDate,
-            salesOrder: sanitizedSalesOrder,
-            regionId,
-            driverId: driverId,
-            products: finalProducts,
-            hasMissingPrices: false,
-        };
-        
-        const calculatedValues = calculateInitialShipmentValues(newShipmentBase, regions, productPrices);
-        
-        const newShipment: Omit<Shipment, 'id'> = {
-            ...newShipmentBase,
-            entryTimestamp: new Date().toISOString(),
-            status: ShipmentStatus.FROM_SALES,
-            ...calculatedValues,
-        };
+      const newShipmentBase: Omit<Shipment, 'id' | 'entryTimestamp' | 'status'> = {
+        orderDate,
+        salesOrder: sanitizedSalesOrder,
+        regionId,
+        driverId: driverId,
+        products: finalProducts,
+        hasMissingPrices: false,
+      };
 
-        await addShipment(newShipment);
-        
-        // Group notifications together
-        notificationPromises.push(addNotification({ message: `شحنة جديدة (${newShipment.salesOrder}) تم استلامها من مسؤول الحركة.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ACCOUNTANT] }));
-        if (currentUser) {
-            notificationPromises.push(addNotification({ message: `تم إرسال شحنتك (${newShipment.salesOrder}) بنجاح للمراجعة.`, category: NotificationCategory.USER_ACTION, targetUserIds: [currentUser.id] }));
-        }
-        
-        await Promise.all(notificationPromises);
-        
-        setSuccess(`تم إرسال الشحنة بنجاح! رقم الأمر: ${newShipment.salesOrder}`);
+      const calculatedValues = calculateInitialShipmentValues(newShipmentBase, regions, productPrices);
 
-        // Reset the form
-        setSalesOrder('');
-        setRegionId(regions[0]?.id || '');
-        setDriverId(0);
-        setSelectedProducts([{ productId: '', productName: '', cartonCount: 0 }]);
+      const newShipment: Omit<Shipment, 'id'> = {
+        ...newShipmentBase,
+        entryTimestamp: new Date().toISOString(),
+        status: ShipmentStatus.FROM_SALES,
+        ...calculatedValues,
+      };
+
+      await addShipment(newShipment);
+
+      // Group notifications together
+      notificationPromises.push(addNotification({ message: `شحنة جديدة (${newShipment.salesOrder}) تم استلامها من مسؤول الحركة.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ACCOUNTANT] }));
+      if (currentUser) {
+        notificationPromises.push(addNotification({ message: `تم إرسال شحنتك (${newShipment.salesOrder}) بنجاح للمراجعة.`, category: NotificationCategory.USER_ACTION, targetUserIds: [currentUser.id] }));
+      }
+
+      await Promise.all(notificationPromises);
+
+      setSuccess(`تم إرسال الشحنة بنجاح! رقم الأمر: ${newShipment.salesOrder}`);
+
+      // Reset the form
+      setSalesOrder('');
+      setRegionId(regions[0]?.id || '');
+      setDriverId(0);
+      setSelectedProducts([{ productId: '', productName: '', cartonCount: 0 }]);
 
     } catch (err: any) {
-        console.error("Failed to submit shipment:", err);
-        setError(`فشل إرسال الشحنة: ${err.message}`);
+      console.error("Failed to submit shipment:", err);
+      setError(`فشل إرسال الشحنة: ${err.message}`);
     } finally {
-        setSubmitting(false);
+      setSubmitting(false);
     }
   };
 
@@ -356,35 +364,35 @@ const NewFleetShipmentForm: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-8">
           {error && <div className="p-3 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 rounded-md">{error}</div>}
           {success && <div className="p-3 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 rounded-md">{success}</div>}
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ArabicDatePicker label="تاريخ الأمر" value={orderDate} onChange={setOrderDate} required />
-              <Input 
-                label="رقم الامر" 
-                type="text" 
-                value={salesOrder} 
-                onChange={e => setSalesOrder(e.target.value)} 
-                placeholder="أدخل رقم الامر"
-                required 
-              />
-              <SearchableSelect
-                  id="region"
-                  label="المنطقة"
-                  options={regions.map((r: Region) => ({ value: r.id, label: r.name }))}
-                  value={regionId}
-                  onChange={(val) => setRegionId(String(val))}
-                  placeholder="ابحث أو اختر منطقة"
-              />
-              <DriverSearchableSelect
-                  id="driver"
-                  label="اسم السائق"
-                  drivers={activeDrivers}
-                  value={driverId}
-                  onChange={(val) => setDriverId(Number(val))}
-              />
-              {driverId && (
-                  <Input label="رقم اللوحة" type="text" value={getSelectedDriver()?.plateNumber || ''} readOnly disabled />
-              )}
+            <ArabicDatePicker label="تاريخ الأمر" value={orderDate} onChange={setOrderDate} required />
+            <Input
+              label="رقم الامر"
+              type="text"
+              value={salesOrder}
+              onChange={e => setSalesOrder(e.target.value)}
+              placeholder="أدخل رقم الامر"
+              required
+            />
+            <SearchableSelect
+              id="region"
+              label="المنطقة"
+              options={regions.map((r: Region) => ({ value: r.id, label: r.name }))}
+              value={regionId}
+              onChange={(val) => setRegionId(String(val))}
+              placeholder="ابحث أو اختر منطقة"
+            />
+            <DriverSearchableSelect
+              id="driver"
+              label="اسم السائق"
+              drivers={activeDrivers}
+              value={driverId}
+              onChange={(val) => setDriverId(Number(val))}
+            />
+            {driverId && (
+              <Input label="رقم اللوحة" type="text" value={getSelectedDriver()?.plateNumber || ''} readOnly disabled />
+            )}
           </div>
 
           <div className="border-t border-secondary-200 dark:border-secondary-700 pt-6">
@@ -408,15 +416,38 @@ const NewFleetShipmentForm: React.FC = () => {
             </Button>
           </div>
 
+          <div className="bg-secondary-50 dark:bg-secondary-800/50 p-4 rounded-lg border border-secondary-200 dark:border-secondary-700">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-secondary-500 dark:text-secondary-400">إجمالي السعر</p>
+                <p className="text-xl font-bold text-primary-600 dark:text-primary-400">
+                  {selectedProducts.reduce((sum, p) => {
+                    const priceInfo = productPrices.find(price => price.regionId === regionId && price.productId === p.productId);
+                    return sum + ((priceInfo?.price || 0) * (p.cartonCount || 0));
+                  }, 0).toLocaleString('en-US')} ر.ي
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-secondary-500 dark:text-secondary-400">إجمالي الوزن</p>
+                <p className="text-xl font-bold text-secondary-900 dark:text-secondary-100">
+                  {(selectedProducts.reduce((sum, p) => {
+                    const product = allProducts.find(prod => prod.id === p.productId);
+                    return sum + ((product?.weightKg || 0) * (p.cartonCount || 0));
+                  }, 0) / 1000).toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} طن
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="flex justify-end pt-6 border-t border-secondary-200 dark:border-secondary-700">
-              <Button type="submit" size="lg" disabled={submitting}>
-                  {submitting ? 'جاري الإرسال...' : (
-                      <>
-                          <Icons.Send className="ml-2 h-5 w-5" />
-                          إرسال البيانات
-                      </>
-                  )}
-              </Button>
+            <Button type="submit" size="lg" disabled={submitting}>
+              {submitting ? 'جاري الإرسال...' : (
+                <>
+                  <Icons.Send className="ml-2 h-5 w-5" />
+                  إرسال البيانات
+                </>
+              )}
+            </Button>
           </div>
         </form>
       </Card>

@@ -54,6 +54,7 @@ type InstallmentPaymentRow = {
 const userFromRow = (row: UserRow): User => ({
     id: row.id,
     username: row.username,
+    email: (row as any).email || '',
     role: row.role as Role,
     isActive: row.is_active ?? true,
     createdAt: row.created_at ?? undefined,
@@ -63,6 +64,7 @@ const productFromRow = (row: ProductRow): Product => ({
     id: row.id,
     name: row.name,
     isActive: row.is_active ?? true,
+    weightKg: (row as any).weight_kg ?? 0,
 });
 
 const driverFromRow = (row: DriverRow): Driver => ({
@@ -102,12 +104,12 @@ const shipmentFromRow = (row: ShipmentRow, products: ShipmentProduct[]): Shipmen
     otherAmounts: row.other_amounts ?? undefined,
     improvementBonds: row.improvement_bonds ?? undefined,
     eveningAllowance: row.evening_allowance ?? undefined,
-    transferFee: row.transfer_fee ?? undefined,
-    totalDueAmount: row.total_due_amount ?? undefined,
-    taxRate: row.tax_rate ?? undefined,
-    totalTax: row.total_tax ?? undefined,
-    transferNumber: row.transfer_number ?? undefined,
-    transferDate: row.transfer_date ?? undefined,
+    transferFee: (row as any).transfer_fee ?? undefined,
+    totalDueAmount: (row as any).total_due_amount ?? undefined,
+    taxRate: (row as any).tax_rate ?? undefined,
+    totalTax: (row as any).total_tax ?? undefined,
+    transferNumber: (row as any).transfer_number ?? undefined,
+    transferDate: (row as any).transfer_date ?? undefined,
     modifiedBy: row.modified_by ?? undefined,
     modifiedAt: row.modified_at ?? undefined,
     deductionsEditedBy: row.deductions_edited_by ?? undefined,
@@ -116,6 +118,8 @@ const shipmentFromRow = (row: ShipmentRow, products: ShipmentProduct[]): Shipmen
     createdBy: row.created_by ?? undefined,
     createdAt: row.created_at ?? undefined,
     updated_at: row.updated_at ?? undefined,
+    isPendingSync: false,
+    notes: (row as any).notes,
 });
 
 const shipmentProductFromRow = (row: ShipmentProductRow): ShipmentProduct => ({
@@ -170,7 +174,7 @@ const installmentPaymentFromRow = (row: InstallmentPaymentRow): InstallmentPayme
 });
 
 const shipmentToRow = (shipment: Partial<Shipment>): Partial<Database['public']['Tables']['shipments']['Update']> => {
-    const keyMap: { [K in keyof Shipment]?: keyof Database['public']['Tables']['shipments']['Update'] } = {
+    const keyMap: Record<string, any> = {
         salesOrder: 'sales_order',
         orderDate: 'order_date',
         entryTimestamp: 'entry_timestamp',
@@ -200,6 +204,7 @@ const shipmentToRow = (shipment: Partial<Shipment>): Partial<Database['public'][
         deductionsEditedBy: 'deductions_edited_by',
         deductionsEditedAt: 'deductions_edited_at',
         hasMissingPrices: 'has_missing_prices',
+        notes: 'notes',
     };
 
     const rowData: Partial<Database['public']['Tables']['shipments']['Update']> = {};
@@ -289,7 +294,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [isInitialLoad, setIsInitialLoad] = useState(true); // Track if this is the first load
     const [isProfileLoaded, setIsProfileLoaded] = useState(false); // Track if user profile has been loaded
     const isInitializing = useRef(true); // Track IndexedDB initialization
-    
+
     // Data states - will be hydrated from IndexedDB after mount
     const [users, setUsers] = useState<User[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -327,7 +332,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
                 // Run migration from localStorage to IndexedDB
                 await IndexedDB.migrateFromLocalStorage();
-                
+
                 // Load all data from IndexedDB
                 const [
                     cachedUsers,
@@ -374,44 +379,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 if (cachedPrices.length > 0) setProductPrices(cachedPrices);
                 if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
 
-                 // Update settings
-                 setAccountantPrintAccess(cachedAccountantPrintAccess);
-                 setIsPrintHeaderEnabled(cachedIsPrintHeaderEnabled);
-                 setAppName(cachedAppName);
-                 setCompanyName(cachedCompanyName);
-                 setCompanyAddress(cachedCompanyAddress);
-                 setCompanyPhone(cachedCompanyPhone);
-                 setCompanyLogo(cachedCompanyLogo);
-                 setIsTimeWidgetVisible(cachedIsTimeWidgetVisible);
+                // Update settings
+                setAccountantPrintAccess(cachedAccountantPrintAccess);
+                setIsPrintHeaderEnabled(cachedIsPrintHeaderEnabled);
+                setAppName(cachedAppName);
+                setCompanyName(cachedCompanyName);
+                setCompanyAddress(cachedCompanyAddress);
+                setCompanyPhone(cachedCompanyPhone);
+                setCompanyLogo(cachedCompanyLogo);
+                setIsTimeWidgetVisible(cachedIsTimeWidgetVisible);
 
-                 // Load global settings from database to sync across users
-                 try {
-                     const settingsData = await SupabaseService.getSettings();
-                     const settingsMap = settingsData.reduce((acc, setting) => {
-                         acc[setting.setting_key] = setting.setting_value || '';
-                         return acc;
-                     }, {} as Record<string, string>);
+                // Load global settings from database to sync across users
+                try {
+                    const settingsData = await SupabaseService.getSettings();
+                    const settingsMap = settingsData.reduce((acc, setting) => {
+                        acc[setting.setting_key] = setting.setting_value || '';
+                        return acc;
+                    }, {} as Record<string, string>);
 
-                     // Update state with DB values, falling back to cached
-                     setAppName(settingsMap['appName'] || cachedAppName);
-                     setCompanyName(settingsMap['companyName'] || cachedCompanyName);
-                     setCompanyAddress(settingsMap['companyAddress'] || cachedCompanyAddress);
-                     setCompanyPhone(settingsMap['companyPhone'] || cachedCompanyPhone);
-                     setCompanyLogo(settingsMap['companyLogo'] || cachedCompanyLogo);
-                     setIsPrintHeaderEnabled(settingsMap['isPrintHeaderEnabled'] === 'true');
-                     setAccountantPrintAccess(settingsMap['accountantPrintAccess'] === 'true');
-                     setIsTimeWidgetVisible(settingsMap['isTimeWidgetVisible'] !== 'false');
+                    // Update state with DB values, falling back to cached
+                    setAppName(settingsMap['appName'] || cachedAppName);
+                    setCompanyName(settingsMap['companyName'] || cachedCompanyName);
+                    setCompanyAddress(settingsMap['companyAddress'] || cachedCompanyAddress);
+                    setCompanyPhone(settingsMap['companyPhone'] || cachedCompanyPhone);
+                    setCompanyLogo(settingsMap['companyLogo'] || cachedCompanyLogo);
+                    setIsPrintHeaderEnabled(settingsMap['isPrintHeaderEnabled'] === 'true');
+                    setAccountantPrintAccess(settingsMap['accountantPrintAccess'] === 'true');
+                    setIsTimeWidgetVisible(settingsMap['isTimeWidgetVisible'] !== 'false');
 
-                     logger.info('Global settings loaded from database');
-                 } catch (error) {
-                     console.error('Failed to load global settings from database:', error);
-                     // Keep cached values
-                 }
+                    logger.info('Global settings loaded from database');
+                } catch (error) {
+                    console.error('Failed to load global settings from database:', error);
+                    // Keep cached values
+                }
 
-                 logger.info('IndexedDB data loaded successfully');
+                logger.info('IndexedDB data loaded successfully');
 
                 // Check for pending mutations that need sync
-        mutationQueue = await IndexedDB.getMutationQueue();
+                mutationQueue = await IndexedDB.getMutationQueue();
                 const isOnline = navigator.onLine;
                 if (isOnline && mutationQueue.length > 0) {
                     logger.info(`Found ${mutationQueue.length} pending mutations, will sync after login`);
@@ -556,7 +561,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             // Retrieve true pending shipments from the mutation queue, not the general shipments cache
             // This ensures that once a shipment is synced and removed from the queue, it's replaced by the server version.
-        mutationQueue = await IndexedDB.getMutationQueue();
+            mutationQueue = await IndexedDB.getMutationQueue();
             const pendingShipments = mutationQueue
                 .filter((m: any) => m.type === 'addShipment')
                 .map((m: any) => m.payload as Shipment);
@@ -889,251 +894,251 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 // Continue with current queue if cleanup fails
             }
 
-        mutationQueue = await IndexedDB.getMutationQueue();
-        if (mutationQueue.length === 0) {
-            logger.info('No pending mutations to sync');
-            return;
-        }
-        logger.info(`Found ${mutationQueue.length} pending mutations to sync`);
-
-        // Cross-tab synchronization: Prevent multiple tabs from syncing simultaneously
-        const lockKey = 'sync_lock';
-        const lockValue = `${Date.now()}_${Math.random()}`;
-        const existingLock = localStorage.getItem(lockKey);
-        
-        // Check if another tab is currently syncing (lock exists and is less than 30 seconds old)
-        if (existingLock) {
-            const lockTimestamp = parseInt(existingLock.split('_')[0]);
-            if (Date.now() - lockTimestamp < 30000) {
-                logger.info('Another tab is syncing. Skipping this sync attempt.');
+            mutationQueue = await IndexedDB.getMutationQueue();
+            if (mutationQueue.length === 0) {
+                logger.info('No pending mutations to sync');
                 return;
             }
-        }
+            logger.info(`Found ${mutationQueue.length} pending mutations to sync`);
 
-        // Acquire lock
-        localStorage.setItem(lockKey, lockValue);
+            // Cross-tab synchronization: Prevent multiple tabs from syncing simultaneously
+            const lockKey = 'sync_lock';
+            const lockValue = `${Date.now()}_${Math.random()}`;
+            const existingLock = localStorage.getItem(lockKey);
 
-        // Broadcast sync start event to other tabs
-        const syncChannel = new BroadcastChannel('sync_channel');
-        syncChannel.postMessage({ type: 'sync_start', lockValue });
-
-        try {
-            setIsSyncing(true);
-            logger.info(`Starting sync of ${mutationQueue.length} offline actions.`);
-
-            const offlineToRealIdMap: Record<string, string> = {};
-            const successfullySyncedIndices: number[] = [];
-
-            for (const [index, mutation] of mutationQueue.entries()) {
-        try {
-            if (mutation.type === 'addShipment') {
-                // Strip the offline ID and pending flag. DB will generate a new UUID.
-                const { products, id: offlineId, isPendingSync, ...shipmentData } = mutation.payload;
-
-                const shipmentRow = shipmentToRow(shipmentData);
-                if (!shipmentRow.created_by && currentUser?.id) {
-                    shipmentRow.created_by = currentUser.id;
+            // Check if another tab is currently syncing (lock exists and is less than 30 seconds old)
+            if (existingLock) {
+                const lockTimestamp = parseInt(existingLock.split('_')[0]);
+                if (Date.now() - lockTimestamp < 30000) {
+                    logger.info('Another tab is syncing. Skipping this sync attempt.');
+                    return;
                 }
+            }
 
-                // Insert shipment and get new ID
-                const { data: newShipmentData, error: shipmentError } = await supabase
-                    .from('shipments')
-                    .insert(shipmentRow as any)
-                    .select()
-                    .single();
+            // Acquire lock
+            localStorage.setItem(lockKey, lockValue);
 
-                if (shipmentError) throw shipmentError;
+            // Broadcast sync start event to other tabs
+            const syncChannel = new BroadcastChannel('sync_channel');
+            syncChannel.postMessage({ type: 'sync_start', lockValue });
 
-                logger.info('Mutation sync result:', { type: mutation.type, data: newShipmentData, error: shipmentError });
+            try {
+                setIsSyncing(true);
+                logger.info(`Starting sync of ${mutationQueue.length} offline actions.`);
 
-                // Store mapping: offlineId -> real UUID
-                if (offlineId && String(offlineId).startsWith('offline-')) {
-                    offlineToRealIdMap[offlineId] = newShipmentData.id;
-                }
+                const offlineToRealIdMap: Record<string, string> = {};
+                const successfullySyncedIndices: number[] = [];
 
-                // Insert products with NEW shipment ID
-                const shipmentProductsToInsert = products.map((p: ShipmentProduct) => ({
-                     shipment_id: newShipmentData.id,
-                     product_id: p.productId,
-                     product_name: p.productName,
-                     carton_count: p.cartonCount,
-                     product_wage_price: p.productWagePrice
-                }));
+                for (const [index, mutation] of mutationQueue.entries()) {
+                    try {
+                        if (mutation.type === 'addShipment') {
+                            // Strip the offline ID and pending flag. DB will generate a new UUID.
+                            const { products, id: offlineId, isPendingSync, ...shipmentData } = mutation.payload;
 
-                const { error: productsError } = await supabase.from('shipment_products').insert(shipmentProductsToInsert);
-                if (productsError) throw productsError;
+                            const shipmentRow = shipmentToRow(shipmentData);
+                            if (!shipmentRow.created_by && currentUser?.id) {
+                                shipmentRow.created_by = currentUser.id;
+                            }
 
-                logger.info(`Successfully synced addShipment: ${newShipmentData.id}`);
+                            // Insert shipment and get new ID
+                            const { data: newShipmentData, error: shipmentError } = await supabase
+                                .from('shipments')
+                                .insert(shipmentRow as any)
+                                .select()
+                                .single();
 
-            } else if (mutation.type === 'updateShipment') {
-                let { shipmentId, updates } = mutation.payload;
+                            if (shipmentError) throw shipmentError;
 
-                // If this update is for an offline shipment we just synced, map the ID
-                if (offlineToRealIdMap[shipmentId]) {
-                    shipmentId = offlineToRealIdMap[shipmentId];
-                }
+                            logger.info('Mutation sync result:', { type: mutation.type, data: newShipmentData, error: shipmentError });
 
-                const { products, ...shipmentUpdates } = updates;
+                            // Store mapping: offlineId -> real UUID
+                            if (offlineId && String(offlineId).startsWith('offline-')) {
+                                offlineToRealIdMap[offlineId] = newShipmentData.id;
+                            }
 
-                // Update the main shipment record
-                if (Object.keys(shipmentUpdates).length > 0) {
-                    const updateRow = shipmentToRow(shipmentUpdates);
-                    logger.info(`Updating shipment ${shipmentId} with status:`, updateRow.status);
-                    const { data, error } = await supabase.from('shipments').update(updateRow).eq('id', shipmentId).select();
-                    if (error) throw error;
-                    if (!data || data.length === 0) throw new Error('Update failed: no rows affected');
-                    logger.info(`Successfully updated shipment ${shipmentId} status to: ${updateRow.status}`, { data });
-                }
+                            // Insert products with NEW shipment ID
+                            const shipmentProductsToInsert = products.map((p: ShipmentProduct) => ({
+                                shipment_id: newShipmentData.id,
+                                product_id: p.productId,
+                                product_name: p.productName,
+                                carton_count: p.cartonCount,
+                                product_wage_price: p.productWagePrice
+                            }));
 
-                // Update products if provided
-                if (products !== undefined) {
-                    // Delete existing products for this shipment
-                    const { data: deleteData, error: deleteError } = await supabase
-                        .from('shipment_products')
-                        .delete()
-                        .eq('shipment_id', shipmentId)
-                        .select();
-                    if (deleteError) throw deleteError;
-                    logger.info(`Deleted ${deleteData?.length || 0} products for shipment ${shipmentId}`);
+                            const { error: productsError } = await supabase.from('shipment_products').insert(shipmentProductsToInsert);
+                            if (productsError) throw productsError;
 
-                    // Insert new products if any
-                    if (products.length > 0) {
-                        const shipmentProductsToInsert = products.map((p: ShipmentProduct) => ({
-                            shipment_id: shipmentId,
-                            product_id: p.productId,
-                            product_name: p.productName,
-                            carton_count: p.cartonCount,
-                            product_wage_price: p.productWagePrice
-                        }));
+                            logger.info(`Successfully synced addShipment: ${newShipmentData.id}`);
 
-                        const { data: productsData, error: productsError } = await supabase
-                            .from('shipment_products')
-                            .insert(shipmentProductsToInsert)
-                            .select();
-                        if (productsError) throw productsError;
-                        logger.info(`Inserted ${productsData?.length || 0} products for shipment ${shipmentId}`);
-                        if (productsError) throw productsError;
+                        } else if (mutation.type === 'updateShipment') {
+                            let { shipmentId, updates } = mutation.payload;
+
+                            // If this update is for an offline shipment we just synced, map the ID
+                            if (offlineToRealIdMap[shipmentId]) {
+                                shipmentId = offlineToRealIdMap[shipmentId];
+                            }
+
+                            const { products, ...shipmentUpdates } = updates;
+
+                            // Update the main shipment record
+                            if (Object.keys(shipmentUpdates).length > 0) {
+                                const updateRow = shipmentToRow(shipmentUpdates);
+                                logger.info(`Updating shipment ${shipmentId} with status:`, updateRow.status);
+                                const { data, error } = await supabase.from('shipments').update(updateRow).eq('id', shipmentId).select();
+                                if (error) throw error;
+                                if (!data || data.length === 0) throw new Error('Update failed: no rows affected');
+                                logger.info(`Successfully updated shipment ${shipmentId} status to: ${updateRow.status}`, { data });
+                            }
+
+                            // Update products if provided
+                            if (products !== undefined) {
+                                // Delete existing products for this shipment
+                                const { data: deleteData, error: deleteError } = await supabase
+                                    .from('shipment_products')
+                                    .delete()
+                                    .eq('shipment_id', shipmentId)
+                                    .select();
+                                if (deleteError) throw deleteError;
+                                logger.info(`Deleted ${deleteData?.length || 0} products for shipment ${shipmentId}`);
+
+                                // Insert new products if any
+                                if (products.length > 0) {
+                                    const shipmentProductsToInsert = products.map((p: ShipmentProduct) => ({
+                                        shipment_id: shipmentId,
+                                        product_id: p.productId,
+                                        product_name: p.productName,
+                                        carton_count: p.cartonCount,
+                                        product_wage_price: p.productWagePrice
+                                    }));
+
+                                    const { data: productsData, error: productsError } = await supabase
+                                        .from('shipment_products')
+                                        .insert(shipmentProductsToInsert)
+                                        .select();
+                                    if (productsError) throw productsError;
+                                    logger.info(`Inserted ${productsData?.length || 0} products for shipment ${shipmentId}`);
+                                    if (productsError) throw productsError;
+                                }
+                            }
+                        } else if (mutation.type === 'createInstallment') {
+                            const installment = mutation.payload;
+
+                            // Create installment record
+                            const installmentRow = {
+                                customer_name: installment.customerName,
+                                customer_phone: installment.customerPhone,
+                                total_amount: installment.totalAmount,
+                                remaining_amount: installment.remainingAmount,
+                                status: installment.status,
+                                notes: installment.notes,
+                                created_by: currentUser?.id,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            };
+
+                            const { data: newInstallmentData, error: installmentError } = await (supabase as any)
+                                .from('installments')
+                                .insert(installmentRow)
+                                .select()
+                                .single();
+
+                            if (installmentError) throw installmentError;
+
+                            logger.info(`Successfully synced createInstallment: ${newInstallmentData.id}`);
+
+                        } else if (mutation.type === 'updateInstallment') {
+                            const { installmentId, updates } = mutation.payload;
+
+                            // Update installment record with proper field mapping
+                            const updateRow: any = {
+                                updated_at: new Date().toISOString()
+                            };
+
+                            // Map camelCase to snake_case field names
+                            if (updates.payableAmount !== undefined) updateRow.payable_amount = updates.payableAmount;
+                            if (updates.remainingAmount !== undefined) updateRow.remaining_amount = updates.remainingAmount;
+                            if (updates.status !== undefined) updateRow.status = updates.status;
+                            if (updates.installmentType !== undefined) updateRow.installment_type = updates.installmentType;
+                            if (updates.originalAmount !== undefined) updateRow.original_amount = updates.originalAmount;
+                            if (updates.notes !== undefined) updateRow.notes = updates.notes;
+                            if (updates.updatedBy !== undefined) updateRow.updated_by = updates.updatedBy;
+
+                            const { data, error } = await (supabase as any)
+                                .from('installments')
+                                .update(updateRow)
+                                .eq('id', installmentId)
+                                .select();
+
+                            if (error) throw error;
+                            if (!data || data.length === 0) throw new Error('Update failed: no rows affected');
+
+                            logger.info(`Successfully updated installment ${installmentId}`);
+
+                        } else if (mutation.type === 'addInstallmentPayment') {
+                            const payment = mutation.payload;
+
+                            // Create payment record
+                            const paymentRow = {
+                                installment_id: payment.installmentId,
+                                amount: payment.amount,
+                                payment_method: payment.paymentMethod,
+                                notes: payment.notes,
+                                received_date: payment.receivedDate,
+                                created_by: currentUser?.id,
+                                created_at: new Date().toISOString()
+                            };
+
+                            const { data: newPaymentData, error: paymentError } = await (supabase as any)
+                                .from('installment_payments')
+                                .insert(paymentRow)
+                                .select()
+                                .single();
+
+                            if (paymentError) throw paymentError;
+
+                            logger.info(`Successfully synced addInstallmentPayment: ${newPaymentData.id}`);
+
+                        } else if (mutation.type === 'updateInstallmentPayment') {
+                            const { paymentId, updates } = mutation.payload;
+
+                            // Update payment record
+                            const updateRow = {
+                                ...updates
+                            };
+
+                            const { data, error } = await (supabase as any)
+                                .from('installment_payments')
+                                .update(updateRow)
+                                .eq('id', paymentId)
+                                .select();
+
+                            if (error) throw error;
+                            if (!data || data.length === 0) throw new Error('Update failed: no rows affected');
+
+                            logger.info(`Successfully updated installment payment ${paymentId}`);
+                        }
+
+                        successfullySyncedIndices.push(index);
+                    } catch (err) {
+                        console.error('Failed to sync mutation:', mutation, err);
+                        // Keep failed mutation in queue for retry
+                        logger.error(`Sync failed for ${mutation.type}:`, err);
                     }
                 }
-            } else if (mutation.type === 'createInstallment') {
-                    const installment = mutation.payload;
 
-                    // Create installment record
-                    const installmentRow = {
-                        customer_name: installment.customerName,
-                        customer_phone: installment.customerPhone,
-                        total_amount: installment.totalAmount,
-                        remaining_amount: installment.remainingAmount,
-                        status: installment.status,
-                        notes: installment.notes,
-                        created_by: currentUser?.id,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    };
+                // Remove successfully synced items
+                const newQueue = mutationQueue.filter((_: any, index: number) => !successfullySyncedIndices.includes(index));
+                await IndexedDB.setMutationQueue(newQueue);
 
-                    const { data: newInstallmentData, error: installmentError } = await (supabase as any)
-                        .from('installments')
-                        .insert(installmentRow)
-                        .select()
-                        .single();
+                // Update sync status
+                await updateSyncStatus();
 
-                    if (installmentError) throw installmentError;
+                logger.info(`Sync completed: ${successfullySyncedIndices.length} mutations synced successfully`);
 
-                    logger.info(`Successfully synced createInstallment: ${newInstallmentData.id}`);
-
-                } else if (mutation.type === 'updateInstallment') {
-                    const { installmentId, updates } = mutation.payload;
-
-                    // Update installment record with proper field mapping
-                    const updateRow: any = {
-                        updated_at: new Date().toISOString()
-                    };
-
-                    // Map camelCase to snake_case field names
-                    if (updates.payableAmount !== undefined) updateRow.payable_amount = updates.payableAmount;
-                    if (updates.remainingAmount !== undefined) updateRow.remaining_amount = updates.remainingAmount;
-                    if (updates.status !== undefined) updateRow.status = updates.status;
-                    if (updates.installmentType !== undefined) updateRow.installment_type = updates.installmentType;
-                    if (updates.originalAmount !== undefined) updateRow.original_amount = updates.originalAmount;
-                    if (updates.notes !== undefined) updateRow.notes = updates.notes;
-                    if (updates.updatedBy !== undefined) updateRow.updated_by = updates.updatedBy;
-
-                    const { data, error } = await (supabase as any)
-                        .from('installments')
-                        .update(updateRow)
-                        .eq('id', installmentId)
-                        .select();
-
-                    if (error) throw error;
-                    if (!data || data.length === 0) throw new Error('Update failed: no rows affected');
-
-                    logger.info(`Successfully updated installment ${installmentId}`);
-
-                } else if (mutation.type === 'addInstallmentPayment') {
-                    const payment = mutation.payload;
-
-                    // Create payment record
-                    const paymentRow = {
-                        installment_id: payment.installmentId,
-                        amount: payment.amount,
-                        payment_method: payment.paymentMethod,
-                        notes: payment.notes,
-                        received_date: payment.receivedDate,
-                        created_by: currentUser?.id,
-                        created_at: new Date().toISOString()
-                    };
-
-                    const { data: newPaymentData, error: paymentError } = await (supabase as any)
-                        .from('installment_payments')
-                        .insert(paymentRow)
-                        .select()
-                        .single();
-
-                    if (paymentError) throw paymentError;
-
-                    logger.info(`Successfully synced addInstallmentPayment: ${newPaymentData.id}`);
-
-                } else if (mutation.type === 'updateInstallmentPayment') {
-                    const { paymentId, updates } = mutation.payload;
-
-                    // Update payment record
-                    const updateRow = {
-                        ...updates
-                    };
-
-                    const { data, error } = await (supabase as any)
-                        .from('installment_payments')
-                        .update(updateRow)
-                        .eq('id', paymentId)
-                        .select();
-
-                    if (error) throw error;
-                    if (!data || data.length === 0) throw new Error('Update failed: no rows affected');
-
-                    logger.info(`Successfully updated installment payment ${paymentId}`);
-                }
-
-                successfullySyncedIndices.push(index);
-                } catch (err) {
-                    console.error('Failed to sync mutation:', mutation, err);
-                    // Keep failed mutation in queue for retry
-                    logger.error(`Sync failed for ${mutation.type}:`, err);
-                }
-        }
-        
-        // Remove successfully synced items
-        const newQueue = mutationQueue.filter((_: any, index: number) => !successfullySyncedIndices.includes(index));
-        await IndexedDB.setMutationQueue(newQueue);
-
-        // Update sync status
-        await updateSyncStatus();
-
-        logger.info(`Sync completed: ${successfullySyncedIndices.length} mutations synced successfully`);
-
-        // Refresh data from server to get the new IDs and clean states
-        await fetchAllData();
-        setIsSyncing(false);
-        logger.info('Sync finished and data refreshed.');
+                // Refresh data from server to get the new IDs and clean states
+                await fetchAllData();
+                setIsSyncing(false);
+                logger.info('Sync finished and data refreshed.');
 
             } finally {
                 // Release lock only if we still own it
@@ -1188,7 +1193,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 console.error('Error refreshing data:', err);
             }
         };
-        
+
         const handleOffline = () => {
             logger.info('Connection lost - going offline');
             setIsOnline(false);
@@ -1333,6 +1338,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setCurrentUser({
                     id: session.user.id,
                     username: session.user.email || 'unknown',
+                    email: session.user.email || '',
                     role: Role.SALES, // Default role, will be updated when profile loads
                     isActive: true
                 });
@@ -1378,7 +1384,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             } else {
                 // Check for offline session when no Supabase session
                 const offlineSession = await getOfflineSession();
-                
+
                 if (offlineSession) {
                     logger.info('No Supabase session but offline session exists');
                     // Try to restore user from cached data
@@ -1389,11 +1395,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         );
                         const cachedUsers = await Promise.race([offlineUserPromise, offlineUserTimeout]);
                         const userProfile = cachedUsers.find(u => u.id === offlineSession.userId) || null;
-                        
+
                         if (userProfile) {
                             logger.info('Restored user from offline session');
                             setCurrentUser(userProfile);
-                            
+
                             // Load cached data with timeout protection
                             const offlineDataPromise = Promise.all([
                                 IndexedDB.getAllFromStore<Product>(STORES.PRODUCTS),
@@ -1421,10 +1427,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                             if (cachedProducts.length > 0) setProducts(cachedProducts);
                             if (cachedDrivers.length > 0) setDrivers(cachedDrivers);
                             if (cachedRegions.length > 0) setRegions(cachedRegions);
-                if (cachedShipments.length > 0) setShipments(cachedShipments);
+                            if (cachedShipments.length > 0) setShipments(cachedShipments);
                             if (cachedPrices.length > 0) setProductPrices(cachedPrices);
                             if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
-                            
+
                             logger.info('Offline session restored with cached data');
                         } else {
                             console.error('Offline session exists but no cached user profile');
@@ -1438,12 +1444,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     // SECURITY FIX: Always require explicit login
                     // No automatic session restoration for security
                     logger.info('No active session - user must login');
-                    
+
                     // Clear all data and user state
                     clearData();
                     setCurrentUser(null);
                 }
-                
+
                 setLoading(false);
                 setIsInitialLoad(false);
             }
@@ -1519,55 +1525,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const addDriver = useCallback(async (driver: Omit<Driver, 'id'>) => {
         const { error } = await supabase.from('drivers').insert({ name: driver.name, plate_number: driver.plateNumber, is_active: driver.isActive });
-        if(error) throw error;
+        if (error) throw error;
         await fetchAllData();
     }, [fetchAllData]);
 
     const updateDriver = useCallback(async (driverId: number, updates: Partial<Driver>) => {
         const { error } = await supabase.from('drivers').update({ name: updates.name, plate_number: updates.plateNumber, is_active: updates.isActive }).eq('id', driverId);
-        if(error) throw error;
+        if (error) throw error;
         await fetchAllData();
     }, [fetchAllData]);
 
     const deleteDriver = useCallback(async (driverId: number) => {
         const { error } = await supabase.from('drivers').delete().eq('id', driverId);
-        if(error) throw error;
+        if (error) throw error;
         await fetchAllData();
     }, [fetchAllData]);
 
     const addRegion = useCallback(async (region: Omit<Region, 'id'>) => {
         const { error } = await supabase.from('regions').insert({ id: window.crypto.randomUUID(), name: region.name, diesel_liter_price: region.dieselLiterPrice, diesel_liters: region.dieselLiters, zaitri_fee: region.zaitriFee });
-        if(error) throw error;
+        if (error) throw error;
         await fetchAllData();
     }, [fetchAllData]);
 
     const updateRegion = useCallback(async (regionId: string, updates: Partial<Region>) => {
         const { error } = await supabase.from('regions').update({ name: updates.name, diesel_liter_price: updates.dieselLiterPrice, diesel_liters: updates.dieselLiters, zaitri_fee: updates.zaitriFee }).eq('id', regionId);
-        if(error) throw error;
+        if (error) throw error;
         await fetchAllData();
     }, [fetchAllData]);
 
     const deleteRegion = useCallback(async (regionId: string) => {
         const { error } = await supabase.from('regions').delete().eq('id', regionId);
-        if(error) throw error;
+        if (error) throw error;
         await fetchAllData();
     }, [fetchAllData]);
 
     const addProductPrice = useCallback(async (price: Omit<ProductPrice, 'id'>) => {
         const { error } = await supabase.from('product_prices').insert({ id: window.crypto.randomUUID(), region_id: price.regionId, product_id: price.productId, price: price.price });
-        if(error) throw error;
+        if (error) throw error;
         await fetchAllData();
     }, [fetchAllData]);
 
     const updateProductPrice = useCallback(async (priceId: string, updates: Partial<ProductPrice>) => {
         const { error } = await supabase.from('product_prices').update({ price: updates.price }).eq('id', priceId);
-        if(error) throw error;
+        if (error) throw error;
         await fetchAllData();
     }, [fetchAllData]);
 
     const deleteProductPrice = useCallback(async (priceId: string) => {
         const { error } = await supabase.from('product_prices').delete().eq('id', priceId);
-        if(error) throw error;
+        if (error) throw error;
         await fetchAllData();
     }, [fetchAllData]);
 
@@ -1576,7 +1582,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             logger.info('Offline: Queuing shipment creation.');
             // Create a temporary ID for local display
             const offlineShipment: Shipment = { ...shipment, id: `offline-${crypto.randomUUID()}`, isPendingSync: true };
-            
+
             const currentShipments = await IndexedDB.getAllFromStore<Shipment>(STORES.SHIPMENTS);
             const updatedShipments = [offlineShipment, ...currentShipments]; // Add to top
             setShipments(updatedShipments);
@@ -1589,25 +1595,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const { products, ...shipmentData } = shipment;
         // Cast to any to avoid TS error about Partial<Update> not matching Insert required fields
         const shipmentToInsert = { ...shipmentToRow(shipmentData), id: crypto.randomUUID(), created_by: currentUser?.id } as any;
-        
+
         const { data: newShipmentData, error: shipmentError } = await supabase.from('shipments').insert(shipmentToInsert).select().single();
         if (shipmentError) throw shipmentError;
-        
-        const shipmentProductsToInsert = products.map(p => ({ 
-            shipment_id: newShipmentData.id, 
-            product_id: p.productId, 
-            product_name: p.productName, 
-            carton_count: p.cartonCount, 
-            product_wage_price: p.productWagePrice 
+
+        const shipmentProductsToInsert = products.map(p => ({
+            shipment_id: newShipmentData.id,
+            product_id: p.productId,
+            product_name: p.productName,
+            carton_count: p.cartonCount,
+            product_wage_price: p.productWagePrice
         }));
-        
+
         const { error: productsError } = await supabase.from('shipment_products').insert(shipmentProductsToInsert);
-        if (productsError) { 
-            console.error("Failed to insert products for shipment:", newShipmentData.id, productsError); 
+        if (productsError) {
+            console.error("Failed to insert products for shipment:", newShipmentData.id, productsError);
             // Ideally delete the shipment if product insertion fails to maintain integrity, but for now throwing error.
-            throw productsError; 
+            throw productsError;
         }
-        
+
         await fetchAllData();
     }, [currentUser, fetchAllData, isOnline]);
 
@@ -1702,7 +1708,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         await fetchAllData();
     }, [fetchAllData, isOnline, shipments]);
-    
+
     const updateUser = useCallback(async (userId: string, updates: Partial<User>) => {
         const { error } = await supabase.from('users').update({ is_active: updates.isActive }).eq('id', userId);
         if (error) throw error;
@@ -1710,9 +1716,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, [fetchAllData]);
 
     const addNotification = useCallback(async (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
-         // Notifications are fire-and-forget, mostly relevant for online users.
-         // If offline, we could queue them, but for simplicity we'll skip or only try if online.
-         if (!isOnline) return; 
+        // Notifications are fire-and-forget, mostly relevant for online users.
+        // If offline, we could queue them, but for simplicity we'll skip or only try if online.
+        if (!isOnline) return;
         const { error } = await supabase.from('notifications').insert({ id: window.crypto.randomUUID(), timestamp: new Date().toISOString(), message: notification.message, category: notification.category, target_roles: notification.targetRoles, target_user_ids: notification.targetUserIds });
         if (error) throw error;
         // Don't refetch all data just for a notification sent
@@ -1722,7 +1728,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const originalNotifications = [...notifications];
         setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
         if (!isOnline) return; // Optimistic update offline
-        
+
         const { error } = await supabase.from('notifications').update({ read: true }).eq('id', notificationId);
         if (error) {
             console.error("Failed to mark notification as read:", error);
@@ -1735,7 +1741,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (unreadIds.length === 0) return;
         const originalNotifications = [...notifications];
         setNotifications(prev => prev.map(n => unreadIds.includes(n.id) ? { ...n, read: true } : n));
-        
+
         if (!isOnline) return; // Optimistic update offline
 
         const { error } = await supabase.from('notifications').update({ read: true }).in('id', unreadIds);

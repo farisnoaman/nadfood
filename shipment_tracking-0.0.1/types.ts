@@ -12,14 +12,14 @@ export enum Role {
  * Represents the various statuses a shipment can have as it moves through the workflow.
  */
 export enum ShipmentStatus {
-   FROM_SALES = 'من مسؤول الحركة', // Newly created by Sales, ready for Accountant
-   DRAFT = 'مسودة', // Saved by Accountant, not yet sent to Admin
-   SENT_TO_ADMIN = 'مرسلة للادمن', // Sent by Accountant, awaiting Admin review
-   RETURNED_FOR_EDIT = 'طلب تعديل', // Returned by Admin to Accountant for changes
-   RETURNED_TO_FLEET = 'مرتجعة لمسؤول الحركة', // Returned by Accountant to Fleet for corrections
-   FINAL = 'نهائي', // Approved by Admin
-   FINAL_MODIFIED = 'نهائي معدل', // A final shipment that was later modified by Admin
-   INSTALLMENTS = 'تسديد دين', // Transferred to installments for debt collection
+  FROM_SALES = 'من مسؤول الحركة', // Newly created by Sales, ready for Accountant
+  DRAFT = 'مسودة', // Saved by Accountant, not yet sent to Admin
+  SENT_TO_ADMIN = 'مرسلة للادمن', // Sent by Accountant, awaiting Admin review
+  RETURNED_FOR_EDIT = 'طلب تعديل', // Returned by Admin to Accountant for changes
+  RETURNED_TO_FLEET = 'مرتجعة لمسؤول الحركة', // Returned by Accountant to Fleet for corrections
+  FINAL = 'نهائي', // Approved by Admin
+  FINAL_MODIFIED = 'نهائي معدل', // A final shipment that was later modified by Admin
+  INSTALLMENTS = 'تسديد دين', // Transferred to installments for debt collection
 }
 
 /**
@@ -41,6 +41,7 @@ export interface Product {
   id: string; // UUID from Supabase
   name: string;
   isActive?: boolean;
+  weightKg?: number;
 }
 
 /**
@@ -97,7 +98,7 @@ export interface Shipment {
   regionId: string;
   driverId: number; // Now a number (integer)
   products: ShipmentProduct[];
-  
+
   // Calculated values
   totalDiesel?: number;
   totalWage?: number;
@@ -127,11 +128,12 @@ export interface Shipment {
   deductionsEditedBy?: string; // Admin who edited accountant's deductions
   deductionsEditedAt?: string; // Timestamp of deductions edit
   hasMissingPrices: boolean;
-   createdBy?: string; // User ID who created it
-   createdAt?: string; // Timestamp from the DB
-   updated_at?: string; // Timestamp of last update
-   isPendingSync?: boolean; // True if created offline and waiting to be sent to the server.
- }
+  createdBy?: string; // User ID who created it
+  createdAt?: string; // Timestamp from the DB
+  updated_at?: string; // Timestamp of last update
+  isPendingSync?: boolean; // True if created offline and waiting to be sent to the server.
+  notes?: string; // Admin notes
+}
 
 /**
  * Defines categories for notifications to allow for filtering.
