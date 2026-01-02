@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Card from '../../common/display/Card';
 import Input from '../../common/ui/Input';
 import { Icons } from '../../Icons';
@@ -29,6 +29,8 @@ const AdminSettings: React.FC = () => {
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [hasUnsavedChanges] = useState(false);
   const [syncNotifications, setSyncNotifications] = useState<string[]>([]);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // State for edit mode and temporary form data
   const [isEditing, setIsEditing] = useState(false);
@@ -205,6 +207,70 @@ const AdminSettings: React.FC = () => {
     setTempDetails(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // Handle logo file upload to Supabase Storage
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('نوع الملف غير مدعوم. يرجى اختيار صورة (JPEG, PNG, GIF, WebP, SVG)');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('حجم الملف كبير جداً. الحد الأقصى هو 5 ميجابايت');
+      return;
+    }
+
+    try {
+      setIsUploadingLogo(true);
+
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `company-logo-${Date.now()}.${fileExt}`;
+      const filePath = `logos/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('company-assets')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        alert('فشل رفع الشعار: ' + uploadError.message);
+        return;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('company-assets')
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+      console.log('Logo uploaded successfully:', publicUrl);
+
+      // Update temp details with new logo URL
+      setTempDetails(prev => ({ ...prev, logo: publicUrl }));
+      alert('تم رفع الشعار بنجاح!');
+
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      alert('حدث خطأ أثناء رفع الشعار. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsUploadingLogo(false);
+      // Reset file input
+      if (logoInputRef.current) {
+        logoInputRef.current.value = '';
+      }
+    }
+  };
+
   // Unified save function for all settings
   const handleSaveAll = async () => {
     try {
@@ -269,9 +335,8 @@ const AdminSettings: React.FC = () => {
     };
 
     return (
-      <label htmlFor={id} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between cursor-pointer p-2 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-700/50 gap-2 ${
-        !isSynced ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' : ''
-      }`}>
+      <label htmlFor={id} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between cursor-pointer p-2 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-700/50 gap-2 ${!isSynced ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' : ''
+        }`}>
         <span className="text-secondary-800 dark:text-secondary-200 text-sm sm:text-base">{label}</span>
         <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
           {!isSynced && (
@@ -293,8 +358,8 @@ const AdminSettings: React.FC = () => {
   };
 
   // Debug logging
-    logger.debug('AdminSettings: Current user role:', currentUser?.role);
-    logger.debug('AdminSettings: Is admin check:', currentUser?.role === 'ادمن');
+  logger.debug('AdminSettings: Current user role:', currentUser?.role);
+  logger.debug('AdminSettings: Is admin check:', currentUser?.role === 'ادمن');
 
   // Check if user is admin
   if (!currentUser) {
@@ -419,12 +484,12 @@ const AdminSettings: React.FC = () => {
       </Card>
 
       <Card title="إعدادات الواجهة">
-          <ToggleSetting
-            id="isTimeWidgetVisible"
-            label="عرض أداة الوقت والتاريخ"
-            isChecked={isTimeWidgetVisible}
-            onToggle={setIsTimeWidgetVisible}
-          />
+        <ToggleSetting
+          id="isTimeWidgetVisible"
+          label="عرض أداة الوقت والتاريخ"
+          isChecked={isTimeWidgetVisible}
+          onToggle={setIsTimeWidgetVisible}
+        />
       </Card>
 
       <Card>
@@ -455,16 +520,64 @@ const AdminSettings: React.FC = () => {
                 <Input label="عنوان الشركة" name="address" value={tempDetails.address} onChange={handleInputChange} />
                 <Input label="رقم الهاتف" name="phone" value={tempDetails.phone} onChange={handleInputChange} />
                 <div>
-                  <Input label="رابط شعار الشركة" name="logo" placeholder="https://example.com/logo.png" value={tempDetails.logo} onChange={handleInputChange} />
-                  <div className="mt-2 flex items-center gap-4">
-                    {tempDetails.logo ? (
-                      <img src={tempDetails.logo} alt="Company Logo Preview" className="h-16 w-auto object-contain bg-gray-200 p-1 rounded"/>
-                    ) : (
-                      <div className="h-16 w-16 flex items-center justify-center bg-secondary-100 dark:bg-secondary-700 rounded text-secondary-500">
-                        <Icons.Truck className="h-8 w-8" />
-                      </div>
-                    )}
-                    {tempDetails.logo && <Button variant="secondary" size="sm" onClick={() => setTempDetails(p => ({...p, logo: ''}))}>إزالة الشعار</Button>}
+                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                    شعار الشركة
+                  </label>
+                  <div className="flex flex-col gap-3">
+                    {/* File Upload Button */}
+                    <div className="flex items-center gap-3">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        id="logo-upload"
+                      />
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={isUploadingLogo}
+                        className="flex-shrink-0"
+                      >
+                        {isUploadingLogo ? (
+                          <>
+                            <Icons.RefreshCw className="ml-2 h-4 w-4 animate-spin" />
+                            جاري الرفع...
+                          </>
+                        ) : (
+                          <>
+                            <Icons.ArrowUp className="ml-2 h-4 w-4" />
+                            رفع شعار جديد
+                          </>
+                        )}
+                      </Button>
+                      {tempDetails.logo && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setTempDetails(p => ({ ...p, logo: '' }))}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Icons.Trash2 className="ml-1 h-4 w-4" />
+                          إزالة
+                        </Button>
+                      )}
+                    </div>
+                    {/* Logo Preview */}
+                    <div className="flex items-center gap-4">
+                      {tempDetails.logo ? (
+                        <img src={tempDetails.logo} alt="Company Logo Preview" className="h-20 w-auto object-contain bg-gray-200 dark:bg-gray-700 p-2 rounded border" />
+                      ) : (
+                        <div className="h-20 w-20 flex items-center justify-center bg-secondary-100 dark:bg-secondary-700 rounded text-secondary-500 border border-dashed border-secondary-300 dark:border-secondary-600">
+                          <Icons.Truck className="h-10 w-10" />
+                        </div>
+                      )}
+                      {tempDetails.logo && (
+                        <span className="text-xs text-green-600 dark:text-green-400">✓ شعار محمّل</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
@@ -489,9 +602,9 @@ const AdminSettings: React.FC = () => {
                   <span className="font-semibold text-secondary-600 dark:text-secondary-400">الشعار:</span>
                   <div className="text-secondary-800 dark:text-secondary-200">
                     {companyLogo ? (
-                        <img src={companyLogo} alt="Company Logo" className="h-16 w-auto object-contain p-1 rounded bg-white"/>
+                      <img src={companyLogo} alt="Company Logo" className="h-16 w-auto object-contain p-1 rounded bg-white" />
                     ) : (
-                        <span>-</span>
+                      <span>-</span>
                     )}
                   </div>
                 </div>

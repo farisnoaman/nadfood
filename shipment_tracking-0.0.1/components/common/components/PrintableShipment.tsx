@@ -31,13 +31,31 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
   return (
     <div className="print-container" style={{ fontFamily: 'Arial, sans-serif', direction: 'rtl', padding: '15px', backgroundColor: '#f9f9f9' }}>
       {isPrintHeaderEnabled && (
-        <header style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '3px solid #007bff', paddingBottom: '8px', background: '#e3f2fd', borderRadius: '8px', padding: '10px' }}>
-          {companyLogo && (
-            <img src={companyLogo} alt={companyName} style={{ maxHeight: '50px', marginBottom: '8px' }} />
-          )}
-          <h1 style={{ margin: '3px 0', fontSize: '18px', fontWeight: 'bold', color: '#007bff' }}>{companyName}</h1>
-          <p style={{ margin: '2px 0', fontSize: '12px', color: '#555' }}>{companyAddress}</p>
-          <p style={{ margin: '2px 0', fontSize: '12px', color: '#555' }}>{companyPhone}</p>
+        <header style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          alignItems: 'center',
+          marginBottom: '15px',
+          borderBottom: '3px solid #007bff',
+          paddingBottom: '8px',
+          background: '#e3f2fd',
+          borderRadius: '8px',
+          padding: '10px'
+        }}>
+          {/* Right Column - Company Info */}
+          <div style={{ textAlign: 'right' }}>
+            <h1 style={{ margin: '3px 0', fontSize: '18px', fontWeight: 'bold', color: '#007bff' }}>{companyName}</h1>
+            <p style={{ margin: '2px 0', fontSize: '12px', color: '#555' }}>{companyAddress}</p>
+            <p style={{ margin: '2px 0', fontSize: '12px', color: '#555' }}>{companyPhone}</p>
+          </div>
+          {/* Center Column - Logo */}
+          <div style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            {companyLogo && (
+              <img src={companyLogo} alt={companyName} crossOrigin="anonymous" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
+            )}
+          </div>
+          {/* Left Column - Empty for balance */}
+          <div style={{ textAlign: 'left' }}></div>
         </header>
       )}
 

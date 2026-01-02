@@ -15,19 +15,37 @@ interface CompanyPrintDetails {
   isPrintHeaderEnabled: boolean;
 }
 
-// Helper to convert URL to Base64
+// Helper to convert URL to Base64 using Image and Canvas (more robust for CORS if headers allow)
 const getBase64FromUrl = async (url: string): Promise<string> => {
-  const data = await fetch(url);
-  const blob = await data.blob();
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onloadend = () => {
-      const base64data = reader.result;
-      resolve(base64data as string);
-    }
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.src = url;
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        const dataURL = canvas.toDataURL('image/png');
+        resolve(dataURL);
+      } catch (error) {
+        // This usually happens if CORS headers are missing (tainted canvas)
+        console.warn('Canvas taint check failed:', error);
+        resolve(url); // Fallback to URL if canvas fails, hoping html2canvas might have better luck or just show broken
+      }
+    };
+    img.onerror = (error) => {
+      console.warn('Image load failed:', error);
+      resolve(url); // Fallback to URL
+    };
   });
-}
+};
 
 /**
  * Generates and triggers the download of a PDF report for a given shipment.
@@ -96,7 +114,7 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
 
     const regionName = regions.find((r: any) => r.id === shipment.regionId)?.name || 'غير معروف';
 
-    // Step 2: Render the component into the off-screen container.
+    // Step 2: Render the component with logo (Base64 if available, otherwise original URL).
     root.render(
       React.createElement(PrintableShipment, {
         shipment,
@@ -106,52 +124,45 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
         printedBy: currentUser.username,
         printTimestamp: printTimestamp,
         ...companyDetails,
-        companyLogo: logoBase64 || companyDetails.companyLogo, // Use base64 if available, fallback to URL
+        companyLogo: logoBase64 || companyDetails.companyLogo, // Use base64 if available
       })
     );
 
-    // Step 3: Wait for render completion with timeout protection
-    // Step 3: Wait for images to load
+    // Step 3: Wait for React to mount the component
+    await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 100)));
+
+    // Step 4: Wait for any other images to load
     const images = Array.from(printContainer.querySelectorAll('img'));
     await Promise.all(images.map(img => {
-      if (img.complete) return Promise.resolve();
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
       return new Promise((resolve) => {
-        img.onload = resolve;
-        img.onerror = resolve; // Don't fail the whole print if one image fails
+        img.onload = () => resolve(undefined);
+        img.onerror = () => resolve(undefined);
       });
     }));
 
-    // Small buffer after images load to ensure layout stability
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Buffer after images load
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     if (!printContainer) {
       throw new Error('Print container was removed unexpectedly');
     }
 
-    // Step 4: Use html2canvas to capture the rendered component.
+    // Step 5: Use html2canvas to capture the rendered component.
     const canvas = await html2canvas(printContainer, {
-      scale: 2, // Higher scale for better quality PDF output
-      useCORS: true, // Important for loading external logo images
+      scale: 2,
+      useCORS: true,
       backgroundColor: '#ffffff',
-      logging: false, // Disable console logging
-      onclone: (clonedDoc) => {
-        // Ensure images are loaded in cloned document
-        const images = clonedDoc.querySelectorAll('img');
-        images.forEach((img) => {
-          if (!img.complete) {
-            console.warn('Image not fully loaded:', img.src);
-          }
-        });
-      }
+      logging: false,
     });
 
     if (!canvas || canvas.width === 0 || canvas.height === 0) {
       throw new Error('Canvas generation failed: Invalid dimensions');
     }
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.9); // Use JPEG for smaller file sizes
+    const imgData = canvas.toDataURL('image/jpeg', 0.9);
 
-    // Step 5: Initialize jsPDF.
+    // Step 6: Initialize jsPDF.
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -162,18 +173,18 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
     const canvasAspectRatio = canvas.height / canvas.width;
     const totalPDFHeight = pdfWidth * canvasAspectRatio;
 
-    // Step 6: Add the captured image to the PDF.
+    // Step 7: Add the captured content to the PDF.
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, totalPDFHeight);
 
-    // Sanitize filename to prevent security issues
+    // Sanitize filename
     const sanitizedSalesOrder = sanitizeFilename(shipment.salesOrder);
     const sanitizedDriverName = sanitizeFilename(driver?.name || 'UnknownDriver');
     const fileName = `${sanitizedDriverName}-${sanitizedSalesOrder}.pdf`;
 
-    // Step 7: Trigger the download.
+    // Step 9: Trigger the download.
     pdf.save(fileName);
 
-    // Step 8: Clean up the temporary DOM element.
+    // Step 10: Clean up
     cleanup();
 
   } catch (err) {
