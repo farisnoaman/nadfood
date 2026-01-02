@@ -74,6 +74,7 @@ export interface ProductPrice {
   regionId: string;
   productId: string;
   price: number; // Price per carton
+  effectiveFrom: string; // Start date of this price (YYYY-MM-DD)
 }
 
 /**

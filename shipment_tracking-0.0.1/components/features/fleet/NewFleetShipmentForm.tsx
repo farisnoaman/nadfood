@@ -128,12 +128,22 @@ const ProductInputRow: React.FC<{
   activeProducts: Product[];
   productPrices: ProductPrice[];
   regionId: string;
+  orderDate: string;
   onProductChange: <K extends keyof ShipmentProduct>(index: number, field: K, value: ShipmentProduct[K]) => void;
   onRemove: (index: number) => void;
   isRemovable: boolean;
-}> = ({ index, product, activeProducts, productPrices, regionId, onProductChange, onRemove, isRemovable }) => {
+}> = ({ index, product, activeProducts, productPrices, regionId, orderDate, onProductChange, onRemove, isRemovable }) => {
 
-  const priceInfo = productPrices.find((p: ProductPrice) => p.regionId === regionId && p.productId === product.productId);
+  const relevantPrices = productPrices.filter((p: ProductPrice) =>
+    p.regionId === regionId &&
+    p.productId === product.productId &&
+    p.effectiveFrom <= orderDate
+  );
+
+  const priceInfo = relevantPrices.sort((a, b) =>
+    new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+  )[0];
+
   const price = priceInfo ? priceInfo.price : null;
 
   return (
@@ -265,10 +275,18 @@ const NewFleetShipmentForm: React.FC = () => {
 
     const finalProducts = selectedProducts.filter(p => p.productId && p.cartonCount > 0);
 
-    // Check for missing or zero prices
+    // Check for missing or zero prices using date-based lookup
     const productsWithMissingPrice: string[] = [];
     finalProducts.forEach(product => {
-      const priceInfo = productPrices.find((pp: ProductPrice) => pp.regionId === regionId && pp.productId === product.productId);
+      const relevantPrices = productPrices.filter((pp: ProductPrice) =>
+        pp.regionId === regionId &&
+        pp.productId === product.productId &&
+        pp.effectiveFrom <= orderDate
+      );
+      const priceInfo = relevantPrices.sort((a, b) =>
+        new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+      )[0];
+
       if (!priceInfo || priceInfo.price === 0) {
         const productDetails = allProducts.find((p: Product) => p.id === product.productId);
         if (productDetails) {
@@ -283,13 +301,17 @@ const NewFleetShipmentForm: React.FC = () => {
       // Use setTimeout to make it non-blocking and avoid React render issues
       setTimeout(() => {
         finalProducts.forEach(product => {
-          const priceExists = productPrices.some((pp: ProductPrice) => pp.regionId === regionId && pp.productId === product.productId);
+          const priceExists = productPrices.some((pp: ProductPrice) =>
+            pp.regionId === regionId &&
+            pp.productId === product.productId &&
+            pp.effectiveFrom <= orderDate
+          );
           if (!priceExists) {
             const region = regions.find((r: Region) => r.id === regionId);
             const productDetails = allProducts.find((p: Product) => p.id === product.productId);
             if (region && productDetails) {
               addNotification({
-                message: `طلب تسعير: مطلوب تحديد سعر للمنتج "<strong style="color:red;">${productDetails.name}</strong>" في منطقة "<strong style="color:green;">${region.name}</strong>". رقم الأمر: ${sanitizedSalesOrder}`,
+                message: `طلب تسعير: مطلوب تحديد سعر للمنتج "<strong style="color:red;">${productDetails.name}</strong>" في منطقة "<strong style="color:green;">${region.name}</strong>" اعتباراً من تاريخ ${orderDate}. رقم الأمر: ${sanitizedSalesOrder}`,
                 category: NotificationCategory.PRICE_ALERT,
                 targetRoles: [Role.ADMIN]
               }).catch(error => {
@@ -405,6 +427,7 @@ const NewFleetShipmentForm: React.FC = () => {
                 activeProducts={activeProducts}
                 productPrices={productPrices}
                 regionId={regionId}
+                orderDate={orderDate}
                 onProductChange={handleProductChange}
                 onRemove={handleRemoveProduct}
                 isRemovable={selectedProducts.length > 1}
@@ -422,8 +445,16 @@ const NewFleetShipmentForm: React.FC = () => {
                 <p className="text-sm text-secondary-500 dark:text-secondary-400">إجمالي السعر</p>
                 <p className="text-xl font-bold text-primary-600 dark:text-primary-400">
                   {selectedProducts.reduce((sum, p) => {
-                    const priceInfo = productPrices.find(price => price.regionId === regionId && price.productId === p.productId);
-                    return sum + ((priceInfo?.price || 0) * (p.cartonCount || 0));
+                    const relevantPrices = productPrices.filter(price =>
+                      price.regionId === regionId &&
+                      price.productId === p.productId &&
+                      price.effectiveFrom <= orderDate
+                    );
+                    const latestPrice = relevantPrices.sort((a, b) =>
+                      new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+                    )[0];
+
+                    return sum + ((latestPrice?.price || 0) * (p.cartonCount || 0));
                   }, 0).toLocaleString('en-US')} ر.ي
                 </p>
               </div>

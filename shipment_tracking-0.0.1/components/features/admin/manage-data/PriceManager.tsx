@@ -6,6 +6,7 @@ import Modal from '../../../common/ui/Modal';
 import { Icons } from '../../../Icons';
 import { useAppContext } from '../../../../providers/AppContext';
 import SearchableSelect from '../../../common/forms/SearchableSelect';
+import ArabicDatePicker from '../../../common/ui/ArabicDatePicker';
 
 const PriceManager: React.FC = () => {
     const { productPrices, addProductPrice, updateProductPrice, deleteProductPrice, regions, products, isOnline } = useAppContext();
@@ -14,12 +15,12 @@ const PriceManager: React.FC = () => {
     const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
     const [editingPrice, setEditingPrice] = useState<ProductPrice | null>(null);
     const [priceToDelete, setPriceToDelete] = useState<ProductPrice | null>(null);
-    const [priceFormData, setPriceFormData] = useState<{ regionId: string, productId: string, price: number }>({
-        regionId: '', productId: '', price: 0,
+    const [priceFormData, setPriceFormData] = useState<{ regionId: string, productId: string, price: number, effectiveFrom: string }>({
+        regionId: '', productId: '', price: 0, effectiveFrom: new Date().toISOString().split('T')[0],
     });
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+
     const filteredPrices = useMemo(() => {
         if (!searchTerm.trim()) return productPrices;
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
@@ -42,7 +43,10 @@ const PriceManager: React.FC = () => {
 
     const handleOpenPriceModal = (price: ProductPrice | null) => {
         setEditingPrice(price);
-        setPriceFormData(price ? { regionId: price.regionId, productId: price.productId, price: price.price } : { regionId: '', productId: '', price: 0 });
+        setPriceFormData(price
+            ? { regionId: price.regionId, productId: price.productId, price: price.price, effectiveFrom: price.effectiveFrom }
+            : { regionId: '', productId: '', price: 0, effectiveFrom: new Date().toISOString().split('T')[0] }
+        );
         setIsPriceModalOpen(true);
         setError('');
     };
@@ -68,16 +72,16 @@ const PriceManager: React.FC = () => {
             return;
         }
         setIsSubmitting(true);
-        
+
         try {
             if (editingPrice) {
-                await updateProductPrice(editingPrice.id, { price });
+                await updateProductPrice(editingPrice.id, { price, effectiveFrom: priceFormData.effectiveFrom });
             } else {
-                await addProductPrice({ regionId, productId, price });
+                await addProductPrice({ regionId, productId, price, effectiveFrom: priceFormData.effectiveFrom });
             }
             handleClosePriceModal();
-        } catch(err: any) {
-             if (err.message.includes('duplicate key')) {
+        } catch (err: any) {
+            if (err.message.includes('duplicate key')) {
                 setError('يوجد سعر مسجل لهذا المنتج في هذه المنطقة بالفعل. يمكنك تعديله من القائمة.');
             } else {
                 setError(`فشل حفظ السعر: ${err.message}`);
@@ -93,8 +97,8 @@ const PriceManager: React.FC = () => {
         try {
             await deleteProductPrice(priceToDelete.id);
             setPriceToDelete(null);
-        } catch(err: any) {
-             alert(`فشل حذف السعر: ${err.message}`);
+        } catch (err: any) {
+            alert(`فشل حذف السعر: ${err.message}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -122,32 +126,38 @@ const PriceManager: React.FC = () => {
                 {visiblePrices.length > 0 ? (
                     <>
                         {visiblePrices.map((p: ProductPrice) => {
-                        const regionName = regions.find((r: Region) => r.id === p.regionId)?.name || 'غير معروف';
-                        const productName = products.find((prod: Product) => prod.id === p.productId)?.name || 'غير معروف';
-                        return (
-                            <div key={p.id} className="flex justify-between items-center p-3 bg-secondary-100 dark:bg-secondary-800 rounded">
-                                <div>
-                                    <p className="font-semibold">{productName} - <span className="text-primary-600">{regionName}</span></p>
-                                    <p className="text-lg font-bold text-secondary-800 dark:text-secondary-200">{p.price} ر.ي</p>
+                            const regionName = regions.find((r: Region) => r.id === p.regionId)?.name || 'غير معروف';
+                            const productName = products.find((prod: Product) => prod.id === p.productId)?.name || 'غير معروف';
+                            return (
+                                <div key={p.id} className="flex justify-between items-center p-3 bg-secondary-100 dark:bg-secondary-800 rounded">
+                                    <div>
+                                        <p className="font-semibold">{productName} - <span className="text-primary-600">{regionName}</span></p>
+                                        <div className="flex items-center gap-4">
+                                            <p className="text-lg font-bold text-secondary-800 dark:text-secondary-200">{p.price} ر.ي</p>
+                                            <p className="text-xs text-secondary-500 bg-secondary-200 dark:bg-secondary-700 px-2 py-0.5 rounded flex items-center gap-1">
+                                                <Icons.Calendar className="h-3 w-3" />
+                                                {p.effectiveFrom}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                                        <Button size="sm" variant="ghost" onClick={() => handleOpenPriceModal(p)} title="تعديل" disabled={!isOnline}>
+                                            <Icons.Edit className="h-5 w-5 text-blue-500" />
+                                        </Button>
+                                        <Button size="sm" variant="destructive" onClick={() => setPriceToDelete(p)} title="حذف" disabled={!isOnline}>
+                                            <Icons.Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                    <Button size="sm" variant="ghost" onClick={() => handleOpenPriceModal(p)} title="تعديل" disabled={!isOnline}>
-                                        <Icons.Edit className="h-5 w-5 text-blue-500" />
-                                    </Button>
-                                    <Button size="sm" variant="destructive" onClick={() => setPriceToDelete(p)} title="حذف" disabled={!isOnline}>
-                                        <Icons.Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
+                            );
+                        })}
+                        {hasMore && (
+                            <div className="text-center py-4">
+                                <Button onClick={() => setVisibleCount(prev => prev + 20)}>
+                                    تحميل المزيد
+                                </Button>
                             </div>
-                        );
-                    })}
-                    {hasMore && (
-                        <div className="text-center py-4">
-                            <Button onClick={() => setVisibleCount(prev => prev + 20)}>
-                                تحميل المزيد
-                            </Button>
-                        </div>
-                    )}
+                        )}
                     </>
                 ) : (
                     <div className="text-center text-secondary-500 py-4">لا توجد أسعار تطابق البحث.</div>
@@ -157,29 +167,35 @@ const PriceManager: React.FC = () => {
             <Modal isOpen={isPriceModalOpen} onClose={handleClosePriceModal} title={editingPrice ? 'تعديل السعر' : 'إضافة سعر جديد'}>
                 <div className="space-y-4">
                     {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-                    <SearchableSelect 
-                        label="المنطقة" 
-                        options={[{ value: '', label: 'اختر منطقة'}, ...regions.map((r: Region) => ({ value: r.id, label: r.name }))]}
-                        value={priceFormData.regionId} 
-                        onChange={val => handlePriceFormChange('regionId', val)} 
+                    <SearchableSelect
+                        label="المنطقة"
+                        options={[{ value: '', label: 'اختر منطقة' }, ...regions.map((r: Region) => ({ value: r.id, label: r.name }))]}
+                        value={priceFormData.regionId}
+                        onChange={val => handlePriceFormChange('regionId', val)}
                         disabled={!!editingPrice}
                     />
-                    <SearchableSelect 
-                        label="المنتج" 
-                        options={[{value: '', label: 'اختر منتج'}, ...products.map((p: Product) => ({ value: p.id, label: p.name }))]}
-                        value={priceFormData.productId} 
-                        onChange={val => handlePriceFormChange('productId', val)} 
+                    <SearchableSelect
+                        label="المنتج"
+                        options={[{ value: '', label: 'اختر منتج' }, ...products.map((p: Product) => ({ value: p.id, label: p.name }))]}
+                        value={priceFormData.productId}
+                        onChange={val => handlePriceFormChange('productId', val)}
                         disabled={!!editingPrice}
                     />
-                    <Input 
-                        label="سعر الكرتون" 
-                        name="price" 
-                        type="number" 
-                        min="0" 
-                        step="0.01" 
-                        value={priceFormData.price} 
-                        onChange={e => handlePriceFormChange(e.target.name, e.target.value, e.target.type)} 
-                        required 
+                    <Input
+                        label="سعر الكرتون"
+                        name="price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={priceFormData.price}
+                        onChange={e => handlePriceFormChange(e.target.name, e.target.value, e.target.type)}
+                        required
+                    />
+                    <ArabicDatePicker
+                        label="تاريخ سريان السعر"
+                        value={priceFormData.effectiveFrom}
+                        onChange={val => handlePriceFormChange('effectiveFrom', val)}
+                        required
                     />
                     <div className="flex justify-end gap-3 pt-4">
                         <Button variant="secondary" onClick={handleClosePriceModal} disabled={isSubmitting}>إلغاء</Button>
@@ -187,7 +203,7 @@ const PriceManager: React.FC = () => {
                     </div>
                 </div>
             </Modal>
-            
+
             <Modal isOpen={!!priceToDelete} onClose={() => setPriceToDelete(null)} title="تأكيد الحذف">
                 <div className="text-center">
                     <Icons.AlertTriangle className="mx-auto h-12 w-12 text-red-500" />

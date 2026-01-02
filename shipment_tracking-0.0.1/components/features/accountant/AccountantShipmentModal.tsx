@@ -189,11 +189,19 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
     setCurrentShipment({ ...shipment });
     setIsProductsExpanded(false);
 
-    // Check for missing prices
+    // Check for missing prices using date-based lookup
     let missingPrice = false;
     if (shipment.products && shipment.products.length > 0) {
       for (const product of shipment.products) {
-        const priceInfo = productPrices.find(pp => pp.regionId === shipment.regionId && pp.productId === product.productId);
+        const relevantPrices = productPrices.filter(pp =>
+          pp.regionId === shipment.regionId &&
+          pp.productId === product.productId &&
+          pp.effectiveFrom <= shipment.orderDate
+        );
+        const priceInfo = relevantPrices.sort((a, b) =>
+          new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+        )[0];
+
         if (!priceInfo || priceInfo.price <= 0) {
           missingPrice = true;
           break;

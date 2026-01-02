@@ -19,9 +19,20 @@ export const calculateInitialShipmentValues = (
 
     let hasMissingPrices = false;
     const calculatedProducts = shipment.products.map(p => {
-        const priceInfo = productPrices.find(pp => pp.regionId === shipment.regionId && pp.productId === p.productId);
-        const productWage = priceInfo ? priceInfo.price : 0;
-        if (!priceInfo || priceInfo.price <= 0) {
+        // Find all prices for this product and region that are effective on or before the order date
+        const relevantPrices = productPrices.filter(pp =>
+            pp.regionId === shipment.regionId &&
+            pp.productId === p.productId &&
+            pp.effectiveFrom <= shipment.orderDate
+        );
+
+        // Sort by effectiveFrom date descending to get the most recent valid price
+        const latestPrice = relevantPrices.sort((a, b) =>
+            new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+        )[0];
+
+        const productWage = latestPrice ? latestPrice.price : 0;
+        if (!latestPrice || latestPrice.price <= 0) {
             hasMissingPrices = true;
         }
         return {
@@ -29,7 +40,7 @@ export const calculateInitialShipmentValues = (
             productWagePrice: productWage * p.cartonCount,
         };
     });
-    
+
     const totalWage = calculatedProducts.reduce((acc, p) => acc + (p.productWagePrice || 0), 0);
     const totalDiesel = region.dieselLiters * region.dieselLiterPrice;
     const zaitriFee = region.zaitriFee;

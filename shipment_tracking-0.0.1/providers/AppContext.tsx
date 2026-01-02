@@ -135,6 +135,7 @@ const priceFromRow = (row: ProductPriceRow): ProductPrice => ({
     regionId: row.region_id,
     productId: row.product_id,
     price: row.price,
+    effectiveFrom: (row as any).effective_from,
 });
 
 const notificationFromRow = (row: NotificationRow): Notification => ({
@@ -1562,13 +1563,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, [fetchAllData]);
 
     const addProductPrice = useCallback(async (price: Omit<ProductPrice, 'id'>) => {
-        const { error } = await supabase.from('product_prices').insert({ id: window.crypto.randomUUID(), region_id: price.regionId, product_id: price.productId, price: price.price });
+        const { error } = await supabase.from('product_prices').insert({
+            id: window.crypto.randomUUID(),
+            region_id: price.regionId,
+            product_id: price.productId,
+            price: price.price,
+            effective_from: price.effectiveFrom
+        } as any);
         if (error) throw error;
         await fetchAllData();
     }, [fetchAllData]);
 
     const updateProductPrice = useCallback(async (priceId: string, updates: Partial<ProductPrice>) => {
-        const { error } = await supabase.from('product_prices').update({ price: updates.price }).eq('id', priceId);
+        const dbUpdates: any = {};
+        if (updates.price !== undefined) dbUpdates.price = updates.price;
+        if (updates.effectiveFrom !== undefined) dbUpdates.effective_from = updates.effectiveFrom;
+
+        const { error } = await supabase.from('product_prices').update(dbUpdates).eq('id', priceId);
         if (error) throw error;
         await fetchAllData();
     }, [fetchAllData]);
