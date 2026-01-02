@@ -285,6 +285,34 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
     }
   };
 
+  const handleReturnToFleet = async () => {
+    setIsSubmitting(true);
+    try {
+      const returnedShipment = { 
+        ...currentShipment, 
+        status: ShipmentStatus.RETURNED_TO_FLEET 
+      };
+      
+      await updateShipment(returnedShipment.id, returnedShipment);
+      
+      // Notify the fleet user who created this shipment
+      if (currentShipment.createdBy) {
+        await addNotification({ 
+          message: `تم إرجاع الشحنة (${returnedShipment.salesOrder}) من الادمن لإعادة المراجعة.`, 
+          category: NotificationCategory.USER_ACTION, 
+          targetUserIds: [currentShipment.createdBy]
+        });
+      }
+      
+      onClose();
+    } catch (err) {
+      console.error("Failed to return to fleet:", err);
+      alert("فشل إرجاع الشحنة إلى مسؤول الحركة.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const isFinal = currentShipment.status === ShipmentStatus.FINAL || currentShipment.status === ShipmentStatus.FINAL_MODIFIED;
   const hasInstallment = installments.some(i => i.shipmentId === currentShipment.id);
   const isViewOnly = currentShipment.status === ShipmentStatus.INSTALLMENTS || hasInstallment;
@@ -378,6 +406,10 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
 
                     <Button variant="secondary" onClick={handleSaveAsDraft} disabled={isSubmitting} className="w-full">
                         {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Save className="ml-2 h-4 w-4" /> حفظ كمسودة </>}
+                    </Button>
+
+                    <Button variant="secondary" onClick={handleReturnToFleet} disabled={isSubmitting} className="w-full">
+                        {isSubmitting ? 'جاري الإرجاع...' : <> <Icons.ArrowLeft className="ml-2 h-4 w-4" /> إرجاع الى مسؤول الحركة </>}
                     </Button>
 
                     <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting} className="w-full">
