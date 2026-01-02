@@ -1,5 +1,5 @@
 
-import { Shipment, Region, ProductPrice } from '../types';
+import { Shipment, Region, ProductPrice, DeductionPrice, ShipmentProduct } from '../types';
 
 /**
  * Calculates the initial financial values for a new shipment based on sales data.
@@ -86,18 +86,60 @@ export const calculateAccountantValues = (shipment: Shipment): Partial<Shipment>
 export const calculateAdminValues = (shipment: Shipment): Partial<Shipment> => {
     const {
         dueAmount = 0,
-        damagedValue = 0,
-        shortageValue = 0,
         otherAmounts = 0,
         improvementBonds = 0,
         eveningAllowance = 0,
         transferFee = 0
     } = shipment;
 
-    // Formula: المبلغ المستحق + سندات تحسين + ممسى + رسوم التحويل - التالف - النقص - مبالغ أخرى
-    const totalDueAmount = dueAmount + improvementBonds + eveningAllowance + transferFee - damagedValue - shortageValue - otherAmounts;
+    // Calculate total shortage and damaged values from itemized product data
+    const totalShortageValue = shipment.products.reduce((acc, p) => acc + (p.shortageValue || 0), 0);
+    const totalDamagedValue = shipment.products.reduce((acc, p) => acc + (p.damagedValue || 0), 0);
 
-    return { totalDueAmount };
+    // Formula: المبلغ المستحق + سندات تحسين + ممسى + رسوم التحويل - التالف - النقص - مبالغ أخرى
+    const totalDueAmount = dueAmount + improvementBonds + eveningAllowance + transferFee - totalDamagedValue - totalShortageValue - otherAmounts;
+
+    return { totalDueAmount, damagedValue: totalDamagedValue, shortageValue: totalShortageValue };
+};
+
+/**
+ * Calculates a single product's deduction values based on cartons, rates, and punishment prices.
+ * Formula: value = (cartons * punishment_price) * (1 - exemption_rate / 100)
+ * @param product - The product with cartons and exemption rates filled in.
+ * @param deductionPrices - All available deduction prices.
+ * @param orderDate - The shipment's order date for versioned lookup.
+ * @returns The product with calculated shortageValue and damagedValue.
+ */
+export const calculateProductDeductions = (
+    product: ShipmentProduct,
+    deductionPrices: DeductionPrice[],
+    orderDate: string
+): ShipmentProduct => {
+    const relevantPrices = deductionPrices.filter(dp =>
+        dp.productId === product.productId &&
+        dp.effectiveFrom <= orderDate
+    );
+
+    const latestPrice = relevantPrices.sort((a, b) =>
+        new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+    )[0];
+
+    const shortagePrice = latestPrice?.shortagePrice || 0;
+    const damagedPrice = latestPrice?.damagedPrice || 0;
+
+    const shortageCartons = product.shortageCartons || 0;
+    const shortageExemptionRate = product.shortageExemptionRate || 0;
+    const damagedCartons = product.damagedCartons || 0;
+    const damagedExemptionRate = product.damagedExemptionRate || 0;
+
+    const shortageValue = (shortageCartons * shortagePrice) * (1 - shortageExemptionRate / 100);
+    const damagedValue = (damagedCartons * damagedPrice) * (1 - damagedExemptionRate / 100);
+
+    return {
+        ...product,
+        shortageValue: Math.round(shortageValue),
+        damagedValue: Math.round(damagedValue),
+    };
 };
 
 /**

@@ -78,6 +78,17 @@ export interface ProductPrice {
 }
 
 /**
+ * Defines the punishment price for shortage and damaged products.
+ */
+export interface DeductionPrice {
+  id: string; // UUID from Supabase
+  productId: string;
+  shortagePrice: number; // Punishment price for shortage
+  damagedPrice: number; // Punishment price for damaged
+  effectiveFrom: string; // Start date of this price (YYYY-MM-DD)
+}
+
+/**
  * Represents a product included within a shipment, with its quantity.
  */
 export interface ShipmentProduct {
@@ -86,6 +97,13 @@ export interface ShipmentProduct {
   cartonCount: number;
   /** The total calculated wage for this product line (price * cartonCount). */
   productWagePrice?: number;
+  // Itemized Deduction Fields
+  shortageCartons?: number;
+  shortageExemptionRate?: number; // 0-100
+  shortageValue?: number; // Calculated value
+  damagedCartons?: number;
+  damagedExemptionRate?: number; // 0-100
+  damagedValue?: number; // Calculated value
 }
 
 /**

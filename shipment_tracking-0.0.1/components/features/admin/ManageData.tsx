@@ -5,16 +5,18 @@ import ProductManager from './manage-data/ProductManager';
 import DriverManager from './manage-data/DriverManager';
 import RegionManager from './manage-data/RegionManager';
 import PriceManager from './manage-data/PriceManager';
+import DeductionPriceManager from './manage-data/DeductionPriceManager';
 import SearchableSelect from '../../common/forms/SearchableSelect';
 import { supabase } from '../../../utils/supabaseClient';
 
-type DataType = 'products' | 'drivers' | 'regions' | 'prices';
+type DataType = 'products' | 'drivers' | 'regions' | 'prices' | 'deductionPrices';
 
 const TABS: { id: DataType; label: string; icon: React.ElementType }[] = [
     { id: 'products', label: 'المنتجات', icon: Icons.Package },
     { id: 'drivers', label: 'السائقون', icon: Icons.User },
     { id: 'regions', label: 'المناطق', icon: Icons.MapPin },
     { id: 'prices', label: 'الأسعار', icon: Icons.ChevronsRightLeft },
+    { id: 'deductionPrices', label: 'أسعار العقوبات', icon: Icons.AlertTriangle },
 ];
 
 
@@ -102,6 +104,7 @@ const ManageData: React.FC = () => {
         drivers: <DriverManager />,
         regions: <RegionManager onExport={handleExport} />,
         prices: <PriceManager />,
+        deductionPrices: <DeductionPriceManager />,
     };
 
     return (
@@ -116,7 +119,7 @@ const ManageData: React.FC = () => {
                     onChange={(val) => setActiveType(val as DataType)}
                 />
             </div>
-            
+
             {/* Desktop Tabs */}
             <div className="hidden md:block border-b border-secondary-200 dark:border-secondary-700">
                 <nav className="-mb-px flex space-x-6 rtl:space-x-reverse overflow-x-auto" aria-label="Tabs">
@@ -138,9 +141,9 @@ const ManageData: React.FC = () => {
                 </nav>
             </div>
 
-             <div className="pt-6">
-                 {contentMap[activeType]}
-             </div>
+            <div className="pt-6">
+                {contentMap[activeType]}
+            </div>
         </Card>
     );
 };

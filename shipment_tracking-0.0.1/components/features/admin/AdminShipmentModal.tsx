@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shipment, ShipmentStatus, Role, NotificationCategory, Driver, Region } from '../../../types';
+import { Shipment, ShipmentStatus, Role, NotificationCategory, Driver, Region, ShipmentProduct, DeductionPrice } from '../../../types';
 import Modal from '../../common/ui/Modal';
 import Button from '../../common/ui/Button';
 import Input from '../../common/ui/Input';
@@ -35,27 +35,101 @@ const BasicInformationSection: React.FC<{ shipment: Shipment; regionRoadExpenses
   </div>
 );
 
-/** Deductions Section - Editable form for all deductions */
-const DeductionsSection: React.FC<{
-  shipment: Shipment;
-  onValueChange: (field: keyof Shipment, value: string) => void;
-  amountAfterDeductions: number;
+/** Itemized Deductions Section - Per-product cartons and exemption rates */
+const ItemizedDeductionsSection: React.FC<{
+  products: ShipmentProduct[];
+  deductionPrices: DeductionPrice[];
+  orderDate: string;
+  onProductDeductionChange: (productId: string, field: keyof Pick<ShipmentProduct, 'shortageCartons' | 'shortageExemptionRate' | 'damagedCartons' | 'damagedExemptionRate'>, value: number) => void;
+  otherAmounts: number;
+  onOtherAmountsChange: (value: string) => void;
   disabled?: boolean;
-}> = ({ shipment, onValueChange, amountAfterDeductions, disabled = false }) => (
-  <div className="space-y-2 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
-    <h4 className="font-bold text-lg">قسم الخصميات</h4>
-    <div className="pt-2 border-t dark:border-secondary-700">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
-        <Input label="التالف" type="number" min="1" value={shipment.damagedValue || ''} onChange={e => onValueChange('damagedValue', e.target.value)} disabled={disabled} />
-        <Input label="النقص" type="number" min="1" value={shipment.shortageValue || ''} onChange={e => onValueChange('shortageValue', e.target.value)} disabled={disabled} />
-        <Input label="مبالغ أخرى" type="number" min="1" value={shipment.otherAmounts || ''} onChange={e => onValueChange('otherAmounts', e.target.value)} disabled={disabled} />
-      </div>
-      <div className="font-bold pt-2 mt-2 border-t dark:border-secondary-700">
-        <FieldValue label="المبلغ بعد الخصم" value={amountAfterDeductions} />
+}> = ({ products, deductionPrices, orderDate, onProductDeductionChange, otherAmounts, onOtherAmountsChange, disabled = false }) => {
+
+  const getDeductionPrice = (productId: string): { shortage: number; damaged: number } => {
+    const relevantPrices = deductionPrices.filter(dp =>
+      dp.productId === productId && dp.effectiveFrom <= orderDate
+    );
+    const latestPrice = relevantPrices.sort((a, b) =>
+      new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+    )[0];
+    return { shortage: latestPrice?.shortagePrice || 0, damaged: latestPrice?.damagedPrice || 0 };
+  };
+
+  return (
+    <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
+      <h4 className="font-bold text-lg">قسم الخصميات (مفصل بالمنتج)</h4>
+      <div className="space-y-4 pt-2 border-t dark:border-secondary-700">
+        {products.map(product => {
+          const prices = getDeductionPrice(product.productId);
+          return (
+            <div key={product.productId} className="p-3 bg-white dark:bg-secondary-800 rounded-lg border dark:border-secondary-700">
+              <p className="font-semibold mb-2">{product.productName}</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                {/* Shortage */}
+                <div>
+                  <label className="block text-xs text-secondary-500">كراتين النقص</label>
+                  <input
+                    type="number" min="0" step="1"
+                    value={product.shortageCartons || ''}
+                    onChange={e => onProductDeductionChange(product.productId, 'shortageCartons', Number(e.target.value) || 0)}
+                    className="w-full px-2 py-1 border rounded dark:bg-secondary-700 dark:border-secondary-600 text-center"
+                    disabled={disabled}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-secondary-500">نسبة الإعفاء %</label>
+                  <input
+                    type="number" min="0" max="100" step="1"
+                    value={product.shortageExemptionRate || ''}
+                    onChange={e => onProductDeductionChange(product.productId, 'shortageExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                    className="w-full px-2 py-1 border rounded dark:bg-secondary-700 dark:border-secondary-600 text-center"
+                    disabled={disabled}
+                  />
+                </div>
+                {/* Damaged */}
+                <div>
+                  <label className="block text-xs text-secondary-500">كراتين التالف</label>
+                  <input
+                    type="number" min="0" step="1"
+                    value={product.damagedCartons || ''}
+                    onChange={e => onProductDeductionChange(product.productId, 'damagedCartons', Number(e.target.value) || 0)}
+                    className="w-full px-2 py-1 border rounded dark:bg-secondary-700 dark:border-secondary-600 text-center"
+                    disabled={disabled}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-secondary-500">نسبة الإعفاء %</label>
+                  <input
+                    type="number" min="0" max="100" step="1"
+                    value={product.damagedExemptionRate || ''}
+                    onChange={e => onProductDeductionChange(product.productId, 'damagedExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                    className="w-full px-2 py-1 border rounded dark:bg-secondary-700 dark:border-secondary-600 text-center"
+                    disabled={disabled}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-between mt-2 text-xs text-secondary-500">
+                <span>سعر النقص: {prices.shortage} ر.ي | سعر التالف: {prices.damaged} ر.ي</span>
+                <span className="font-semibold text-red-600">
+                  نقص: {product.shortageValue || 0} ر.ي | تالف: {product.damagedValue || 0} ر.ي
+                </span>
+              </div>
+            </div>
+          );
+        })}
+        <Input
+          label="مبالغ أخرى"
+          type="number"
+          min="0"
+          value={otherAmounts || ''}
+          onChange={e => onOtherAmountsChange(e.target.value)}
+          disabled={disabled}
+        />
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 /** Additions Section */
 const AdditionsSection: React.FC<{ shipment: Shipment; onValueChange: (field: keyof Shipment, value: string) => void; disabled?: boolean; }> = ({ shipment, onValueChange, disabled = false }) => (
@@ -138,7 +212,7 @@ interface AdminShipmentModalProps {
 const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpen, onClose }) => {
   const {
     updateShipment, createInstallment, currentUser, addNotification, drivers, regions,
-    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, installments, products
+    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, installments, products, deductionPrices
   } = useAppContext();
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
@@ -150,13 +224,13 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
   const shipmentRegion = regions.find((r: Region) => r.id === shipment.regionId);
   const regionRoadExpenses = currentShipment.roadExpenses ?? (shipmentRegion?.roadExpenses || 0);
 
-  // Calculate amount after deductions
+  // Calculate amount after deductions (from itemized product-level values)
   const calculateAmountAfterDeductions = (ship: Shipment): number => {
     const dueAmount = ship.dueAmount || 0;
-    const damagedValue = ship.damagedValue || 0;
-    const shortageValue = ship.shortageValue || 0;
+    const totalDamagedValue = ship.products.reduce((acc, p) => acc + (p.damagedValue || 0), 0);
+    const totalShortageValue = ship.products.reduce((acc, p) => acc + (p.shortageValue || 0), 0);
     const otherAmounts = ship.otherAmounts || 0;
-    return dueAmount - damagedValue - shortageValue - otherAmounts;
+    return dueAmount - totalDamagedValue - totalShortageValue - otherAmounts;
   };
 
   // Calculate final amount
@@ -176,17 +250,53 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
   const handleValueChange = (field: keyof Shipment, value: string) => {
     let processedValue: string | number = value;
     const additionFields: (keyof Shipment)[] = ['improvementBonds', 'eveningAllowance', 'transferFee'];
-    const deductionFields: (keyof Shipment)[] = ['damagedValue', 'shortageValue', 'otherAmounts'];
+    const deductionFields: (keyof Shipment)[] = ['otherAmounts'];
 
     if (additionFields.includes(field)) {
       processedValue = value === '' ? '' : Math.max(0, Number(value));
     } else if (deductionFields.includes(field)) {
-      processedValue = value === '' ? '' : Math.max(1, Number(value));
+      processedValue = value === '' ? '' : Math.max(0, Number(value));
     } else if (field === 'notes') {
       processedValue = value;
     }
 
     setCurrentShipment({ ...currentShipment, [field]: processedValue });
+  };
+
+  // Handle per-product deduction changes
+  const handleProductDeductionChange = (
+    productId: string,
+    field: keyof Pick<ShipmentProduct, 'shortageCartons' | 'shortageExemptionRate' | 'damagedCartons' | 'damagedExemptionRate'>,
+    value: number
+  ) => {
+    setCurrentShipment(prev => {
+      const updatedProducts = prev.products.map(p => {
+        if (p.productId !== productId) return p;
+
+        const updatedProduct = { ...p, [field]: value };
+
+        // Recalculate values for this product
+        const relevantPrices = deductionPrices.filter(dp =>
+          dp.productId === productId && dp.effectiveFrom <= shipment.orderDate
+        );
+        const latestPrice = relevantPrices.sort((a, b) =>
+          new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+        )[0];
+
+        const shortagePrice = latestPrice?.shortagePrice || 0;
+        const damagedPrice = latestPrice?.damagedPrice || 0;
+        const shortageCartons = updatedProduct.shortageCartons || 0;
+        const shortageExemptionRate = updatedProduct.shortageExemptionRate || 0;
+        const damagedCartons = updatedProduct.damagedCartons || 0;
+        const damagedExemptionRate = updatedProduct.damagedExemptionRate || 0;
+
+        updatedProduct.shortageValue = Math.round((shortageCartons * shortagePrice) * (1 - shortageExemptionRate / 100));
+        updatedProduct.damagedValue = Math.round((damagedCartons * damagedPrice) * (1 - damagedExemptionRate / 100));
+
+        return updatedProduct;
+      });
+      return { ...prev, products: updatedProducts };
+    });
   };
 
   // Handle attachment file upload
@@ -404,7 +514,6 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
   const isFinal = currentShipment.status === ShipmentStatus.FINAL || currentShipment.status === ShipmentStatus.FINAL_MODIFIED;
   const hasInstallment = installments.some(i => i.shipmentId === currentShipment.id);
   const isViewOnly = currentShipment.status === ShipmentStatus.INSTALLMENTS || hasInstallment;
-  const amountAfterDeductions = calculateAmountAfterDeductions(currentShipment);
   const finalAmount = calculateFinalAmount(currentShipment);
 
   return (
@@ -434,10 +543,13 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
           disabled={isViewOnly}
         />
 
-        <DeductionsSection
-          shipment={currentShipment}
-          onValueChange={handleValueChange}
-          amountAfterDeductions={amountAfterDeductions}
+        <ItemizedDeductionsSection
+          products={currentShipment.products}
+          deductionPrices={deductionPrices}
+          orderDate={shipment.orderDate}
+          onProductDeductionChange={handleProductDeductionChange}
+          otherAmounts={currentShipment.otherAmounts || 0}
+          onOtherAmountsChange={val => handleValueChange('otherAmounts', val)}
           disabled={isViewOnly}
         />
 

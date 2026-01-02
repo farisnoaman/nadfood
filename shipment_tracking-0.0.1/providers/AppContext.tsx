@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useEffect, useContext, useMemo, useCallback, useRef } from 'react';
-import { User, Role, Product, Region, Driver, Shipment, ProductPrice, Notification, NotificationCategory, ShipmentProduct, ShipmentStatus, Installment, InstallmentPayment } from '../types';
+import { User, Role, Product, Region, Driver, Shipment, ProductPrice, DeductionPrice, Notification, NotificationCategory, ShipmentProduct, ShipmentStatus, Installment, InstallmentPayment } from '../types';
 import { supabase } from '../utils/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 import { Database } from '../supabase/database.types';
@@ -138,6 +138,24 @@ const priceFromRow = (row: ProductPriceRow): ProductPrice => ({
     effectiveFrom: (row as any).effective_from,
 });
 
+// Manual type definition for deduction_prices table (not in generated types yet)
+type DeductionPriceRow = {
+    id: string;
+    product_id: string;
+    shortage_price: number;
+    damaged_price: number;
+    effective_from: string;
+    created_at: string;
+};
+
+const deductionPriceFromRow = (row: DeductionPriceRow): DeductionPrice => ({
+    id: row.id,
+    productId: row.product_id,
+    shortagePrice: row.shortage_price,
+    damagedPrice: row.damaged_price,
+    effectiveFrom: row.effective_from,
+});
+
 const notificationFromRow = (row: NotificationRow): Notification => ({
     id: row.id,
     message: row.message,
@@ -250,6 +268,10 @@ interface AppContextType {
     addProductPrice: (price: Omit<ProductPrice, 'id'>) => Promise<void>;
     updateProductPrice: (priceId: string, updates: Partial<ProductPrice>) => Promise<void>;
     deleteProductPrice: (priceId: string) => Promise<void>;
+    deductionPrices: DeductionPrice[];
+    addDeductionPrice: (price: Omit<DeductionPrice, 'id'>) => Promise<void>;
+    updateDeductionPrice: (priceId: string, updates: Partial<DeductionPrice>) => Promise<void>;
+    deleteDeductionPrice: (priceId: string) => Promise<void>;
     notifications: Notification[];
     addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => Promise<void>;
     markNotificationAsRead: (notificationId: string) => Promise<void>;
@@ -305,6 +327,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [regions, setRegions] = useState<Region[]>([]);
     const [shipments, setShipments] = useState<Shipment[]>([]);
     const [productPrices, setProductPrices] = useState<ProductPrice[]>([]);
+    const [deductionPrices, setDeductionPrices] = useState<DeductionPrice[]>([]);
     const [installments, setInstallments] = useState<Installment[]>([]);
     const [installmentPayments, setInstallmentPayments] = useState<InstallmentPayment[]>([]);
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -505,6 +528,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 (supabase as any).from('installment_payments').select('*').order('received_date', { ascending: false }).abortSignal(controller.signal),
             ]);
 
+            // Fetch deduction_prices separately (optional - table may not exist yet)
+            let newDeductionPrices: DeductionPrice[] = [];
+            try {
+                const deductionPricesRes = await (supabase as any).from('deduction_prices').select('*').abortSignal(controller.signal);
+                if (!deductionPricesRes.error && deductionPricesRes.data) {
+                    newDeductionPrices = deductionPricesRes.data.map(deductionPriceFromRow);
+                }
+            } catch (err) {
+                // deduction_prices table may not exist yet - this is okay
+                console.warn('deduction_prices table not available yet:', err);
+            }
+
             clearTimeout(timeoutId);
 
             const responses = [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes, settingsRes, installmentsRes, installmentPaymentsRes];
@@ -530,6 +565,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setDrivers(newDrivers); await IndexedDB.saveAllToStore(STORES.DRIVERS, newDrivers);
             setRegions(newRegions); await IndexedDB.saveAllToStore(STORES.REGIONS, newRegions);
             setProductPrices(newPrices); await IndexedDB.saveAllToStore(STORES.PRODUCT_PRICES, newPrices);
+            setDeductionPrices(newDeductionPrices); // Deduction prices not cached in IndexedDB for now
             setNotifications(newNotifications); await IndexedDB.saveAllToStore(STORES.NOTIFICATIONS, newNotifications);
             setInstallments(newInstallments); await IndexedDB.saveAllToStore(STORES.INSTALLMENTS, newInstallments);
             setInstallmentPayments(newInstallmentPayments); await IndexedDB.saveAllToStore(STORES.INSTALLMENT_PAYMENTS, newInstallmentPayments);
@@ -1590,6 +1626,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await fetchAllData();
     }, [fetchAllData]);
 
+    // --- Deduction Price CRUD ---
+    const addDeductionPrice = useCallback(async (price: Omit<DeductionPrice, 'id'>) => {
+        const { error } = await (supabase as any).from('deduction_prices').insert({
+            id: window.crypto.randomUUID(),
+            product_id: price.productId,
+            shortage_price: price.shortagePrice,
+            damaged_price: price.damagedPrice,
+            effective_from: price.effectiveFrom
+        } as any);
+        if (error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const updateDeductionPrice = useCallback(async (priceId: string, updates: Partial<DeductionPrice>) => {
+        const dbUpdates: any = {};
+        if (updates.shortagePrice !== undefined) dbUpdates.shortage_price = updates.shortagePrice;
+        if (updates.damagedPrice !== undefined) dbUpdates.damaged_price = updates.damagedPrice;
+        if (updates.effectiveFrom !== undefined) dbUpdates.effective_from = updates.effectiveFrom;
+
+        const { error } = await (supabase as any).from('deduction_prices').update(dbUpdates).eq('id', priceId);
+        if (error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
+    const deleteDeductionPrice = useCallback(async (priceId: string) => {
+        const { error } = await (supabase as any).from('deduction_prices').delete().eq('id', priceId);
+        if (error) throw error;
+        await fetchAllData();
+    }, [fetchAllData]);
+
     const addShipment = useCallback(async (shipment: Omit<Shipment, 'id'>) => {
         if (!isOnline) {
             logger.info('Offline: Queuing shipment creation.');
@@ -1925,6 +1991,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         regions, addRegion, updateRegion, deleteRegion,
         shipments, addShipment, updateShipment,
         productPrices, addProductPrice, updateProductPrice, deleteProductPrice,
+        deductionPrices, addDeductionPrice, updateDeductionPrice, deleteDeductionPrice,
         notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
         installments, createInstallment, updateInstallment, installmentPayments, addInstallmentPayment, updateInstallmentPayment,
         accountantPrintAccess, setAccountantPrintAccess, isPrintHeaderEnabled, setIsPrintHeaderEnabled,
@@ -1940,6 +2007,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         regions, addRegion, updateRegion, deleteRegion,
         shipments, addShipment, updateShipment,
         productPrices, addProductPrice, updateProductPrice, deleteProductPrice,
+        deductionPrices, addDeductionPrice, updateDeductionPrice, deleteDeductionPrice,
         notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
         installments, createInstallment, updateInstallment, installmentPayments, addInstallmentPayment, updateInstallmentPayment,
         accountantPrintAccess, isPrintHeaderEnabled, appName, companyName, companyAddress, companyPhone, companyLogo, isTimeWidgetVisible,
