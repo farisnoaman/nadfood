@@ -35,7 +35,6 @@ const BasicInformationSection: React.FC<{ shipment: Shipment; regionRoadExpenses
   </div>
 );
 
-/** Itemized Deductions Section - Per-product cartons and exemption rates */
 const ItemizedDeductionsSection: React.FC<{
   products: ShipmentProduct[];
   deductionPrices: DeductionPrice[];
@@ -45,6 +44,7 @@ const ItemizedDeductionsSection: React.FC<{
   onOtherAmountsChange: (value: string) => void;
   disabled?: boolean;
 }> = ({ products, deductionPrices, orderDate, onProductDeductionChange, otherAmounts, onOtherAmountsChange, disabled = false }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const getDeductionPrice = (productId: string): { shortage: number; damaged: number } => {
     const relevantPrices = deductionPrices.filter(dp =>
@@ -57,76 +57,108 @@ const ItemizedDeductionsSection: React.FC<{
   };
 
   return (
-    <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
-      <h4 className="font-bold text-lg">قسم الخصميات (مفصل بالمنتج)</h4>
-      <div className="space-y-4 pt-2 border-t dark:border-secondary-700">
-        {products.map(product => {
-          const prices = getDeductionPrice(product.productId);
-          return (
-            <div key={product.productId} className="p-3 bg-white dark:bg-secondary-800 rounded-lg border dark:border-secondary-700">
-              <p className="font-semibold mb-2">{product.productName}</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                {/* Shortage */}
-                <div>
-                  <label className="block text-xs text-secondary-500">كراتين النقص</label>
-                  <input
-                    type="number" min="0" step="1"
-                    value={product.shortageCartons || ''}
-                    onChange={e => onProductDeductionChange(product.productId, 'shortageCartons', Number(e.target.value) || 0)}
-                    className="w-full px-2 py-1 border rounded dark:bg-secondary-700 dark:border-secondary-600 text-center"
-                    disabled={disabled}
-                  />
+    <div className="bg-secondary-50 dark:bg-secondary-900 rounded-md overflow-hidden">
+      <button
+        className="w-full flex justify-between items-center p-3 hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <h4 className="font-bold text-lg">قسم الخصميات (مفصل بالمنتج)</h4>
+        <Icons.ChevronDown className={`h-5 w-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isExpanded && (
+        <div className="p-3 pt-0 space-y-4 border-t dark:border-secondary-700">
+          {products.map(product => {
+            const prices = getDeductionPrice(product.productId);
+            return (
+              <div key={product.productId} className="p-3 bg-white dark:bg-secondary-800 rounded-lg border dark:border-secondary-700 shadow-sm">
+                <div className="mb-3">
+                  <p className="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap overflow-hidden text-ellipsis" title={product.productName}>
+                    {product.productName}
+                  </p>
+                  <p className="text-xs text-secondary-500 mt-1">
+                    سعر النقص: {prices.shortage} ر.ي | سعر التالف: {prices.damaged} ر.ي
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-xs text-secondary-500">نسبة الإعفاء %</label>
-                  <input
-                    type="number" min="0" max="100" step="1"
-                    value={product.shortageExemptionRate || ''}
-                    onChange={e => onProductDeductionChange(product.productId, 'shortageExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
-                    className="w-full px-2 py-1 border rounded dark:bg-secondary-700 dark:border-secondary-600 text-center"
-                    disabled={disabled}
-                  />
-                </div>
-                {/* Damaged */}
-                <div>
-                  <label className="block text-xs text-secondary-500">كراتين التالف</label>
-                  <input
-                    type="number" min="0" step="1"
-                    value={product.damagedCartons || ''}
-                    onChange={e => onProductDeductionChange(product.productId, 'damagedCartons', Number(e.target.value) || 0)}
-                    className="w-full px-2 py-1 border rounded dark:bg-secondary-700 dark:border-secondary-600 text-center"
-                    disabled={disabled}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-secondary-500">نسبة الإعفاء %</label>
-                  <input
-                    type="number" min="0" max="100" step="1"
-                    value={product.damagedExemptionRate || ''}
-                    onChange={e => onProductDeductionChange(product.productId, 'damagedExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
-                    className="w-full px-2 py-1 border rounded dark:bg-secondary-700 dark:border-secondary-600 text-center"
-                    disabled={disabled}
-                  />
+
+                <div className="flex flex-col gap-3">
+                  {/* Shortage Group */}
+                  <div className="bg-red-50 dark:bg-red-900/10 p-2 rounded-md border border-red-100 dark:border-red-900/20">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-semibold text-red-700 dark:text-red-400">النقص</span>
+                      <span className="text-xs font-bold text-red-600">{product.shortageValue || 0} ر.ي</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-secondary-500 mb-0.5">عدد الكراتين</label>
+                        <input
+                          type="number" min="0" step="1"
+                          value={product.shortageCartons || ''}
+                          onChange={e => onProductDeductionChange(product.productId, 'shortageCartons', Number(e.target.value) || 0)}
+                          className="w-full px-2 py-1.5 text-sm border rounded bg-white dark:bg-secondary-700 dark:border-secondary-600 focus:ring-1 focus:ring-red-500"
+                          disabled={disabled}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-secondary-500 mb-0.5">نسبة الإعفاء %</label>
+                        <input
+                          type="number" min="0" max="100" step="1"
+                          value={product.shortageExemptionRate || ''}
+                          onChange={e => onProductDeductionChange(product.productId, 'shortageExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                          className="w-full px-2 py-1.5 text-sm border rounded bg-white dark:bg-secondary-700 dark:border-secondary-600 focus:ring-1 focus:ring-red-500"
+                          disabled={disabled}
+                          placeholder="0%"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Damaged Group */}
+                  <div className="bg-orange-50 dark:bg-orange-900/10 p-2 rounded-md border border-orange-100 dark:border-orange-900/20">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-semibold text-orange-700 dark:text-orange-400">التالف</span>
+                      <span className="text-xs font-bold text-orange-600">{product.damagedValue || 0} ر.ي</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-secondary-500 mb-0.5">عدد الكراتين</label>
+                        <input
+                          type="number" min="0" step="1"
+                          value={product.damagedCartons || ''}
+                          onChange={e => onProductDeductionChange(product.productId, 'damagedCartons', Number(e.target.value) || 0)}
+                          className="w-full px-2 py-1.5 text-sm border rounded bg-white dark:bg-secondary-700 dark:border-secondary-600 focus:ring-1 focus:ring-orange-500"
+                          disabled={disabled}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-secondary-500 mb-0.5">نسبة الإعفاء %</label>
+                        <input
+                          type="number" min="0" max="100" step="1"
+                          value={product.damagedExemptionRate || ''}
+                          onChange={e => onProductDeductionChange(product.productId, 'damagedExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                          className="w-full px-2 py-1.5 text-sm border rounded bg-white dark:bg-secondary-700 dark:border-secondary-600 focus:ring-1 focus:ring-orange-500"
+                          disabled={disabled}
+                          placeholder="0%"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-between mt-2 text-xs text-secondary-500">
-                <span>سعر النقص: {prices.shortage} ر.ي | سعر التالف: {prices.damaged} ر.ي</span>
-                <span className="font-semibold text-red-600">
-                  نقص: {product.shortageValue || 0} ر.ي | تالف: {product.damagedValue || 0} ر.ي
-                </span>
-              </div>
-            </div>
-          );
-        })}
-        <Input
-          label="مبالغ أخرى"
-          type="number"
-          min="0"
-          value={otherAmounts || ''}
-          onChange={e => onOtherAmountsChange(e.target.value)}
-          disabled={disabled}
-        />
-      </div>
+            );
+          })}
+          <Input
+            label="مبالغ أخرى"
+            type="number"
+            min="0"
+            value={otherAmounts || ''}
+            onChange={e => onOtherAmountsChange(e.target.value)}
+            disabled={disabled}
+          />
+        </div>
+      )}
     </div>
   );
 };
