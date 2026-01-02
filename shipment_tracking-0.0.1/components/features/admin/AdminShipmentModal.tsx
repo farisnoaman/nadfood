@@ -7,6 +7,7 @@ import ArabicDatePicker from '../../common/ui/ArabicDatePicker';
 import { Icons } from '../../Icons';
 import { printShipmentDetails } from '../../../utils/print';
 import { useAppContext } from '../../../providers/AppContext';
+import { supabase } from '../../../utils/supabaseClient';
 
 import FieldValue from '../../common/components/FieldValue';
 import ProductDetails from '../../common/components/ProductDetails';
@@ -142,6 +143,8 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const attachmentInputRef = React.useRef<HTMLInputElement>(null);
 
   // Get region to display road expenses in basic info
   const shipmentRegion = regions.find((r: Region) => r.id === shipment.regionId);
@@ -184,6 +187,70 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
     }
 
     setCurrentShipment({ ...currentShipment, [field]: processedValue });
+  };
+
+  // Handle attachment file upload
+  const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('نوع الملف غير مدعوم. يرجى اختيار PDF أو صورة (JPEG, PNG, GIF, WebP)');
+      return;
+    }
+
+    // Validate file size (1MB max)
+    if (file.size > 1 * 1024 * 1024) {
+      alert('حجم الملف كبير جداً. الحد الأقصى هو 1 ميجابايت');
+      return;
+    }
+
+    try {
+      setIsUploadingAttachment(true);
+
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `shipment-${currentShipment.salesOrder}-${Date.now()}.${fileExt}`;
+      const filePath = `attachments/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('shipment-attachments')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        alert('فشل رفع المرفق: ' + uploadError.message);
+        return;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('shipment-attachments')
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+      console.log('Attachment uploaded successfully:', publicUrl);
+
+      // Update shipment with attachment URL
+      setCurrentShipment(prev => ({ ...prev, attachmentUrl: publicUrl }));
+      alert('تم رفع المرفق بنجاح!');
+
+    } catch (error) {
+      console.error('Error uploading attachment:', error);
+      alert('حدث خطأ أثناء رفع المرفق. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsUploadingAttachment(false);
+      // Reset file input
+      if (attachmentInputRef.current) {
+        attachmentInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSaveAsDraft = async () => {
@@ -384,6 +451,74 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
           onValueChange={handleValueChange}
           disabled={isViewOnly}
         />
+
+        {/* Attachment Section */}
+        <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
+          <h4 className="font-bold text-lg">المرفقات</h4>
+          <div className="flex flex-col gap-3">
+            {/* Upload Button */}
+            {!isViewOnly && (
+              <div className="flex items-center gap-3">
+                <input
+                  ref={attachmentInputRef}
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleAttachmentUpload}
+                  className="hidden"
+                  id="attachment-upload"
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => attachmentInputRef.current?.click()}
+                  disabled={isUploadingAttachment}
+                >
+                  {isUploadingAttachment ? (
+                    <>
+                      <Icons.RefreshCw className="ml-2 h-4 w-4 animate-spin" />
+                      جاري الرفع...
+                    </>
+                  ) : (
+                    <>
+                      <Icons.FileText className="ml-2 h-4 w-4" />
+                      رفع مرفق (PDF أو صورة)
+                    </>
+                  )}
+                </Button>
+                {currentShipment.attachmentUrl && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setCurrentShipment(prev => ({ ...prev, attachmentUrl: undefined }))}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Icons.Trash2 className="ml-1 h-4 w-4" />
+                    إزالة
+                  </Button>
+                )}
+              </div>
+            )}
+            {/* Attachment Preview/Link */}
+            {currentShipment.attachmentUrl ? (
+              <div className="flex items-center gap-3 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
+                <Icons.FileText className="h-6 w-6 text-green-600" />
+                <a
+                  href={currentShipment.attachmentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 underline text-sm"
+                >
+                  عرض المرفق
+                </a>
+                <span className="text-xs text-green-600 dark:text-green-400">✓ مرفق محمّل</span>
+              </div>
+            ) : (
+              <div className="text-sm text-secondary-500 dark:text-secondary-400">
+                لا يوجد مرفق (الحد الأقصى 1 ميجابايت - PDF أو صورة)
+              </div>
+            )}
+          </div>
+        </div>
 
         <TransferSection
           shipment={currentShipment}

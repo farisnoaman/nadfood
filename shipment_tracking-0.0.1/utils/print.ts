@@ -205,3 +205,135 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
     throw err; // Re-throw for potential handling by caller
   }
 };
+
+/**
+ * Generates and triggers the download of a PDF report for an installment.
+ */
+export const printInstallmentDetails = async (
+  installment: any,
+  payments: any[],
+  shipment: any | undefined,
+  driverName: string,
+  companyDetails: CompanyPrintDetails,
+  currentUser: User
+): Promise<void> => {
+  // Dynamically import the component to avoid circular dependencies
+  const PrintableInstallment = (await import('../components/common/components/PrintableInstallment')).default;
+
+  let printContainer: HTMLDivElement | null = null;
+  let root: ReactDOM.Root | null = null;
+
+  const cleanup = () => {
+    try {
+      if (root) root.unmount();
+      if (printContainer && document.body.contains(printContainer)) {
+        document.body.removeChild(printContainer);
+      }
+    } catch (err) {
+      console.error('Cleanup error:', err);
+    }
+  };
+
+  try {
+    // Pre-process logo to base64
+    let logoBase64 = '';
+    if (companyDetails.companyLogo) {
+      try {
+        logoBase64 = await getBase64FromUrl(companyDetails.companyLogo);
+      } catch (err) {
+        console.warn('Failed to load logo:', err);
+      }
+    }
+
+    // Create container
+    printContainer = document.createElement('div');
+    printContainer.id = 'pdf-container';
+    printContainer.style.position = 'absolute';
+    printContainer.style.left = '-9999px';
+    printContainer.style.top = '0px';
+    printContainer.style.width = `${PDF.A4_WIDTH_MM}mm`;
+    printContainer.style.backgroundColor = 'white';
+    document.body.appendChild(printContainer);
+
+    root = ReactDOM.createRoot(printContainer);
+
+    const printTimestamp = new Date().toLocaleString('ar-EG', {
+      year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+
+    // Render the component
+    root.render(
+      React.createElement(PrintableInstallment, {
+        installment,
+        payments,
+        shipment,
+        driverName,
+        printedBy: currentUser.username,
+        printTimestamp,
+        ...companyDetails,
+        companyLogo: logoBase64 || companyDetails.companyLogo,
+      })
+    );
+
+    // Wait for React to mount
+    await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 100)));
+
+    // Wait for images to load
+    const images = Array.from(printContainer.querySelectorAll('img'));
+    await Promise.all(images.map(img => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = () => resolve(undefined);
+        img.onerror = () => resolve(undefined);
+      });
+    }));
+
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    if (!printContainer) {
+      throw new Error('Print container was removed unexpectedly');
+    }
+
+    // Capture with html2canvas
+    const canvas = await html2canvas(printContainer, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+
+    if (!canvas || canvas.width === 0 || canvas.height === 0) {
+      throw new Error('Canvas generation failed');
+    }
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.9);
+
+    // Create PDF
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const canvasAspectRatio = canvas.height / canvas.width;
+    const totalPDFHeight = pdfWidth * canvasAspectRatio;
+
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, totalPDFHeight);
+
+    // Generate filename
+    const salesOrder = shipment?.salesOrder || installment.id.slice(-8);
+    const fileName = `تسديد-${sanitizeFilename(salesOrder)}.pdf`;
+
+    pdf.save(fileName);
+    cleanup();
+
+  } catch (err) {
+    cleanup();
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Installment PDF generation failed:', err);
+    alert(`فشل إنشاء ملف PDF: ${errorMessage}`);
+    throw err;
+  }
+};

@@ -120,6 +120,7 @@ const shipmentFromRow = (row: ShipmentRow, products: ShipmentProduct[]): Shipmen
     updated_at: row.updated_at ?? undefined,
     isPendingSync: false,
     notes: (row as any).notes,
+    attachmentUrl: (row as any).attachment_url ?? undefined,
 });
 
 const shipmentProductFromRow = (row: ShipmentProductRow): ShipmentProduct => ({
@@ -205,6 +206,7 @@ const shipmentToRow = (shipment: Partial<Shipment>): Partial<Database['public'][
         deductionsEditedAt: 'deductions_edited_at',
         hasMissingPrices: 'has_missing_prices',
         notes: 'notes',
+        attachmentUrl: 'attachment_url',
     };
 
     const rowData: Partial<Database['public']['Tables']['shipments']['Update']> = {};

@@ -133,6 +133,7 @@ export interface Shipment {
   updated_at?: string; // Timestamp of last update
   isPendingSync?: boolean; // True if created offline and waiting to be sent to the server.
   notes?: string; // Admin notes
+  attachmentUrl?: string; // URL to attachment (PDF or image)
 }
 
 /**

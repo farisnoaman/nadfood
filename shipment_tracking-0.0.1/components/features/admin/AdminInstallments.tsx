@@ -5,13 +5,18 @@ import { Icons } from '../../Icons';
 import Button from '../../common/ui/Button';
 import Modal from '../../common/ui/Modal';
 import Input from '../../common/ui/Input';
+import { printInstallmentDetails } from '../../../utils/print';
 
 interface AdminInstallmentsProps {
   // Empty interface for future props
 }
 
 const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
-  const { installments, installmentPayments, addInstallmentPayment, updateInstallment, currentUser, shipments, drivers, regions, productPrices, products: allProducts } = useAppContext();
+  const {
+    installments, installmentPayments, addInstallmentPayment, updateInstallment,
+    currentUser, shipments, drivers, regions, productPrices, products: allProducts,
+    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo
+  } = useAppContext();
   const [selectedInstallment, setSelectedInstallment] = useState<Installment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPaymentAmount, setNewPaymentAmount] = useState('');
@@ -37,6 +42,30 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
   const getInstallmentShipments = () => {
     const installmentShipmentIds = new Set(installments.map(inst => inst.shipmentId));
     return shipments.filter(shipment => installmentShipmentIds.has(shipment.id));
+  };
+
+  // Handle print installment
+  const handlePrintInstallment = async () => {
+    if (!selectedInstallment || !currentUser) return;
+
+    const relatedShipment = shipments.find(s => s.id === selectedInstallment.shipmentId);
+    const driver = relatedShipment ? drivers.find((d: Driver) => d.id === relatedShipment.driverId) : undefined;
+    const payments = installmentPaymentsMap.get(selectedInstallment.id) || [];
+
+    const companyDetails = { companyName, companyAddress, companyPhone, companyLogo, isPrintHeaderEnabled };
+
+    try {
+      await printInstallmentDetails(
+        selectedInstallment,
+        payments,
+        relatedShipment,
+        driver?.name || 'غير معروف',
+        companyDetails,
+        currentUser
+      );
+    } catch (error) {
+      console.error('Failed to print installment:', error);
+    }
   };
 
   const handleExportToCSV = () => {
@@ -213,9 +242,8 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
     const relatedShipment = shipments.find(s => s.id === installment.shipmentId);
 
     return (
-      <div className={`bg-gradient-to-br from-white via-blue-50 to-indigo-100 dark:from-secondary-800 dark:via-secondary-750 dark:to-secondary-700 shadow-lg hover:shadow-xl transition-all duration-300 rounded-lg overflow-hidden flex flex-col border border-gray-200 dark:border-secondary-600 ${
-        isDebtCollection ? 'ring-2 ring-orange-200 dark:ring-orange-800' : ''
-      }`}>
+      <div className={`bg-gradient-to-br from-white via-blue-50 to-indigo-100 dark:from-secondary-800 dark:via-secondary-750 dark:to-secondary-700 shadow-lg hover:shadow-xl transition-all duration-300 rounded-lg overflow-hidden flex flex-col border border-gray-200 dark:border-secondary-600 ${isDebtCollection ? 'ring-2 ring-orange-200 dark:ring-orange-800' : ''
+        }`}>
         {/* Header */}
         <div className="px-4 py-3 bg-blue-200 dark:bg-blue-800 flex justify-between items-center border-b border-secondary-200 dark:border-secondary-700">
           <div className="flex items-center gap-2">
@@ -228,11 +256,10 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
               </span>
             )}
           </div>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            installment.status === 'completed'
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-          }`}>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${installment.status === 'completed'
+            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+            }`}>
             {installment.status === 'completed' ? 'مكتمل' : 'نشط'}
           </span>
         </div>
@@ -363,6 +390,18 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
       >
         {selectedInstallment && (
           <div className="space-y-6">
+            {/* Print Button */}
+            <div className="flex justify-end">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handlePrintInstallment}
+                className="flex items-center gap-2"
+              >
+                <Icons.Printer className="h-4 w-4" />
+                طباعة
+              </Button>
+            </div>
             {/* Installment Summary */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-secondary-800 dark:to-secondary-700 rounded-lg p-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
