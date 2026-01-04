@@ -30,8 +30,8 @@ Dashboard → Project → Variables
 Dashboard → Service → Environment
 
 Values needed:
-VITE_SUPABASE_URL=https://kjvzhzbxspgvvmktjwdi.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqdnpoemJ4c3BndnZta3Rqd2RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2MjYyMTQsImV4cCI6MjA3ODIwMjIxNH0.xc1wMNg_q23ZbNhUm6oyKbUw_298y0xG9B8YBU6j2VI
+VITE_SUPABASE_URL=https://thenalkjfbmjyhvmhbki.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoZW5hbGtqZmJtanlodm1oYmtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NzQzNzUsImV4cCI6MjA3OTE1MDM3NX0.0L1SznbcoPBSd4gYNuX5kCLoRlcQwXPO08bHYYOfsTY
 
 For local development, ensure .env file exists with these variables.
   `.trim();

@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './src/index.css';
+import './index.css';
 import App from './App';
 
 const rootElement = document.getElementById('root');
@@ -26,36 +26,36 @@ if ('serviceWorker' in navigator) {
       });
     });
   }
-  
+
   // Add online/offline event listeners (works in both dev and prod)
   const updateOnlineStatus = () => {
     const isOnline = navigator.onLine;
     console.log(`App is ${isOnline ? 'online' : 'offline'}`);
-    
+
     // Dispatch custom event for app components to listen to
-    window.dispatchEvent(new CustomEvent('app-online-status', { 
-      detail: { online: isOnline } 
+    window.dispatchEvent(new CustomEvent('app-online-status', {
+      detail: { online: isOnline }
     }));
   };
-  
+
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
-  
+
   // Initial status check
   updateOnlineStatus();
-  
+
   // Only register service worker in production
   if (import.meta.env.PROD) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
           console.log('Service Worker registered:', registration);
-          
+
           // Handle service worker updates
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             if (!newWorker) return;
-            
+
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 // New version available
@@ -65,12 +65,12 @@ if ('serviceWorker' in navigator) {
               }
             });
           });
-          
+
           // Check for updates periodically (every 30 minutes)
           setInterval(() => {
             registration.update();
           }, 30 * 60 * 1000);
-          
+
           // Listen for controlling service worker changes
           navigator.serviceWorker.addEventListener('controllerchange', () => {
             console.log('Service worker controller changed - reloading page');

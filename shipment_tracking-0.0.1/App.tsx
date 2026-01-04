@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './providers/ThemeContext';
+import { TenantProvider, useTenant } from './providers/TenantContext';
 import { AppProvider, useAppContext } from './providers/AppContext';
 import { Role } from './types';
 import Layout from './components/layout/Layout';
@@ -14,6 +15,10 @@ const Login = lazy(() => import('./components/features/auth/Login'));
 const FleetDashboard = lazy(() => import('./components/features/fleet/FleetDashboard'));
 const AccountantDashboard = lazy(() => import('./components/features/accountant/AccountantDashboard'));
 const AdminDashboard = lazy(() => import('./components/features/admin/AdminDashboard'));
+const PlatformDashboard = lazy(() => import('./components/features/platform/Dashboard'));
+const CreateTenant = lazy(() => import('./components/features/platform/CreateTenant'));
+const MasterCatalog = lazy(() => import('./components/features/platform/MasterCatalog'));
+const PlatformLayout = lazy(() => import('./components/layout/PlatformLayout'));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[] }> = ({ children, allowedRoles }) => {
     const { currentUser } = useAppContext();
@@ -79,7 +84,7 @@ const AppRoutes: React.FC = () => {
                     <p className="mt-2 text-sm text-secondary-500 dark:text-secondary-400">
                         يرجى التحقق من الاتصال بالإنترنت
                     </p>
-                    <button 
+                    <button
                         onClick={() => {
                             // Clear browser cache and reload
                             window.location.reload();
@@ -88,7 +93,7 @@ const AppRoutes: React.FC = () => {
                     >
                         إعادة المحاولة
                     </button>
-                    <button 
+                    <button
                         onClick={() => {
                             // Clear IndexedDB and localStorage to reset the app
                             if ('indexedDB' in window) {
@@ -116,7 +121,7 @@ const AppRoutes: React.FC = () => {
             </div>
         );
     }
-    
+
     if (error) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-red-50 dark:bg-red-900/50">
@@ -136,6 +141,22 @@ const AppRoutes: React.FC = () => {
                 <Suspense fallback={<PageLoading title="جاري تحميل التطبيق..." />}>
                     <Routes>
                         <Route path="/login" element={!currentUser ? <Login /> : <Navigate to="/" />} />
+
+                        {/* Platform Admin Routes */}
+                        <Route path="/platform/*" element={
+                            <ProtectedRoute allowedRoles={[Role.SUPER_ADMIN]}>
+                                <Suspense fallback={<PageLoading title="جاري تحميل لوحة التحكم..." />}>
+                                    <PlatformLayout>
+                                        <Routes>
+                                            <Route index element={<PlatformDashboard />} />
+                                            <Route path="create-tenant" element={<CreateTenant />} />
+                                            <Route path="catalog" element={<MasterCatalog />} />
+                                        </Routes>
+                                    </PlatformLayout>
+                                </Suspense>
+                            </ProtectedRoute>
+                        } />
+
                         <Route path="/*" element={
                             currentUser ? (
                                 <Layout>
@@ -156,6 +177,7 @@ const AppRoutes: React.FC = () => {
                                                         {currentUser.role === Role.SALES && <Navigate to="/fleet" />}
                                                         {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
                                                         {currentUser.role === Role.ADMIN && <Navigate to="/manager" />}
+                                                        {currentUser.role === Role.SUPER_ADMIN && <Navigate to="/platform" />}
                                                     </>
                                                 )
                                             } />
@@ -163,10 +185,10 @@ const AppRoutes: React.FC = () => {
                                             <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
                                             <Route path="/manager/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN]}><AdminDashboard /></ProtectedRoute>} />
                                         </Routes>
-                                     </Suspense>
-                                     {/* Sync Status Indicator - shown when logged in */}
-                                     <SyncStatusIndicator onSync={syncOfflineMutations} />
-                                 </Layout>
+                                    </Suspense>
+                                    {/* Sync Status Indicator - shown when logged in */}
+                                    <SyncStatusIndicator onSync={syncOfflineMutations} />
+                                </Layout>
                             ) : <Login />
                         } />
                     </Routes>
@@ -177,12 +199,56 @@ const AppRoutes: React.FC = () => {
 };
 
 
+
+const TenantGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { loading, error, company } = useTenant();
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-secondary-100 dark:bg-secondary-900">
+                <div className="flex flex-col items-center">
+                    <Icons.Truck className="h-16 w-16 text-primary-600 animate-pulse" />
+                    <p className="mt-4 text-lg font-semibold text-secondary-700 dark:text-secondary-300">
+                        جاري تحميل بيانات الشركة...
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !company) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-red-50 dark:bg-red-900/50">
+                <div className="text-center p-8">
+                    <Icons.AlertTriangle className="h-12 w-12 text-red-500 mx-auto" />
+                    <h2 className="mt-4 text-xl font-bold text-red-800 dark:text-red-200">
+                        خطأ في تحميل الشركة
+                    </h2>
+                    <p className="mt-2 text-red-600 dark:text-red-300">
+                        {error || 'الشركة غير موجودة'}
+                    </p>
+                    <p className="mt-2 text-sm text-secondary-500">
+                        تأكد من صحة رابط الشركة أو تواصل مع الدعم الفني.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    return <>{children}</>;
+};
+
 const App: React.FC = () => (
-    <ThemeProvider>
-        <AppProvider>
-            <AppRoutes />
-        </AppProvider>
-    </ThemeProvider>
+    <TenantProvider>
+        <TenantGuard>
+            <ThemeProvider>
+                <AppProvider>
+                    <AppRoutes />
+                </AppProvider>
+            </ThemeProvider>
+        </TenantGuard>
+    </TenantProvider>
 );
 
 export default App;
+

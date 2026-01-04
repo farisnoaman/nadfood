@@ -24,8 +24,6 @@ CREATE POLICY "Allow insert for authenticated users" ON public.deduction_prices
 CREATE POLICY "Allow update for authenticated users" ON public.deduction_prices
   FOR UPDATE USING (auth.role() = 'authenticated');
 
-
-
 CREATE POLICY "Allow delete for authenticated users" ON public.deduction_prices
   FOR DELETE USING (auth.role() = 'authenticated');
 

@@ -7,7 +7,7 @@ import {
     Package, Bell, Save, AlertTriangle, ChevronsRightLeft, Undo2, FileText, UserPlus,
     FileDown, CircleCheck, CircleX, Grid, List, Settings, ArrowRight, ArrowLeft, Printer,
     ArrowUp, ArrowDown, Share, BarChart3, WifiOff, RefreshCw, Wifi, CheckCircle, Info,
-    Eye, EyeOff, DollarSign
+    Eye, EyeOff, DollarSign, LayoutDashboard, Building, CreditCard, Database, ShieldCheck, Menu, Loader
 } from 'lucide-react';
 
 // Type guard to ensure all icons are valid components
@@ -43,6 +43,7 @@ export const Icons = {
     ChevronDown: validateIcon(ChevronDown, 'ChevronDown'),
     Plus: validateIcon(Plus, 'Plus'),
     Trash2: validateIcon(Trash2, 'Trash2'),
+    Trash: validateIcon(Trash2, 'Trash'),
     FileInput: validateIcon(FileInput, 'FileInput'),
     FileOutput: validateIcon(FileOutput, 'FileOutput'),
     Users: validateIcon(Users, 'Users'),
@@ -73,7 +74,14 @@ export const Icons = {
     RefreshCw: validateIcon(RefreshCw, 'RefreshCw'),
     Wifi: validateIcon(Wifi, 'Wifi'),
     Info: validateIcon(Info, 'Info'),
-    DollarSign: validateIcon(DollarSign, 'DollarSign')
+    DollarSign: validateIcon(DollarSign, 'DollarSign'),
+    LayoutDashboard: validateIcon(LayoutDashboard, 'LayoutDashboard'),
+    Building: validateIcon(Building, 'Building'),
+    CreditCard: validateIcon(CreditCard, 'CreditCard'),
+    Database: validateIcon(Database, 'Database'),
+    ShieldCheck: validateIcon(ShieldCheck, 'ShieldCheck'),
+    Menu: validateIcon(Menu, 'Menu'),
+    Loader: validateIcon(Loader, 'Loader')
 };
 
 // Fallback icons in case any are undefined

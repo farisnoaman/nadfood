@@ -6,6 +6,7 @@ export enum Role {
   SALES = 'مسؤول الحركة',
   ACCOUNTANT = 'محاسب',
   ADMIN = 'ادمن',
+  SUPER_ADMIN = 'super_admin', // Platform-level administrator
 }
 
 /**
@@ -23,6 +24,21 @@ export enum ShipmentStatus {
 }
 
 /**
+ * Represents a company/tenant in the multi-tenant system.
+ */
+export interface Company {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  brandColor: string;
+  settings: Record<string, unknown>;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
  * Represents a user profile in the system. Links to Supabase Auth user.
  */
 export interface User {
@@ -30,6 +46,7 @@ export interface User {
   username: string;
   email: string;
   role: Role;
+  companyId?: string; // Foreign key to companies table
   isActive?: boolean;
   createdAt?: string;
 }
