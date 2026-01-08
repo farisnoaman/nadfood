@@ -18,6 +18,9 @@ const AdminDashboard = lazy(() => import('./components/features/admin/AdminDashb
 const PlatformDashboard = lazy(() => import('./components/features/platform/Dashboard'));
 const CreateTenant = lazy(() => import('./components/features/platform/CreateTenant'));
 const MasterCatalog = lazy(() => import('./components/features/platform/MasterCatalog'));
+const PlatformCompanies = lazy(() => import('./components/features/platform/Companies'));
+const PlatformPlans = lazy(() => import('./components/features/platform/Plans'));
+const PlatformBackups = lazy(() => import('./components/features/platform/Backups'));
 const PlatformLayout = lazy(() => import('./components/layout/PlatformLayout'));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[] }> = ({ children, allowedRoles }) => {
@@ -151,6 +154,9 @@ const AppRoutes: React.FC = () => {
                                             <Route index element={<PlatformDashboard />} />
                                             <Route path="create-tenant" element={<CreateTenant />} />
                                             <Route path="catalog" element={<MasterCatalog />} />
+                                            <Route path="companies" element={<PlatformCompanies />} />
+                                            <Route path="plans" element={<PlatformPlans />} />
+                                            <Route path="backups" element={<PlatformBackups />} />
                                         </Routes>
                                     </PlatformLayout>
                                 </Suspense>

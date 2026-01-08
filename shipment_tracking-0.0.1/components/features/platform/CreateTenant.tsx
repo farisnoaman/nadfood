@@ -24,12 +24,10 @@ const CreateTenant: React.FC = () => {
 
     const fetchPlans = async () => {
         try {
-            // Cast to any because subscription_plans type is not yet in generated types
             const { data, error } = await supabase.from('subscription_plans' as any).select('*');
             if (error) throw error;
             const plansData = data as any[];
             setPlans(plansData || []);
-            // Set default plan if available
             if (plansData && plansData.length > 0) {
                 const defaultPlan = plansData.find((p: any) => p.name === 'Bronze') || plansData[0];
                 setFormData(prev => ({ ...prev, planId: String(defaultPlan.id) }));
@@ -44,9 +42,7 @@ const CreateTenant: React.FC = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
 
-        // Auto-generate slug from name if slug is empty or matches previous auto-gen
         if (name === 'companyName' && !formData.slug) {
-            // Very basic slugify
             const slug = value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
             setFormData(prev => ({ ...prev, slug, [name]: value }));
         }
@@ -57,9 +53,7 @@ const CreateTenant: React.FC = () => {
         setLoading(true);
 
         try {
-            // Call Edge Function
-            // Note: This requires the function to be deployed.
-            const { data, error } = await supabase.functions.invoke('create-tenant', {
+            const { error } = await supabase.functions.invoke('create-tenant', {
                 body: formData
             });
 
@@ -69,7 +63,6 @@ const CreateTenant: React.FC = () => {
             navigate('/platform');
         } catch (error: any) {
             console.error('Creation failed:', error);
-            // Handle specific errors potentially returned by the function
             const msg = error.message || 'حدث خطأ أثناء الإنشاء. تأكد من نشر دالة create-tenant.';
             toast.error('فشل العملية: ' + msg);
         } finally {
@@ -78,115 +71,112 @@ const CreateTenant: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">إضافة شركة جديدة</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">إنشاء مستأجر جديد وتعيين مدير النظام</p>
+        <div className="space-y-6 px-1 sm:px-0 pb-12">
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                    <h1 className="text-2xl font-black text-slate-800 dark:text-white">إضافة شركة جديدة</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">تجهيز مستأجر جديد في المنصة</p>
                 </div>
                 <button
                     onClick={() => navigate('/platform')}
-                    className="flex items-center px-4 py-2 text-slate-600 bg-white dark:bg-slate-800 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
+                    className="p-2 sm:px-4 sm:py-2 flex items-center bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors"
                 >
-                    <Icons.ArrowRight className="w-5 h-5 ml-2" />
-                    عودة
+                    <Icons.ArrowRight className="w-5 h-5 sm:ml-2" />
+                    <span className="hidden sm:inline font-bold">عودة</span>
                 </button>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden">
+                <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
 
                     {/* Company Details */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                            <Icons.Building className="w-5 h-5" />
+                    <div className="space-y-6">
+                        <h3 className="text-lg font-black flex items-center gap-2 text-emerald-600">
+                            <Icons.Building className="w-6 h-6 p-1 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg" />
                             بيانات الشركة
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اسم الشركة</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">اسم الشركة</label>
                                 <input
                                     type="text"
                                     name="companyName"
                                     value={formData.companyName}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
-                                    placeholder="مثال: شركة النقل السريع"
+                                    className="w-full px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium"
+                                    placeholder="مثال: ناد فود للنقل"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 text-left" dir="ltr">Company Slug (Subdomain)</label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        name="slug"
-                                        value={formData.slug}
-                                        onChange={handleChange}
-                                        required
-                                        pattern="[a-z0-9-]+"
-                                        title="Only lowercase letters, numbers, and hyphens"
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-left"
-                                        placeholder="example-corp"
-                                        style={{ direction: 'ltr' }}
-                                    />
-                                </div>
-                                <p className="text-xs text-slate-500 mt-1 text-left" dir="ltr">Used for URL: slug.app-domain.com</p>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 text-left" dir="ltr">Company Slug (Subdomain)</label>
+                                <input
+                                    type="text"
+                                    name="slug"
+                                    value={formData.slug}
+                                    onChange={handleChange}
+                                    required
+                                    pattern="[a-z0-9-]+"
+                                    className="w-full px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none text-left font-mono"
+                                    placeholder="nadfood-express"
+                                    style={{ direction: 'ltr' }}
+                                />
+                                <p className="text-[10px] text-slate-400 mt-1 text-left" dir="ltr">http://{formData.slug || 'slug'}.domain.com</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="border-t border-slate-200 dark:border-slate-700"></div>
+                    <div className="h-px bg-slate-100 dark:bg-slate-700"></div>
 
                     {/* Subscription */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                            <Icons.CreditCard className="w-5 h-5" />
-                            خطة الاشتراك
+                    <div className="space-y-6">
+                        <h3 className="text-lg font-black flex items-center gap-2 text-emerald-600">
+                            <Icons.Palette className="w-6 h-6 p-1 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg" />
+                            باقة الخدمة
                         </h3>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الباقة</label>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">اختر الخطة</label>
                             <select
                                 name="planId"
                                 value={formData.planId}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                                className="w-full px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none font-bold"
                             >
                                 <option value="" disabled>اختر الباقة</option>
                                 {plans.map(plan => (
                                     <option key={plan.id} value={plan.id}>
-                                        {plan.name} - (Users: {plan.max_users ?? '∞'}, Drivers: {plan.max_drivers ?? '∞'})
+                                        {plan.name} - ({plan.max_users || '∞'} مستخدم، {plan.max_drivers || '∞'} سائق)
                                     </option>
                                 ))}
                             </select>
                         </div>
                     </div>
 
-                    <div className="border-t border-slate-200 dark:border-slate-700"></div>
+                    <div className="h-px bg-slate-100 dark:bg-slate-700"></div>
 
                     {/* Admin User */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                            <Icons.User className="w-5 h-5" />
-                            حساب المدير (Admin)
+                    <div className="space-y-6">
+                        <h3 className="text-lg font-black flex items-center gap-2 text-emerald-600">
+                            <Icons.User className="w-6 h-6 p-1 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg" />
+                            بيانات المدير
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">البريد الإلكتروني</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">البريد الإلكتروني</label>
                                 <input
                                     type="email"
                                     name="adminEmail"
                                     value={formData.adminEmail}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                                    className="w-full px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none font-medium text-left"
                                     placeholder="admin@company.com"
                                     dir="ltr"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">كلمة المرور</label>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">كلمة المرور</label>
                                 <input
                                     type="password"
                                     name="adminPassword"
@@ -194,36 +184,36 @@ const CreateTenant: React.FC = () => {
                                     onChange={handleChange}
                                     required
                                     minLength={6}
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
-                                    placeholder="******"
+                                    className="w-full px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none text-left"
+                                    placeholder="••••••••"
                                     dir="ltr"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div className="pt-4 flex justify-end gap-3">
+                    <div className="pt-8 flex flex-col sm:flex-row justify-end gap-3">
                         <button
                             type="button"
                             onClick={() => navigate('/platform')}
-                            className="px-6 py-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            className="w-full sm:w-auto px-8 py-3 rounded-2xl text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                         >
-                            إلغاء
+                            إلغاء العملية
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex items-center px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full sm:w-auto flex items-center justify-center px-10 py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg hover:bg-emerald-700 shadow-xl shadow-emerald-500/30 transition-all disabled:opacity-50"
                         >
                             {loading ? (
                                 <>
-                                    <Icons.Loader className="w-5 h-5 ml-2 animate-spin" />
-                                    جاري الإنشاء...
+                                    <Icons.Loader className="w-6 h-6 ml-2 animate-spin" />
+                                    جاري المعالجة...
                                 </>
                             ) : (
                                 <>
-                                    <Icons.Check className="w-5 h-5 ml-2" />
-                                    إنشاء الشركة
+                                    <Icons.CheckCircle className="w-6 h-6 ml-2" />
+                                    تأكيد وإنشاء الشركة
                                 </>
                             )}
                         </button>
