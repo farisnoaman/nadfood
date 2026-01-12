@@ -38,6 +38,42 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          brand_color: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          settings: Json | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          brand_color?: string | null
+          created_at?: string | null
+          id: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          settings?: Json | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          brand_color?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          settings?: Json | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       drivers: {
         Row: {
           id: number

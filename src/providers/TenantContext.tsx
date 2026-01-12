@@ -139,18 +139,28 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
                 throw new Error('الشركة غير موجودة');
             }
 
-            setCompany(data);
+            const companyData: Company = {
+                id: data.id,
+                name: data.name,
+                slug: data.slug,
+                logo_url: data.logo_url,
+                brand_color: data.brand_color || '#3b82f6',
+                settings: (data.settings as Record<string, unknown>) || {},
+                is_active: data.is_active ?? true
+            };
+
+            setCompany(companyData);
 
             // Apply brand color to CSS custom property
-            if (data.brand_color) {
-                document.documentElement.style.setProperty('--brand-color', data.brand_color);
+            if (companyData.brand_color) {
+                document.documentElement.style.setProperty('--brand-color', companyData.brand_color);
                 // Also set variations for hover states etc
-                document.documentElement.style.setProperty('--brand-color-dark', adjustBrightness(data.brand_color, -20));
-                document.documentElement.style.setProperty('--brand-color-light', adjustBrightness(data.brand_color, 20));
+                document.documentElement.style.setProperty('--brand-color-dark', adjustBrightness(companyData.brand_color, -20));
+                document.documentElement.style.setProperty('--brand-color-light', adjustBrightness(companyData.brand_color, 20));
             }
 
             // Update document title with company name
-            document.title = data.name;
+            document.title = companyData.name;
 
         } catch (err) {
             // For network errors or other failures, use fallback company data
