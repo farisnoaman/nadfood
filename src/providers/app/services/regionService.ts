@@ -10,11 +10,17 @@ import * as IndexedDB from '../../../utils/indexedDB';
 import { STORES } from '../../../utils/constants';
 
 export const regionService = {
-    async fetchAll(): Promise<Region[]> {
-        const { data, error } = await supabase
+    async fetchAll(signal?: AbortSignal): Promise<Region[]> {
+        let query = supabase
             .from('regions')
             .select('*')
             .order('name');
+
+        if (signal) {
+            query = query.abortSignal(signal);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             logger.error('Error fetching regions:', error);
@@ -26,6 +32,7 @@ export const regionService = {
 
     async create(region: Omit<Region, 'id'>, isOnline: boolean, currentUser: any): Promise<void> {
         const regionData = {
+            id: window.crypto.randomUUID(),
             name: region.name,
             diesel_liter_price: region.dieselLiterPrice,
             diesel_liters: region.dieselLiters,
@@ -44,13 +51,13 @@ export const regionService = {
                 throw error;
             }
         } else {
-            const tempId = `temp_${Date.now()}`;
+            const tempId = regionData.id;
             const tempRegion: Region = {
                 ...region,
                 id: tempId,
             };
-            await IndexedDB.addToStore(STORES.REGIONS, tempRegion);
-            await IndexedDB.queueMutation({
+            await IndexedDB.saveToStore(STORES.REGIONS, tempRegion);
+            await IndexedDB.addToMutationQueue({
                 type: 'INSERT',
                 table: 'regions',
                 data: regionData,
@@ -78,7 +85,7 @@ export const regionService = {
                 throw error;
             }
         } else {
-            await IndexedDB.queueMutation({
+            await IndexedDB.addToMutationQueue({
                 type: 'UPDATE',
                 table: 'regions',
                 id: regionId,
@@ -99,7 +106,7 @@ export const regionService = {
                 throw error;
             }
         } else {
-            await IndexedDB.queueMutation({
+            await IndexedDB.addToMutationQueue({
                 type: 'DELETE',
                 table: 'regions',
                 id: regionId,

@@ -10,11 +10,17 @@ import * as IndexedDB from '../../../utils/indexedDB';
 import { STORES } from '../../../utils/constants';
 
 export const driverService = {
-    async fetchAll(): Promise<Driver[]> {
-        const { data, error } = await supabase
+    async fetchAll(signal?: AbortSignal): Promise<Driver[]> {
+        let query = supabase
             .from('drivers')
             .select('*')
             .order('name');
+
+        if (signal) {
+            query = query.abortSignal(signal);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             logger.error('Error fetching drivers:', error);
@@ -47,8 +53,8 @@ export const driverService = {
                 ...driver,
                 id: tempId,
             };
-            await IndexedDB.addToStore(STORES.DRIVERS, tempDriver);
-            await IndexedDB.queueMutation({
+            await IndexedDB.saveToStore(STORES.DRIVERS, tempDriver);
+            await IndexedDB.addToMutationQueue({
                 type: 'INSERT',
                 table: 'drivers',
                 data: driverData,
@@ -74,7 +80,7 @@ export const driverService = {
                 throw error;
             }
         } else {
-            await IndexedDB.queueMutation({
+            await IndexedDB.addToMutationQueue({
                 type: 'UPDATE',
                 table: 'drivers',
                 id: driverId.toString(),
@@ -95,7 +101,7 @@ export const driverService = {
                 throw error;
             }
         } else {
-            await IndexedDB.queueMutation({
+            await IndexedDB.addToMutationQueue({
                 type: 'DELETE',
                 table: 'drivers',
                 id: driverId.toString(),

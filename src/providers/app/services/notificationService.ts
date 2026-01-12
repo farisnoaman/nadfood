@@ -10,11 +10,17 @@ import * as IndexedDB from '../../../utils/indexedDB';
 import { STORES } from '../../../utils/constants';
 
 export const notificationService = {
-    async fetchAll(): Promise<Notification[]> {
-        const { data, error } = await supabase
+    async fetchAll(signal?: AbortSignal): Promise<Notification[]> {
+        let query = supabase
             .from('notifications')
             .select('*')
             .order('timestamp', { ascending: false });
+
+        if (signal) {
+            query = query.abortSignal(signal);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             logger.error('Error fetching notifications:', error);
@@ -26,6 +32,7 @@ export const notificationService = {
 
     async create(notification: Omit<Notification, 'id' | 'timestamp' | 'read'>, isOnline: boolean): Promise<void> {
         const notificationData = {
+            id: window.crypto.randomUUID(),
             message: notification.message,
             category: notification.category,
             target_roles: notification.targetRoles,
@@ -44,15 +51,15 @@ export const notificationService = {
                 throw error;
             }
         } else {
-            const tempId = `temp_${Date.now()}`;
+            const tempId = notificationData.id;
             const tempNotification: Notification = {
                 id: tempId,
                 ...notification,
-                timestamp: new Date().toISOString(),
+                timestamp: notificationData.timestamp,
                 read: false,
             };
-            await IndexedDB.addToStore(STORES.NOTIFICATIONS, tempNotification);
-            await IndexedDB.queueMutation({
+            await IndexedDB.saveToStore(STORES.NOTIFICATIONS, tempNotification);
+            await IndexedDB.addToMutationQueue({
                 type: 'INSERT',
                 table: 'notifications',
                 data: notificationData,
@@ -73,7 +80,7 @@ export const notificationService = {
                 throw error;
             }
         } else {
-            await IndexedDB.queueMutation({
+            await IndexedDB.addToMutationQueue({
                 type: 'UPDATE',
                 table: 'notifications',
                 id: notificationId,
@@ -99,7 +106,7 @@ export const notificationService = {
             const unreadNotifications = notifications.filter(n => !n.read);
 
             for (const notification of unreadNotifications) {
-                await IndexedDB.queueMutation({
+                await IndexedDB.addToMutationQueue({
                     type: 'UPDATE',
                     table: 'notifications',
                     id: notification.id,

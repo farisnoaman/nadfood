@@ -8,11 +8,17 @@ import { userFromRow } from '../mappers';
 import logger from '../../../utils/logger';
 
 export const userService = {
-    async fetchAll(): Promise<User[]> {
-        const { data, error } = await supabase
+    async fetchAll(signal?: AbortSignal): Promise<User[]> {
+        let query = supabase
             .from('users')
             .select('*')
             .order('username');
+
+        if (signal) {
+            query = query.abortSignal(signal);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             logger.error('Error fetching users:', error);
@@ -20,6 +26,21 @@ export const userService = {
         }
 
         return (data || []).map(userFromRow);
+    },
+
+    async fetchById(userId: string): Promise<User | null> {
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (error) {
+            logger.error('Error fetching user by id:', error);
+            throw error;
+        }
+
+        return data ? userFromRow(data) : null;
     },
 
     async create(userData: Omit<User, 'id'>, password: string, currentUser: any): Promise<User | null> {

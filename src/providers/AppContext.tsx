@@ -12,11 +12,16 @@ import logger from '../utils/logger';
 // Import types and mappers from extracted modules
 import { AppContextType } from './app/types';
 import {
-    userFromRow, productFromRow, driverFromRow, regionFromRow,
     shipmentFromRow, shipmentProductFromRow, priceFromRow,
-    deductionPriceFromRow, notificationFromRow, installmentFromRow,
+    deductionPriceFromRow, installmentFromRow,
     installmentPaymentFromRow, shipmentToRow
 } from './app/mappers';
+
+// Service modules
+import {
+    userService, productService, driverService,
+    regionService, notificationService
+} from './app/services';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -237,15 +242,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
 
         try {
-            const [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes, settingsRes, installmentsRes, installmentPaymentsRes] = await Promise.all([
-                supabase.from('users').select('*').abortSignal(controller.signal),
-                supabase.from('products').select('*').abortSignal(controller.signal),
-                supabase.from('drivers').select('*').abortSignal(controller.signal),
-                supabase.from('regions').select('*').abortSignal(controller.signal),
+            const [
+                newUsers,
+                newProducts,
+                newDrivers,
+                newRegions,
+                newNotifications,
+                shipmentsRes,
+                shipmentProductsRes,
+                pricesRes,
+                settingsRes,
+                installmentsRes,
+                installmentPaymentsRes
+            ] = await Promise.all([
+                userService.fetchAll(controller.signal),
+                productService.fetchAll(controller.signal),
+                driverService.fetchAll(controller.signal),
+                regionService.fetchAll(controller.signal),
+                notificationService.fetchAll(controller.signal),
                 supabase.from('shipments').select('*').abortSignal(controller.signal),
                 supabase.from('shipment_products').select('*').abortSignal(controller.signal),
                 supabase.from('product_prices').select('*').abortSignal(controller.signal),
-                supabase.from('notifications').select('*').order('timestamp', { ascending: false }).abortSignal(controller.signal),
                 (supabase as any).from('company_settings').select('*').maybeSingle().abortSignal(controller.signal),
                 (supabase as any).from('installments').select('*').abortSignal(controller.signal),
                 (supabase as any).from('installment_payments').select('*').order('received_date', { ascending: false }).abortSignal(controller.signal),
@@ -265,44 +282,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             clearTimeout(timeoutId);
 
-            const responses = [usersRes, productsRes, driversRes, regionsRes, shipmentsRes, shipmentProductsRes, pricesRes, notificationsRes, settingsRes, installmentsRes, installmentPaymentsRes];
-            for (const res of responses) { if (res.error) throw res.error; }
+            // Check errors for direct supabase calls
+            const directResponses: any[] = [shipmentsRes, shipmentProductsRes, pricesRes, settingsRes, installmentsRes, installmentPaymentsRes];
+            for (const res of directResponses) { if (res && res.error && res !== settingsRes) throw res.error; }
 
-            const newUsers = usersRes.data!.map(userFromRow);
-            const newProducts = productsRes.data!.map(productFromRow);
-            const newDrivers = driversRes.data!.map(driverFromRow);
-            const newRegions = regionsRes.data!.map(regionFromRow);
-            const newPrices = pricesRes.data!.map(priceFromRow);
-            const newNotifications = notificationsRes.data!.map(notificationFromRow);
-            const newInstallments = installmentsRes.data!.map(installmentFromRow);
-            const newInstallmentPayments = installmentPaymentsRes.data!.map(installmentPaymentFromRow);
-            const shipmentProductsByShipmentId = shipmentProductsRes.data!.reduce((acc, sp) => {
+            const newPrices = (pricesRes as any).data!.map(priceFromRow);
+            const newInstallments = (installmentsRes as any).data!.map(installmentFromRow);
+            const newInstallmentPayments = (installmentPaymentsRes as any).data!.map(installmentPaymentFromRow);
+            const shipmentProductsByShipmentId = (shipmentProductsRes as any).data!.reduce((acc: any, sp: any) => {
                 if (!acc[sp.shipment_id]) { acc[sp.shipment_id] = []; }
                 acc[sp.shipment_id].push(shipmentProductFromRow(sp));
                 return acc;
             }, {} as Record<string, ShipmentProduct[]>);
-            const newShipments = shipmentsRes.data!.map(s => shipmentFromRow(s, shipmentProductsByShipmentId[s.id] || []));
+            const newShipments = (shipmentsRes as any).data!.map((s: any) => shipmentFromRow(s, shipmentProductsByShipmentId[s.id] || []));
 
-            setUsers(newUsers); await IndexedDB.saveAllToStore(STORES.USERS, newUsers);
-            setProducts(newProducts); await IndexedDB.saveAllToStore(STORES.PRODUCTS, newProducts);
-            setDrivers(newDrivers); await IndexedDB.saveAllToStore(STORES.DRIVERS, newDrivers);
-            setRegions(newRegions); await IndexedDB.saveAllToStore(STORES.REGIONS, newRegions);
+            setUsers(newUsers as User[]); await IndexedDB.saveAllToStore(STORES.USERS, newUsers as User[]);
+            setProducts(newProducts as Product[]); await IndexedDB.saveAllToStore(STORES.PRODUCTS, newProducts as Product[]);
+            setDrivers(newDrivers as Driver[]); await IndexedDB.saveAllToStore(STORES.DRIVERS, newDrivers as Driver[]);
+            setRegions(newRegions as Region[]); await IndexedDB.saveAllToStore(STORES.REGIONS, newRegions as Region[]);
             setProductPrices(newPrices); await IndexedDB.saveAllToStore(STORES.PRODUCT_PRICES, newPrices);
-            setDeductionPrices(newDeductionPrices); // Deduction prices not cached in IndexedDB for now
-            setNotifications(newNotifications); await IndexedDB.saveAllToStore(STORES.NOTIFICATIONS, newNotifications);
+            setDeductionPrices(newDeductionPrices);
+            setNotifications(newNotifications as Notification[]); await IndexedDB.saveAllToStore(STORES.NOTIFICATIONS, newNotifications as Notification[]);
             setInstallments(newInstallments); await IndexedDB.saveAllToStore(STORES.INSTALLMENTS, newInstallments);
             setInstallmentPayments(newInstallmentPayments); await IndexedDB.saveAllToStore(STORES.INSTALLMENT_PAYMENTS, newInstallmentPayments);
 
             // Process and update company settings (column-based)
-            const companySettings = settingsRes.data;
-
-            // Check if settingsRes had an error (no row found)
-            if (settingsRes.error && settingsRes.error.code === 'PGRST116') {
-                logger.warn('No company settings row found, using defaults');
-            } else if (settingsRes.error) {
-                logger.error('Error fetching company settings:', settingsRes.error);
-            }
-
+            const companySettings = (settingsRes as any).data;
             if (companySettings) {
                 setAccountantPrintAccess(companySettings.accountant_print_access ?? false);
                 setIsPrintHeaderEnabled(companySettings.is_print_header_enabled ?? true);
@@ -507,14 +512,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // Try to get user profile from server first (online) or cache (offline)
             if (isOnline) {
                 try {
-                    const { data, error } = await supabase
-                        .from('users')
-                        .select('*')
-                        .eq('id', user.id)
-                        .maybeSingle();
-
-                    if (!error && data) {
-                        userProfile = userFromRow(data);
+                    userProfile = await userService.fetchById(user.id);
+                    if (userProfile) {
                         logger.info('Loaded user profile from server');
                     }
                 } catch (err) {
@@ -1273,81 +1272,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, [clearData]);
 
     const addProduct = useCallback(async (product: Omit<Product, 'id'>) => {
-        const { error } = await supabase.from('products').insert({
-            id: window.crypto.randomUUID(),
-            name: product.name,
-            is_active: product.isActive,
-            weight_kg: product.weightKg,
-            company_id: currentUser?.companyId
-        });
-        if (error) throw error;
+        await productService.create(product, isOnline, currentUser);
         await fetchAllData();
-    }, [fetchAllData, currentUser]);
+    }, [isOnline, currentUser, fetchAllData]);
 
     const updateProduct = useCallback(async (productId: string, updates: Partial<Product>) => {
-        const updateData: any = { name: updates.name, is_active: updates.isActive };
-        if (updates.weightKg !== undefined) {
-            updateData.weight_kg = updates.weightKg;
-        }
-
-        const { error } = await supabase.from('products').update(updateData).eq('id', productId);
-        if (error) throw error;
+        await productService.update(productId, updates, isOnline);
         await fetchAllData();
-    }, [fetchAllData]);
+    }, [isOnline, fetchAllData]);
 
     const deleteProduct = useCallback(async (productId: string) => {
-        const { error } = await supabase.from('products').delete().eq('id', productId);
-        if (error) throw error;
+        await productService.delete(productId, isOnline);
         await fetchAllData();
-    }, [fetchAllData]);
+    }, [isOnline, fetchAllData]);
 
     const addDriver = useCallback(async (driver: Omit<Driver, 'id'>) => {
-        const { error } = await supabase.from('drivers').insert({
-            name: driver.name,
-            plate_number: driver.plateNumber,
-            is_active: driver.isActive,
-            company_id: currentUser?.companyId
-        });
-        if (error) throw error;
+        await driverService.create(driver, isOnline, currentUser);
         await fetchAllData();
-    }, [fetchAllData, currentUser]);
+    }, [isOnline, currentUser, fetchAllData]);
 
     const updateDriver = useCallback(async (driverId: number, updates: Partial<Driver>) => {
-        const { error } = await supabase.from('drivers').update({ name: updates.name, plate_number: updates.plateNumber, is_active: updates.isActive }).eq('id', driverId);
-        if (error) throw error;
+        await driverService.update(driverId, updates, isOnline);
         await fetchAllData();
-    }, [fetchAllData]);
+    }, [isOnline, fetchAllData]);
 
     const deleteDriver = useCallback(async (driverId: number) => {
-        const { error } = await supabase.from('drivers').delete().eq('id', driverId);
-        if (error) throw error;
+        await driverService.delete(driverId, isOnline);
         await fetchAllData();
-    }, [fetchAllData]);
+    }, [isOnline, fetchAllData]);
 
     const addRegion = useCallback(async (region: Omit<Region, 'id'>) => {
-        const { error } = await supabase.from('regions').insert({
-            id: window.crypto.randomUUID(),
-            name: region.name,
-            diesel_liter_price: region.dieselLiterPrice,
-            diesel_liters: region.dieselLiters,
-            zaitri_fee: region.zaitriFee,
-            company_id: currentUser?.companyId
-        });
-        if (error) throw error;
+        await regionService.create(region, isOnline, currentUser);
         await fetchAllData();
-    }, [fetchAllData, currentUser]);
+    }, [isOnline, currentUser, fetchAllData]);
 
     const updateRegion = useCallback(async (regionId: string, updates: Partial<Region>) => {
-        const { error } = await supabase.from('regions').update({ name: updates.name, diesel_liter_price: updates.dieselLiterPrice, diesel_liters: updates.dieselLiters, zaitri_fee: updates.zaitriFee }).eq('id', regionId);
-        if (error) throw error;
+        await regionService.update(regionId, updates, isOnline);
         await fetchAllData();
-    }, [fetchAllData]);
+    }, [isOnline, fetchAllData]);
 
     const deleteRegion = useCallback(async (regionId: string) => {
-        const { error } = await supabase.from('regions').delete().eq('id', regionId);
-        if (error) throw error;
+        await regionService.delete(regionId, isOnline);
         await fetchAllData();
-    }, [fetchAllData]);
+    }, [isOnline, fetchAllData]);
 
     const addProductPrice = useCallback(async (price: Omit<ProductPrice, 'id'>) => {
         const { error } = await supabase.from('product_prices').insert({
@@ -1547,90 +1514,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, [fetchAllData, isOnline, shipments]);
 
     const updateUser = useCallback(async (userId: string, updates: Partial<User>) => {
-        const { error } = await supabase.from('users').update({ is_active: updates.isActive }).eq('id', userId);
-        if (error) throw error;
+        await userService.update(userId, updates);
         await fetchAllData();
     }, [fetchAllData]);
 
     const addNotification = useCallback(async (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
-        // Notifications are fire-and-forget, mostly relevant for online users.
-        // If offline, we could queue them, but for simplicity we'll skip or only try if online.
-        if (!isOnline) return;
-        const { error } = await supabase.from('notifications').insert({ id: window.crypto.randomUUID(), timestamp: new Date().toISOString(), message: notification.message, category: notification.category, target_roles: notification.targetRoles, target_user_ids: notification.targetUserIds });
-        if (error) throw error;
-        // Don't refetch all data just for a notification sent
+        await notificationService.create(notification, isOnline);
     }, [isOnline]);
 
     const markNotificationAsRead = useCallback(async (notificationId: string) => {
-        const originalNotifications = [...notifications];
         setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
-        if (!isOnline) return; // Optimistic update offline
-
-        const { error } = await supabase.from('notifications').update({ read: true }).eq('id', notificationId);
-        if (error) {
-            logger.error("Failed to mark notification as read:", error);
-            setNotifications(originalNotifications);
-        }
-    }, [notifications, isOnline]);
+        await notificationService.markAsRead(notificationId, isOnline);
+    }, [isOnline]);
 
     const markAllNotificationsAsRead = useCallback(async () => {
         const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
         if (unreadIds.length === 0) return;
-        const originalNotifications = [...notifications];
         setNotifications(prev => prev.map(n => unreadIds.includes(n.id) ? { ...n, read: true } : n));
-
-        if (!isOnline) return; // Optimistic update offline
-
-        const { error } = await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
-        if (error) {
-            logger.error("Failed to mark all notifications as read:", error);
-            setNotifications(originalNotifications);
-        }
+        await notificationService.markAllAsRead(isOnline);
     }, [notifications, isOnline]);
 
     const addUser = useCallback(async (userData: Omit<User, 'id'>, password: string): Promise<User | null> => {
         try {
-            // Create authentication account
-            logger.info('DEBUG: Creating user with company_id:', currentUser?.companyId);
-            const { data, error } = await supabase.auth.signUp({
-                email: `${userData.username}@temp.placeholder`, // Placeholder email format
-                password: password,
-                options: {
-                    data: {
-                        username: userData.username,
-                        role: userData.role,
-                        company_id: currentUser?.companyId,
-                        is_active: userData.isActive ?? true
-                    }
-                }
-            });
-
-            if (error) {
-                logger.error('Error creating auth user:', error);
-                throw error;
-            }
-
-            if (!data.user) {
-                throw new Error('User creation failed: No user returned');
-            }
-
-            // Public user profile is now created automatically by the database trigger
-            // 'on_auth_user_created' which calls 'public.handle_new_user()'
-
-            // Refresh data to include new user
+            const newUser = await userService.create(userData, password, currentUser);
             await fetchAllData();
-
-            const newUser: User = {
-                ...userData,
-                id: data.user.id,
-            };
-
             return newUser;
         } catch (err) {
             logger.error('addUser failed:', err);
             return null;
         }
-    }, [fetchAllData]);
+    }, [fetchAllData, currentUser]);
 
     const createInstallment = useCallback(async (installment: Omit<Installment, 'id' | 'createdAt' | 'updatedAt'>) => {
         if (!isOnline) {

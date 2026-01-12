@@ -10,11 +10,17 @@ import * as IndexedDB from '../../../utils/indexedDB';
 import { STORES } from '../../../utils/constants';
 
 export const productService = {
-    async fetchAll(): Promise<Product[]> {
-        const { data, error } = await supabase
+    async fetchAll(signal?: AbortSignal): Promise<Product[]> {
+        let query = supabase
             .from('products')
             .select('*')
             .order('name');
+
+        if (signal) {
+            query = query.abortSignal(signal);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             logger.error('Error fetching products:', error);
@@ -26,6 +32,7 @@ export const productService = {
 
     async create(product: Omit<Product, 'id'>, isOnline: boolean, currentUser: any): Promise<void> {
         const productData = {
+            id: window.crypto.randomUUID(),
             name: product.name,
             is_active: product.isActive,
             weight_kg: product.weightKg,
@@ -43,13 +50,13 @@ export const productService = {
             }
         } else {
             // Offline: queue mutation
-            const tempId = `temp_${Date.now()}`;
+            const tempId = productData.id;
             const tempProduct: Product = {
                 ...product,
                 id: tempId,
             };
-            await IndexedDB.addToStore(STORES.PRODUCTS, tempProduct);
-            await IndexedDB.queueMutation({
+            await IndexedDB.saveToStore(STORES.PRODUCTS, tempProduct);
+            await IndexedDB.addToMutationQueue({
                 type: 'INSERT',
                 table: 'products',
                 data: productData,
@@ -75,7 +82,7 @@ export const productService = {
                 throw error;
             }
         } else {
-            await IndexedDB.queueMutation({
+            await IndexedDB.addToMutationQueue({
                 type: 'UPDATE',
                 table: 'products',
                 id: productId,
@@ -96,7 +103,7 @@ export const productService = {
                 throw error;
             }
         } else {
-            await IndexedDB.queueMutation({
+            await IndexedDB.addToMutationQueue({
                 type: 'DELETE',
                 table: 'products',
                 id: productId,
