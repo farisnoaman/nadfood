@@ -6,14 +6,28 @@
 -- 1. Create Function to handle new user creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_company_id uuid;
 BEGIN
-  INSERT INTO public.users (id, username, role, company_id, is_active)
+  -- Extract company_id from metadata, validate it's a proper UUID
+  BEGIN
+    v_company_id := (new.raw_user_meta_data->>'company_id')::uuid;
+  EXCEPTION
+    WHEN others THEN
+      v_company_id := NULL;
+  END;
+
+  -- Log for debugging
+  RAISE NOTICE 'Creating user % with company_id from metadata: %', new.id, v_company_id;
+
+  INSERT INTO public.users (id, username, role, company_id, is_active, email)
   VALUES (
     new.id,
-    new.raw_user_meta_data->>'username',
-    new.raw_user_meta_data->>'role',
-    (new.raw_user_meta_data->>'company_id')::uuid,
-    (new.raw_user_meta_data->>'is_active')::boolean
+    COALESCE(new.raw_user_meta_data->>'username', new.email),
+    COALESCE(new.raw_user_meta_data->>'role', 'موظف مبيعات'),
+    v_company_id,
+    COALESCE((new.raw_user_meta_data->>'is_active')::boolean, true),
+    new.email
   );
   RETURN new;
 END;

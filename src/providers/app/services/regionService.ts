@@ -10,11 +10,15 @@ import * as IndexedDB from '../../../utils/indexedDB';
 import { STORES } from '../../../utils/constants';
 
 export const regionService = {
-    async fetchAll(signal?: AbortSignal): Promise<Region[]> {
-        let query = supabase
+    async fetchAll(signal?: AbortSignal, companyId?: string): Promise<Region[]> {
+        let query: any = supabase
             .from('regions')
             .select('*')
             .order('name');
+
+        if (companyId) {
+            query = query.eq('company_id', companyId);
+        }
 
         if (signal) {
             query = query.abortSignal(signal);

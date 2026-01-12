@@ -10,11 +10,15 @@ import * as IndexedDB from '../../../utils/indexedDB';
 import { STORES } from '../../../utils/constants';
 
 export const productService = {
-    async fetchAll(signal?: AbortSignal): Promise<Product[]> {
-        let query = supabase
+    async fetchAll(signal?: AbortSignal, companyId?: string): Promise<Product[]> {
+        let query: any = supabase
             .from('products')
             .select('*')
             .order('name');
+
+        if (companyId) {
+            query = query.eq('company_id', companyId);
+        }
 
         if (signal) {
             query = query.abortSignal(signal);

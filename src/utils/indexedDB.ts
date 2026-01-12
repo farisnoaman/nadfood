@@ -707,6 +707,31 @@ export const cleanupOldMutations = async (maxAgeHours: number = 168): Promise<nu
   }
 };
 
+/**
+ * Check if a store has any data
+ */
+export const hasData = async (storeName: string): Promise<boolean> => {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readonly');
+      const store = transaction.objectStore(storeName);
+      const request = store.count();
+
+      request.onsuccess = () => {
+        resolve(request.result > 0);
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  } catch (error) {
+    logger.error(`Error checking if ${storeName} has data:`, error);
+    return false;
+  }
+};
+
 // Initialize DB on module load with error handling
 initDB().catch((error) => {
   logger.error('Failed to initialize IndexedDB on module load:', error);

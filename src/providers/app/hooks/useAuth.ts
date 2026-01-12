@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { User, Role, NotificationCategory, Product } from '../types';
-import { supabase } from '../../utils/supabaseClient';
+import { User, Product } from '../types';
+import { Role, NotificationCategory } from '../../../types';
+import { supabase } from '../../../utils/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
-import * as IndexedDB from '../../utils/indexedDB';
-import { STORES } from '../../utils/constants';
-import { clearOfflineSession, getOfflineSession } from '../../utils/offlineAuth';
-import { getSyncQueueCount } from '../../utils/syncQueue';
-import logger from '../../utils/logger';
+import * as IndexedDB from '../../../utils/indexedDB';
+import { STORES } from '../../../utils/constants';
+import { clearOfflineSession, getOfflineSession } from '../../../utils/offlineAuth';
+import { getSyncQueueCount } from '../../../utils/syncQueue';
+import logger from '../../../utils/logger';
 import { userService } from '../services';
 
 interface UseAuthProps {

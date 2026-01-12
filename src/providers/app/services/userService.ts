@@ -8,11 +8,15 @@ import { userFromRow } from '../mappers';
 import logger from '../../../utils/logger';
 
 export const userService = {
-    async fetchAll(signal?: AbortSignal): Promise<User[]> {
-        let query = supabase
+    async fetchAll(signal?: AbortSignal, companyId?: string): Promise<User[]> {
+        let query: any = supabase
             .from('users')
             .select('*')
             .order('username');
+
+        if (companyId) {
+            query = query.eq('company_id', companyId);
+        }
 
         if (signal) {
             query = query.abortSignal(signal);
