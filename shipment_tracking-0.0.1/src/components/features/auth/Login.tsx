@@ -67,7 +67,7 @@ const Login: React.FC = () => {
 
         emailToUse = userData.email;
       } catch (err) {
-        console.error('Error looking up user:', err);
+        logger.error('Error looking up user:', err);
         setError('حدث خطأ في البحث عن المستخدم');
         setLoading(false);
         return;

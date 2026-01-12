@@ -1,5 +1,6 @@
 
 import { Shipment, Region, ProductPrice, DeductionPrice, ShipmentProduct } from '../../types';
+import logger from './logger';
 
 /**
  * Calculates the initial financial values for a new shipment based on sales data.
@@ -70,7 +71,7 @@ export const calculateAccountantValues = (shipment: Shipment): Partial<Shipment>
     const { dueAmount = 0, damagedValue = 0, shortageValue = 0 } = shipment;
     let roadExpenses = shipment.roadExpenses;
     if (roadExpenses === null || roadExpenses === undefined) {
-        console.warn(`Road expenses is null/undefined for shipment ${shipment.id}, defaulting to 0`);
+        logger.warn(`Road expenses is null/undefined for shipment ${shipment.id}, defaulting to 0`);
         roadExpenses = 0;
     }
     const dueAmountAfterDiscount = dueAmount - damagedValue - shortageValue - roadExpenses;

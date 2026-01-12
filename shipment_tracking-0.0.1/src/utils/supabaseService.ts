@@ -39,7 +39,7 @@ class SupabaseService {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Database connection test failed:', error);
+      logger.error('Database connection test failed:', error);
       return false;
     }
   }
@@ -79,7 +79,7 @@ class SupabaseService {
         logger.warn('SupabaseService: No settings found for company, returning defaults');
         return this.CompanySettingsDefaults;
       }
-      console.error('SupabaseService: Error fetching company settings:', error);
+      logger.error('SupabaseService: Error fetching company settings:', error);
       throw error;
     }
 
@@ -102,7 +102,7 @@ class SupabaseService {
       }, { onConflict: 'company_id' });
 
     if (error) {
-      console.error('SupabaseService: Error saving company settings:', error);
+      logger.error('SupabaseService: Error saving company settings:', error);
       throw error;
     }
 

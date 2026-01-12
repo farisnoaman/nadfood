@@ -93,14 +93,14 @@ const ManageUsers: React.FC = () => {
       });
 
       if (error) {
-        console.error('Password change error:', error);
+        logger.error('Password change error:', error);
         setChangePasswordMessage(`خطأ: ${error.message || 'فشل تغيير كلمة المرور'}`);
         setIsSubmitting(false);
         return;
       }
 
       if (data?.error) {
-        console.error('Password change error:', data.error);
+        logger.error('Password change error:', data.error);
         setChangePasswordMessage(`خطأ: ${data.error}`);
         setIsSubmitting(false);
         return;
@@ -117,7 +117,7 @@ const ManageUsers: React.FC = () => {
       }, 2000);
 
     } catch (err) {
-      console.error('Unexpected error:', err);
+      logger.error('Unexpected error:', err);
       setChangePasswordMessage('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsSubmitting(false);
@@ -214,14 +214,14 @@ const ManageUsers: React.FC = () => {
        });
 
        if (error) {
-         console.error('Edit user error:', error);
+         logger.error('Edit user error:', error);
          setEditUserMessage(`خطأ: ${error.message || 'فشل تعديل المستخدم'}`);
          setIsSubmitting(false);
          return;
        }
 
        if (data?.error) {
-         console.error('Edit user error:', data.error);
+         logger.error('Edit user error:', data.error);
          setEditUserMessage(`خطأ: ${data.error}`);
          setIsSubmitting(false);
          return;
@@ -238,7 +238,7 @@ const ManageUsers: React.FC = () => {
        }, 2000);
 
      } catch (err) {
-       console.error('Unexpected error:', err);
+       logger.error('Unexpected error:', err);
        setEditUserMessage('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
      } finally {
        setIsSubmitting(false);
@@ -263,14 +263,14 @@ const ManageUsers: React.FC = () => {
        });
 
        if (error) {
-         console.error('Delete user error:', error);
+         logger.error('Delete user error:', error);
          // Handle error - perhaps show a message
          setIsSubmitting(false);
          return;
        }
 
        if (data?.error) {
-         console.error('Delete user error:', data.error);
+         logger.error('Delete user error:', data.error);
          setIsSubmitting(false);
          return;
        }
@@ -279,7 +279,7 @@ const ManageUsers: React.FC = () => {
        setUserToDelete(null);
 
      } catch (err) {
-       console.error('Unexpected error:', err);
+       logger.error('Unexpected error:', err);
      } finally {
        setIsSubmitting(false);
      }

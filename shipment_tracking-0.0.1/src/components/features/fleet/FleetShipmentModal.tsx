@@ -178,7 +178,7 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
       alert('تم تحديث الشحنة بنجاح وإرسالها للمحاسب');
       onClose();
     } catch (error) {
-      console.error('Error updating shipment:', error);
+      logger.error('Error updating shipment:', error);
       alert('فشل في تحديث الشحنة. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsSubmitting(false);

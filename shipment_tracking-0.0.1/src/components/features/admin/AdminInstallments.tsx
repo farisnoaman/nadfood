@@ -64,7 +64,7 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
         currentUser
       );
     } catch (error) {
-      console.error('Failed to print installment:', error);
+      logger.error('Failed to print installment:', error);
     }
   };
 
@@ -228,7 +228,7 @@ const AdminInstallments: React.FC<AdminInstallmentsProps> = () => {
       setNewPaymentAmount('');
       alert('تم إضافة الدفعة بنجاح');
     } catch (error) {
-      console.error('Failed to add payment:', error);
+      logger.error('Failed to add payment:', error);
       alert('فشل في إضافة الدفعة');
     } finally {
       setIsSubmitting(false);

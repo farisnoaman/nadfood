@@ -59,7 +59,7 @@ const InstallPrompt: React.FC = () => {
     setIsVisible(false);
     
     if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
+      logger.info('User accepted the install prompt');
     }
   };
 

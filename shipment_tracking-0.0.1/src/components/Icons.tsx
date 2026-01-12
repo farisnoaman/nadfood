@@ -11,9 +11,9 @@ import {
 } from 'lucide-react';
 
 // Type guard to ensure all icons are valid components
-const validateIcon = (icon: any, name: string) => {
+const validateIcon = (icon: React.ComponentType<{ className?: string }> | undefined, name: string) => {
     if (!icon) {
-        console.warn(`Invalid icon: ${name}`, icon);
+        logger.warn(`Invalid icon: ${name}`, icon);
         return ({ className }: { className?: string }) => <div className={className} title={`Icon ${name} not found`} />;
     }
     return icon;
@@ -88,8 +88,8 @@ export const Icons = {
 // Fallback icons in case any are undefined
 export const IconsWithFallback = {
     ...Icons,
-    RefreshCw: Icons.RefreshCw || ((props: any) => React.createElement('div', { ...props }, '↻')),
-    Edit: Icons.Edit || ((props: any) => React.createElement('div', { ...props }, '✏️')),
-    Undo2: Icons.Undo2 || ((props: any) => React.createElement('div', { ...props }, '↩️')),
-    AlertTriangle: Icons.AlertTriangle || ((props: any) => React.createElement('div', { ...props }, '⚠️'))
+    RefreshCw: Icons.RefreshCw || ((props: { className?: string }) => React.createElement('div', { ...props }, '↻')),
+    Edit: Icons.Edit || ((props: { className?: string }) => React.createElement('div', { ...props }, '✏️')),
+    Undo2: Icons.Undo2 || ((props: { className?: string }) => React.createElement('div', { ...props }, '↩️')),
+    AlertTriangle: Icons.AlertTriangle || ((props: { className?: string }) => React.createElement('div', { ...props }, '⚠️'))
 };

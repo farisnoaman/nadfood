@@ -734,7 +734,7 @@ const ArabicDatePicker: React.FC<ArabicDatePickerProps> = ({
           setCalendarStatus('ready');
         }
       } catch (error) {
-        console.warn('Arabic calendar failed to load, using fallback:', error);
+        logger.warn('Arabic calendar failed to load, using fallback:', error);
         if (isMounted) {
           setCalendarStatus('fallback');
         }
@@ -757,7 +757,7 @@ const ArabicDatePicker: React.FC<ArabicDatePickerProps> = ({
           setSelectedDate(parsed);
         }
       } catch (error) {
-        console.warn('Failed to parse date value:', value, error);
+        logger.warn('Failed to parse date value:', value, error);
         setSelectedDate(null);
       }
     } else {
@@ -772,7 +772,7 @@ const ArabicDatePicker: React.FC<ArabicDatePickerProps> = ({
         const formatted = format(date, 'yyyy-MM-dd');
         onChange(formatted);
       } catch (error) {
-        console.error('Failed to format date:', error);
+        logger.error('Failed to format date:', error);
         onChange('');
       }
     } else {
@@ -793,7 +793,7 @@ const ArabicDatePicker: React.FC<ArabicDatePickerProps> = ({
           setSelectedDate(parsed);
         }
       } catch (error) {
-        console.warn('Failed to parse input date:', inputValue);
+        logger.warn('Failed to parse input date:', inputValue);
       }
     } else {
       setSelectedDate(null);
@@ -824,7 +824,7 @@ const ArabicDatePicker: React.FC<ArabicDatePickerProps> = ({
         return format(selectedDate, 'yyyy-MM-dd');
       }
     } catch (error) {
-      console.warn('Failed to format display date:', error);
+      logger.warn('Failed to format display date:', error);
       return value || '';
     }
   };

@@ -93,7 +93,7 @@ const DeductionPriceManager: React.FC = () => {
             await deleteDeductionPrice(priceToDelete.id);
             setPriceToDelete(null);
         } catch (err: any) {
-            console.error('Failed to delete deduction price:', err);
+            logger.error('Failed to delete deduction price:', err);
         } finally {
             setIsSubmitting(false);
         }

@@ -31,7 +31,7 @@ serve(async (req) => {
             .single();
 
         if (error) {
-            console.error('Error fetching company:', error);
+            logger.error('Error fetching company:', error);
         }
 
         // Build manifest with company branding or defaults
@@ -70,7 +70,7 @@ serve(async (req) => {
             },
         });
     } catch (error) {
-        console.error('Edge function error:', error);
+        logger.error('Edge function error:', error);
 
         // Return default manifest on error
         const defaultManifest = {

@@ -207,5 +207,5 @@ export const validateCSRF = (request: Request): boolean => {
 
 // Log function execution
 export const logExecution = (functionName: string, message: string) => {
-  console.log(`[${functionName}] ${message}`);
+  logger.info(`[${functionName}] ${message}`);
 };

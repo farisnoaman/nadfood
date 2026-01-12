@@ -121,7 +121,7 @@ export const getPendingSyncItems = async (): Promise<SyncQueueItem[]> => {
     const allItems = await getAllFromStore<SyncQueueItem>(SYNC_QUEUE_STORE);
     return allItems.filter(item => item.status === 'pending' || item.status === 'failed');
   } catch (error) {
-    console.error('Error getting pending sync items:', error);
+    logger.error('Error getting pending sync items:', error);
     return [];
   }
 };
@@ -134,7 +134,7 @@ const getMutationQueueCount = async (): Promise<number> => {
     const mutations = await getMutationQueue();
     return mutations.length;
   } catch (error) {
-    console.error('Error getting mutation queue count:', error);
+    logger.error('Error getting mutation queue count:', error);
     return 0;
   }
 };
@@ -153,7 +153,7 @@ export const getSyncQueueCount = async (): Promise<number> => {
     // Return total pending operations
     return syncItems.length + mutationCount;
   } catch (error) {
-    console.error('Error getting total sync queue count:', error);
+    logger.error('Error getting total sync queue count:', error);
     return 0;
   }
 };
@@ -180,7 +180,7 @@ const updateQueueItemStatus = async (
       await saveToStore(SYNC_QUEUE_STORE, item);
     }
   } catch (error) {
-    console.error('Error updating queue item status:', error);
+    logger.error('Error updating queue item status:', error);
   }
 };
 
@@ -192,7 +192,7 @@ const removeFromQueue = async (id: string): Promise<void> => {
     await initDB();
     await deleteFromStore(SYNC_QUEUE_STORE, id);
   } catch (error) {
-    console.error('Error removing from queue:', error);
+    logger.error('Error removing from queue:', error);
   }
 };
 
@@ -267,7 +267,7 @@ const processSyncItem = async (
     
    } catch (error: any) {
      logger.error(`Sync failed for ${item.operation} ${item.entityType}:`, error, { itemId: item.id, retryCount: item.retryCount });
-     console.error(`Sync failed for ${item.operation} ${item.entityType}:`, error);
+     logger.error(`Sync failed for ${item.operation} ${item.entityType}:`, error);
 
      if (item.retryCount >= MAX_RETRIES) {
        // Mark as permanently failed
@@ -307,12 +307,12 @@ export const processSyncQueue = async (supabase?: any): Promise<{
   remaining: number;
 }> => {
   if (currentSyncStatus.isSyncing) {
-    console.log('Sync already in progress');
+    logger.info('Sync already in progress');
     return { success: 0, failed: 0, remaining: await getSyncQueueCount() };
   }
   
   if (!navigator.onLine) {
-    console.log('Cannot sync: offline');
+    logger.info('Cannot sync: offline');
     return { success: 0, failed: 0, remaining: await getSyncQueueCount() };
   }
   
@@ -325,7 +325,7 @@ export const processSyncQueue = async (supabase?: any): Promise<{
   try {
     await supabase.auth.refreshSession();
   } catch (authError) {
-    console.warn('Failed to refresh auth session:', authError);
+    logger.warn('Failed to refresh auth session:', authError);
   }
 
   currentSyncStatus.isSyncing = true;
@@ -359,7 +359,7 @@ export const processSyncQueue = async (supabase?: any): Promise<{
     currentSyncStatus.lastSyncError = null;
     
   } catch (error: any) {
-    console.error('Error processing sync queue:', error);
+    logger.error('Error processing sync queue:', error);
     currentSyncStatus.lastSyncError = error.message;
   } finally {
     currentSyncStatus.isSyncing = false;
@@ -367,7 +367,7 @@ export const processSyncQueue = async (supabase?: any): Promise<{
   }
   
   const remaining = await getSyncQueueCount();
-  console.log(`Sync complete: ${success} success, ${failed} failed, ${remaining} remaining`);
+  logger.info(`Sync complete: ${success} success, ${failed} failed, ${remaining} remaining`);
   
   return { success, failed, remaining };
 };
@@ -389,7 +389,7 @@ export const clearCompletedItems = async (): Promise<void> => {
     
     await updateSyncStatus();
   } catch (error) {
-    console.error('Error clearing completed items:', error);
+    logger.error('Error clearing completed items:', error);
   }
 };
 
@@ -400,9 +400,9 @@ export const clearSyncQueue = async (): Promise<void> => {
   try {
     await clearStore(SYNC_QUEUE_STORE);
     await updateSyncStatus();
-    console.log('Sync queue cleared');
+    logger.info('Sync queue cleared');
   } catch (error) {
-    console.error('Error clearing sync queue:', error);
+    logger.error('Error clearing sync queue:', error);
   }
 };
 
@@ -423,7 +423,7 @@ export const updateSyncStatus = async (): Promise<void> => {
     
     notifySyncStatusChange();
   } catch (error) {
-    console.error('Error updating sync status:', error);
+    logger.error('Error updating sync status:', error);
   }
 };
 
@@ -459,7 +459,7 @@ const notifySyncStatusChange = (): void => {
     try {
       listener(currentSyncStatus);
     } catch (error) {
-      console.error('Error notifying sync status listener:', error);
+      logger.error('Error notifying sync status listener:', error);
     }
   });
 };
@@ -473,7 +473,7 @@ export const initSyncService = (): void => {
   
   // Listen for online/offline events
   window.addEventListener('online', async () => {
-    console.log('Back online');
+    logger.info('Back online');
     currentSyncStatus.isOnline = true;
     notifySyncStatusChange();
 
@@ -481,7 +481,7 @@ export const initSyncService = (): void => {
   });
   
   window.addEventListener('offline', () => {
-    console.log('Gone offline');
+    logger.info('Gone offline');
     currentSyncStatus.isOnline = false;
     notifySyncStatusChange();
   });
@@ -489,7 +489,7 @@ export const initSyncService = (): void => {
   // Initial status update
   updateSyncStatus();
   
-  console.log('Sync service initialized');
+  logger.info('Sync service initialized');
 };
 
 // Auto-initialize on module load

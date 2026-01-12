@@ -22,7 +22,7 @@ const PlatformCompanies: React.FC = () => {
             if (error) throw error;
             setCompanies(data || []);
         } catch (error) {
-            console.error('Error fetching companies:', error);
+            logger.error('Error fetching companies:', error);
             toast.error('فشل تحميل الشركات');
         } finally {
             setLoading(false);
@@ -58,7 +58,7 @@ const PlatformCompanies: React.FC = () => {
             if (error) throw error;
             toast.success('تم إنشاء النسخة الاحتياطية بنجاح', { id: toastId });
         } catch (error: any) {
-            console.error('Snapshot failed:', error);
+            logger.error('Snapshot failed:', error);
             toast.error('فشل إنشاء النسخة: ' + error.message, { id: toastId });
         } finally {
             setSnapshotting(null);

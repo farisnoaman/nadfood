@@ -43,7 +43,7 @@ const ManageData: React.FC = () => {
             }
             downloadCSV(`${activeType}_export.csv`, data.headers, data.rows);
         } catch (error) {
-            console.error("Error exporting data:", error);
+            logger.error("Error exporting data:", error);
             alert("حدث خطأ أثناء تصدير البيانات.");
         }
     };

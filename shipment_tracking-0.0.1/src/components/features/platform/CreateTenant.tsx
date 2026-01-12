@@ -27,17 +27,17 @@ const CreateTenant: React.FC = () => {
             const { data, error } = await supabase.from('subscription_plans' as any).select('*');
             if (error) throw error;
             const plansData = data as any[];
-            console.log('Fetched plans:', plansData);
+            logger.info('Fetched plans:', plansData);
             setPlans(plansData || []);
             if (plansData && plansData.length > 0) {
                 const defaultPlan = plansData.find((p: any) => p.name === 'Bronze') || plansData[0];
-                console.log('Setting default plan:', defaultPlan);
+                logger.info('Setting default plan:', defaultPlan);
                 setFormData(prev => ({ ...prev, planId: String(defaultPlan.id) }));
             } else {
-                console.warn('No subscription plans found in database!');
+                logger.warn('No subscription plans found in database!');
             }
         } catch (error) {
-            console.error('Error fetching plans:', error);
+            logger.error('Error fetching plans:', error);
             toast.error('فشل تحميل باقات الاشتراك');
         }
     };
@@ -67,14 +67,14 @@ const CreateTenant: React.FC = () => {
                 throw new Error('يرجى اختيار باقة الاشتراك');
             }
 
-            console.log('Submitting tenant data:', formData);
+            logger.info('Submitting tenant data:', formData);
 
             const { data, error } = await supabase.functions.invoke('create-tenant', {
                 body: formData
             });
 
             if (error) {
-                console.error('Edge Function error object:', error);
+                logger.error('Edge Function error object:', error);
                 // Try to get the actual error message from the response
                 let errorMsg = 'حدث خطأ أثناء الإنشاء';
                 if (error.context?.body) {
@@ -99,7 +99,7 @@ const CreateTenant: React.FC = () => {
             toast.success('تم إنشاء الشركة بنجاح!');
             navigate('/platform');
         } catch (error: any) {
-            console.error('Creation failed:', error);
+            logger.error('Creation failed:', error);
             const msg = error.message || 'حدث خطأ أثناء الإنشاء. تأكد من نشر دالة create-tenant.';
             toast.error('فشل العملية: ' + msg);
         } finally {

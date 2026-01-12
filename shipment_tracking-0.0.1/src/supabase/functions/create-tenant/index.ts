@@ -30,7 +30,7 @@ serve(async (req) => {
             )
         }
 
-        console.log(`🚀 Creating tenant: ${companyName} (${slug})`)
+        logger.info(`🚀 Creating tenant: ${companyName} (${slug})`)
 
         // 1. Check if slug exists
         const { data: existingCompany } = await supabaseClient
@@ -57,7 +57,7 @@ serve(async (req) => {
 
         if (authError) throw authError
         const userId = authUser.user.id
-        console.log(`✅ Auth User Created: ${userId}`)
+        logger.info(`✅ Auth User Created: ${userId}`)
 
         // 3. Create Company
         const { data: company, error: companyError } = await supabaseClient
@@ -76,7 +76,7 @@ serve(async (req) => {
             await supabaseClient.auth.admin.deleteUser(userId)
             throw companyError
         }
-        console.log(`✅ Company Created: ${company.id}`)
+        logger.info(`✅ Company Created: ${company.id}`)
 
         // 4. Create default company settings
         const { error: settingsError } = await supabaseClient
@@ -88,9 +88,9 @@ serve(async (req) => {
             })
 
         if (settingsError) {
-            console.warn('Settings creation warning (non-fatal):', settingsError.message)
+            logger.warn('Settings creation warning (non-fatal):', settingsError.message)
         } else {
-            console.log(`✅ Company Settings Created`)
+            logger.info(`✅ Company Settings Created`)
         }
 
         // 5. Update User with Company ID and Role
@@ -105,13 +105,13 @@ serve(async (req) => {
             })
 
         if (updateError) {
-            console.error('Failed to link user, rolling back...', updateError)
+            logger.error('Failed to link user, rolling back...', updateError)
             await supabaseClient.from('companies').delete().eq('id', company.id)
             await supabaseClient.auth.admin.deleteUser(userId)
             throw updateError
         }
 
-        console.log(`✅ Tenant Setup Complete`)
+        logger.info(`✅ Tenant Setup Complete`)
 
         return new Response(
             JSON.stringify({
@@ -127,7 +127,7 @@ serve(async (req) => {
         )
 
     } catch (error) {
-        console.error('Error creating tenant:', error)
+        logger.error('Error creating tenant:', error)
         return new Response(
             JSON.stringify({ error: error.message }),
             {

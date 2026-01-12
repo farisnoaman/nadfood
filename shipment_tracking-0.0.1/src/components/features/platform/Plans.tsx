@@ -20,7 +20,7 @@ const PlatformPlans: React.FC = () => {
             if (error) throw error;
             setPlans(data || []);
         } catch (error) {
-            console.error('Error fetching plans:', error);
+            logger.error('Error fetching plans:', error);
             toast.error('فشل تحميل الخطط');
         } finally {
             setLoading(false);

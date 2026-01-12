@@ -61,7 +61,7 @@ export const useOfflineAuth = (): UseOfflineAuthReturn => {
         offlineSessionExpiry: offlineSession?.expiresAt || null,
       }));
     } catch (error) {
-      console.error('Error refreshing offline auth status:', error);
+      logger.error('Error refreshing offline auth status:', error);
     }
   }, []);
 
@@ -108,7 +108,7 @@ export const useOfflineAuth = (): UseOfflineAuthReturn => {
       await createOfflineSession(userId, email);
       await refreshStatus();
     } catch (error) {
-      console.error('Error creating offline session:', error);
+      logger.error('Error creating offline session:', error);
       throw error;
     }
   }, [refreshStatus]);
@@ -118,7 +118,7 @@ export const useOfflineAuth = (): UseOfflineAuthReturn => {
       await clearOfflineSession();
       await refreshStatus();
     } catch (error) {
-      console.error('Error clearing offline session:', error);
+      logger.error('Error clearing offline session:', error);
       throw error;
     }
   }, [refreshStatus]);

@@ -28,7 +28,7 @@ const AccountantDashboard: React.FC = () => {
         // Only show shipments from fleet/sales (FROM_SALES status)
         // Exclude DRAFT shipments which are work-in-progress by accountant
         filtered = shipments.filter((s: Shipment) => s.status === ShipmentStatus.FROM_SALES);
-        console.log('AccountantDashboard - Received tab filtering:', {
+        logger.info('AccountantDashboard - Received tab filtering:', {
           totalShipments: shipments.length,
           fromSalesShipments: shipments.filter(s => s.status === ShipmentStatus.FROM_SALES).length,
           draftShipments: shipments.filter(s => s.status === ShipmentStatus.DRAFT).length,

@@ -256,7 +256,7 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
 
       onClose();
     } catch (err) {
-      console.error("Failed to return to fleet:", err);
+      logger.error("Failed to return to fleet:", err);
       alert("فشل إرجاع الشحنة إلى مسؤول الحركة.");
     } finally {
       setIsSubmitting(false);
@@ -296,7 +296,7 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
       });
       onClose();
     } catch (err) {
-      console.error("Failed to send to admin:", err);
+      logger.error("Failed to send to admin:", err);
       alert("فشل إرسال الشحنة للمدير.");
     } finally {
       setIsSubmitting(false);

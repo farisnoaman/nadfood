@@ -14,7 +14,7 @@ const PlatformNavbar: React.FC = () => {
             await handleLogout();
             navigate('/login');
         } catch (error) {
-            console.error('Logout failed:', error);
+            logger.error('Logout failed:', error);
         }
     };
 

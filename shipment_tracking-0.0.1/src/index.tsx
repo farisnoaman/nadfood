@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import logger from './utils/logger';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -22,7 +23,7 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(registrations => {
       registrations.forEach(registration => {
         registration.unregister();
-        console.log('Service Worker unregistered for development');
+        logger.info('Service Worker unregistered for development');
       });
     });
   }
@@ -30,7 +31,7 @@ if ('serviceWorker' in navigator) {
   // Add online/offline event listeners (works in both dev and prod)
   const updateOnlineStatus = () => {
     const isOnline = navigator.onLine;
-    console.log(`App is ${isOnline ? 'online' : 'offline'}`);
+    logger.info(`App is ${isOnline ? 'online' : 'offline'}`);
 
     // Dispatch custom event for app components to listen to
     window.dispatchEvent(new CustomEvent('app-online-status', {
@@ -49,7 +50,7 @@ if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
-          console.log('Service Worker registered:', registration);
+          logger.info('Service Worker registered:', registration);
 
           // Handle service worker updates
           registration.addEventListener('updatefound', () => {
@@ -73,12 +74,30 @@ if ('serviceWorker' in navigator) {
 
           // Listen for controlling service worker changes
           navigator.serviceWorker.addEventListener('controllerchange', () => {
-            console.log('Service worker controller changed - reloading page');
+            logger.info('Service worker controller changed - reloading page');
             window.location.reload();
+          });
+
+          // Listen for background sync messages from service worker
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            const { type, data } = event.data;
+
+            if (type === 'BACKGROUND_SYNC_TRIGGER') {
+              logger.info('Received background sync trigger from service worker');
+
+              // Import and trigger the sync function dynamically
+              import('./providers/AppContext').then(({ useAppContext }) => {
+                // This is a bit tricky since we need access to the context
+                // We'll dispatch a custom event that components can listen to
+                window.dispatchEvent(new CustomEvent('background-sync-triggered', {
+                  detail: { timestamp: data?.timestamp }
+                }));
+              }).catch(err => logger.error('Failed to handle background sync:', err));
+            }
           });
         })
         .catch(error => {
-          console.error('Service Worker registration failed:', error);
+          logger.error('Service Worker registration failed:', error);
         });
     });
   }

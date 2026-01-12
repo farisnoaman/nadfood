@@ -57,7 +57,7 @@ const FleetDashboard: React.FC = () => {
       
       return filtered;
     } catch (error) {
-      console.error('Error filtering returned shipments:', error);
+      logger.error('Error filtering returned shipments:', error);
       return [];
     }
   }, [shipments]);
@@ -82,7 +82,7 @@ const FleetDashboard: React.FC = () => {
       try {
         setActiveTab(tabId);
       } catch (error) {
-        console.error('Error clicking tab:', error);
+        logger.error('Error clicking tab:', error);
       }
     };
 

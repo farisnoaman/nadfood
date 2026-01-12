@@ -49,13 +49,13 @@ const AppRoutes: React.FC = () => {
         if (loading) {
             // Primary timeout (15s) - show retry screen
             const primaryTimeout = setTimeout(() => {
-                console.warn('Primary loading timeout reached - showing retry screen');
+                logger.warn('Primary loading timeout reached - showing retry screen');
                 setLoadingTimeout(true);
             }, 15000);
 
             // Emergency timeout (30s) - force reload as last resort
             const emergencyTimeout = setTimeout(() => {
-                console.error('Emergency loading timeout - forcing page reload');
+                logger.error('Emergency loading timeout - forcing page reload');
                 window.location.reload();
             }, 30000);
 

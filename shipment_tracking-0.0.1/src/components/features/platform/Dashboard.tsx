@@ -43,7 +43,7 @@ const PlatformDashboard: React.FC = () => {
             });
 
         } catch (err) {
-            console.error('Error fetching dashboard stats:', err);
+            logger.error('Error fetching dashboard stats:', err);
             setStats(prev => ({ ...prev, loading: false }));
         }
     };

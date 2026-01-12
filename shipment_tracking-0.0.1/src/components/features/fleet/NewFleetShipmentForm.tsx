@@ -315,7 +315,7 @@ const NewFleetShipmentForm: React.FC = () => {
                 category: NotificationCategory.PRICE_ALERT,
                 targetRoles: [Role.ADMIN]
               }).catch(error => {
-                console.error('Failed to send price alert notification:', error);
+                logger.error('Failed to send price alert notification:', error);
               });
             }
           }
@@ -373,7 +373,7 @@ const NewFleetShipmentForm: React.FC = () => {
       setSelectedProducts([{ productId: '', productName: '', cartonCount: 0 }]);
 
     } catch (err: any) {
-      console.error("Failed to submit shipment:", err);
+      logger.error("Failed to submit shipment:", err);
       setError(`فشل إرسال الشحنة: ${err.message}`);
     } finally {
       setSubmitting(false);

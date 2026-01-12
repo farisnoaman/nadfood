@@ -30,7 +30,7 @@ const ReturnedShipmentsTab: React.FC<ReturnedShipmentsTabProps> = ({
 
 
   // Debug logging
-  console.log('ReturnedShipmentsTab render:', {
+  logger.info('ReturnedShipmentsTab render:', {
     returnedShipmentsCount: returnedShipments?.length || 0,
     returnedShipments,
     driversCount: drivers?.length || 0,
@@ -53,7 +53,7 @@ const ReturnedShipmentsTab: React.FC<ReturnedShipmentsTabProps> = ({
   }
 
   const handleEditClick = (shipment: Shipment) => {
-    console.log('Edit clicked for shipment:', shipment);
+    logger.info('Edit clicked for shipment:', shipment);
     onEditShipment(shipment);
   };
 
@@ -82,7 +82,7 @@ const ReturnedShipmentsTab: React.FC<ReturnedShipmentsTabProps> = ({
           .filter(shipment => shipment && typeof shipment === 'object' && shipment.id)
           .map((shipment, index) => {
             try {
-              console.log(`Rendering shipment ${index + 1}:`, shipment);
+              logger.info(`Rendering shipment ${index + 1}:`, shipment);
               
               return (
                  <div key={shipment.id} className="bg-white dark:bg-secondary-800 shadow rounded-lg overflow-hidden flex flex-col border border-red-200 dark:border-red-800">
@@ -151,7 +151,7 @@ const ReturnedShipmentsTab: React.FC<ReturnedShipmentsTabProps> = ({
                 </div>
               );
             } catch (error) {
-              console.error('Error rendering shipment:', error, shipment);
+              logger.error('Error rendering shipment:', error, shipment);
               return (
                 <Card 
                   key={`error-${shipment.id || index}`}

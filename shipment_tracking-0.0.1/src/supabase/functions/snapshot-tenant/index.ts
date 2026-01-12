@@ -23,11 +23,11 @@ serve(async (req) => {
         const { companyId, userId } = body
 
         if (!companyId) {
-            console.error("Missing companyId in request body:", body);
+            logger.error("Missing companyId in request body:", body);
             throw new Error('Company ID is required');
         }
 
-        console.log(`[Snapshot] Starting for company: ${companyId}`);
+        logger.info(`[Snapshot] Starting for company: ${companyId}`);
 
         // 2. Pre-flight Checks (Existence of table and bucket)
 
@@ -46,7 +46,7 @@ serve(async (req) => {
         const fetchData = async (table: string, filter: object = { company_id: companyId }) => {
             const { data, error } = await supabaseClient.from(table).select('*').match(filter);
             if (error) {
-                console.warn(`[Snapshot] Table ${table} fetch warning: ${error.message}`);
+                logger.warn(`[Snapshot] Table ${table} fetch warning: ${error.message}`);
                 return []; // Return empty for optional/extended data
             }
             return data;
@@ -103,7 +103,7 @@ serve(async (req) => {
         const fileName = `${companyId}/snapshot-${timestamp}.json`
         const fileSize = new TextEncoder().encode(jsonString).length
 
-        console.log(`[Snapshot] Uploading ${fileName} (${fileSize} bytes)...`);
+        logger.info(`[Snapshot] Uploading ${fileName} (${fileSize} bytes)...`);
 
         const { error: uploadError } = await supabaseClient
             .storage
@@ -135,7 +135,7 @@ serve(async (req) => {
             throw new Error(`Database record failed: ${dbError.message}`);
         }
 
-        console.log(`[Snapshot] Success: ${backupRecord.id}`);
+        logger.info(`[Snapshot] Success: ${backupRecord.id}`);
 
         return new Response(
             JSON.stringify(backupRecord),
@@ -143,7 +143,7 @@ serve(async (req) => {
         )
 
     } catch (error) {
-        console.error(`[Snapshot] CRITICAL ERROR:`, error.message)
+        logger.error(`[Snapshot] CRITICAL ERROR:`, error.message)
         return new Response(
             JSON.stringify({
                 error: error.message,

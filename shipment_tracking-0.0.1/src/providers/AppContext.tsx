@@ -428,7 +428,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
                         // Handle case where no settings row exists (PGRST116)
                         if (settingsError && settingsError.code !== 'PGRST116') {
-                            console.error('Failed to load company settings:', settingsError);
+                            logger.error('Failed to load company settings:', settingsError);
                         }
 
                         if (companySettings) {
@@ -448,7 +448,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         logger.info('Not authenticated, skipping company settings fetch');
                     }
                 } catch (error) {
-                    console.error('Failed to load company settings from database:', error);
+                    logger.error('Failed to load company settings from database:', error);
                     // Keep cached values
                 }
 
@@ -463,7 +463,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 }
                 isInitializing.current = false;
             } catch (error) {
-                console.error('Error initializing IndexedDB:', error);
+                logger.error('Error initializing IndexedDB:', error);
                 isInitializing.current = false;
             }
         };
@@ -514,7 +514,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 logger.info('Offline data loaded from cache');
                 return;
             } catch (cacheErr) {
-                console.error('Error loading cached data:', cacheErr);
+                logger.error('Error loading cached data:', cacheErr);
                 throw new Error('OFFLINE_CACHE_ERROR');
             }
         }
@@ -550,7 +550,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 }
             } catch (err) {
                 // deduction_prices table may not exist yet - this is okay
-                console.warn('deduction_prices table not available yet:', err);
+                logger.warn('deduction_prices table not available yet:', err);
             }
 
             clearTimeout(timeoutId);
@@ -590,7 +590,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (settingsRes.error && settingsRes.error.code === 'PGRST116') {
                 logger.warn('No company settings row found, using defaults');
             } else if (settingsRes.error) {
-                console.error('Error fetching company settings:', settingsRes.error);
+                logger.error('Error fetching company settings:', settingsRes.error);
             }
 
             if (companySettings) {
@@ -632,11 +632,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         } catch (err: any) {
             clearTimeout(timeoutId);
-            console.error("Error fetching data:", err);
+            logger.error("Error fetching data:", err);
 
             // Check if error is due to timeout/network issues
             if (err.name === 'AbortError') {
-                console.warn('Data fetch timeout - falling back to cache');
+                logger.warn('Data fetch timeout - falling back to cache');
                 // Try to load from cache as fallback
                 try {
                     const [
@@ -668,11 +668,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     logger.info('Fallback: Loaded data from cache after timeout');
                     return; // Don't throw error, we have fallback data
                 } catch (cacheErr) {
-                    console.error('Fallback cache also failed:', cacheErr);
+                    logger.error('Fallback cache also failed:', cacheErr);
                 }
                 throw new Error('TIMEOUT');
             } else {
-                console.warn('Data fetch failed:', err.message);
+                logger.warn('Data fetch failed:', err.message);
                 // Try cache fallback for network errors too
                 try {
                     const [
@@ -704,7 +704,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     logger.info('Fallback: Loaded data from cache after network error');
                     return; // Don't throw error, we have fallback data
                 } catch (cacheErr) {
-                    console.error('Fallback cache also failed:', cacheErr);
+                    logger.error('Fallback cache also failed:', cacheErr);
                 }
                 throw err;
             }
@@ -759,17 +759,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         // Then refresh data from server
                         await fetchAllData();
                     } catch (err) {
-                        console.warn('Sync or refresh failed:', err);
+                        logger.warn('Sync or refresh failed:', err);
                         // Try refresh anyway
                         try {
                             await fetchAllData();
                         } catch (refreshErr) {
-                            console.warn('Background refresh failed:', refreshErr);
+                            logger.warn('Background refresh failed:', refreshErr);
                         }
                     }
                 }
             } catch (cacheErr) {
-                console.error('Cache loading failed:', cacheErr);
+                logger.error('Cache loading failed:', cacheErr);
                 // CRITICAL FIX: If cache fails and we have offline session, don't try server fetch
                 if (!isOnline || offlineSession) {
                     setError('فشل تحميل البيانات المحفوظة. يرجى تسجيل الدخول مرة أخرى.');
@@ -808,7 +808,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         logger.info('Loaded user profile from server');
                     }
                 } catch (err) {
-                    console.warn('Server profile fetch failed, trying cache:', err);
+                    logger.warn('Server profile fetch failed, trying cache:', err);
                 }
             }
 
@@ -821,7 +821,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         logger.info('Loaded user profile from cache');
                     }
                 } catch (err) {
-                    console.warn('Cache profile fetch failed:', err);
+                    logger.warn('Cache profile fetch failed:', err);
                 }
             }
 
@@ -833,7 +833,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             // Load application data
             loadData(hasCachedData, isOnline, null).catch(err => {
-                console.error('Data loading failed:', err);
+                logger.error('Data loading failed:', err);
             });
 
             // Check for pending offline mutations and notify user if any exist
@@ -852,13 +852,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                             });
                         }
                     } catch (checkError) {
-                        console.warn('Failed to check pending operations on login:', checkError);
+                        logger.warn('Failed to check pending operations on login:', checkError);
                     }
                 }, 2000); // Delay to allow UI to settle
             }
 
         } catch (err) {
-            console.error('Error in loadUserProfileAndData:', err);
+            logger.error('Error in loadUserProfileAndData:', err);
         }
     }, [loadData]);
 
@@ -874,7 +874,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 logger.info('Minimal user data loaded');
             }
         } catch (err) {
-            console.warn('Minimal data loading failed:', err);
+            logger.warn('Minimal data loading failed:', err);
         }
     }, []);
 
@@ -1177,7 +1177,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
                         successfullySyncedIndices.push(index);
                     } catch (err) {
-                        console.error('Failed to sync mutation:', mutation, err);
+                        logger.error('Failed to sync mutation:', mutation, err);
                         // Keep failed mutation in queue for retry
                         logger.error(`Sync failed for ${mutation.type}:`, err);
                     }
@@ -1214,7 +1214,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             try {
                 await updateSyncStatus();
             } catch (statusError) {
-                console.warn('Failed to update sync status after critical error:', statusError);
+                logger.warn('Failed to update sync status after critical error:', statusError);
             }
             throw criticalError; // Re-throw to let caller handle it
         }
@@ -1247,7 +1247,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     });
                 }
             } catch (err) {
-                console.error('Error refreshing data:', err);
+                logger.error('Error refreshing data:', err);
             }
         };
 
@@ -1426,11 +1426,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     // Load user profile and data in background
                     return loadUserProfileAndData(session.user, isOnline, hasCachedData);
                 }).catch(err => {
-                    console.warn('Background session/data loading failed:', err);
+                    logger.warn('Background session/data loading failed:', err);
                     // Try minimal data loading as fallback
                     return loadMinimalData(session.user);
                 }).catch(err => {
-                    console.error('All data loading attempts failed:', err);
+                    logger.error('All data loading attempts failed:', err);
                     // At minimum, we have the user session
                 });
 
@@ -1490,11 +1490,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
                             logger.info('Offline session restored with cached data');
                         } else {
-                            console.error('Offline session exists but no cached user profile');
+                            logger.error('Offline session exists but no cached user profile');
                             await clearOfflineSession();
                         }
                     } catch (err) {
-                        console.error('Error restoring offline session:', err);
+                        logger.error('Error restoring offline session:', err);
                         await clearOfflineSession();
                     }
                 } else {
@@ -1529,7 +1529,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 }
             }
         } catch (error) {
-            console.error('Error loading offline user:', error);
+            logger.error('Error loading offline user:', error);
         }
     }, [loadData]);
 
@@ -1555,10 +1555,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // Always attempt signOut (works online, harmless offline after manual clear)
             const { error } = await supabase.auth.signOut();
             if (error) {
-                console.error("Error signing out from Supabase:", error);
+                logger.error("Error signing out from Supabase:", error);
             }
         } catch (error) {
-            console.error("Error during logout:", error);
+            logger.error("Error during logout:", error);
         }
     }, [clearData]);
 
@@ -1729,7 +1729,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         const { error: productsError } = await supabase.from('shipment_products').insert(shipmentProductsToInsert);
         if (productsError) {
-            console.error("Failed to insert products for shipment:", newShipmentData.id, productsError);
+            logger.error("Failed to insert products for shipment:", newShipmentData.id, productsError);
             // Ideally delete the shipment if product insertion fails to maintain integrity, but for now throwing error.
             throw productsError;
         }
@@ -1851,7 +1851,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         const { error } = await supabase.from('notifications').update({ read: true }).eq('id', notificationId);
         if (error) {
-            console.error("Failed to mark notification as read:", error);
+            logger.error("Failed to mark notification as read:", error);
             setNotifications(originalNotifications);
         }
     }, [notifications, isOnline]);
@@ -1866,7 +1866,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         const { error } = await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
         if (error) {
-            console.error("Failed to mark all notifications as read:", error);
+            logger.error("Failed to mark all notifications as read:", error);
             setNotifications(originalNotifications);
         }
     }, [notifications, isOnline]);
@@ -1874,7 +1874,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const addUser = useCallback(async (userData: Omit<User, 'id'>, password: string): Promise<User | null> => {
         try {
             // Create authentication account
-            console.log('DEBUG: Creating user with company_id:', currentUser?.companyId);
+            logger.info('DEBUG: Creating user with company_id:', currentUser?.companyId);
             const { data, error } = await supabase.auth.signUp({
                 email: `${userData.username}@temp.placeholder`, // Placeholder email format
                 password: password,
@@ -1889,7 +1889,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
 
             if (error) {
-                console.error('Error creating auth user:', error);
+                logger.error('Error creating auth user:', error);
                 throw error;
             }
 
@@ -1910,7 +1910,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             return newUser;
         } catch (err) {
-            console.error('addUser failed:', err);
+            logger.error('addUser failed:', err);
             return null;
         }
     }, [fetchAllData]);
@@ -2054,6 +2054,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loading, error, isOnline, isSyncing, isProfileLoaded, setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible,
         fetchAllData, syncOfflineMutations
     ]);
+
+    // Listen for background sync events from service worker
+    useEffect(() => {
+        const handleBackgroundSync = (event: CustomEvent) => {
+            logger.info('Background sync event received, triggering sync');
+            syncOfflineMutations().catch(err => {
+                logger.error('Background sync failed:', err);
+            });
+        };
+
+        window.addEventListener('background-sync-triggered', handleBackgroundSync as EventListener);
+
+        return () => {
+            window.removeEventListener('background-sync-triggered', handleBackgroundSync as EventListener);
+        };
+    }, [syncOfflineMutations]);
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

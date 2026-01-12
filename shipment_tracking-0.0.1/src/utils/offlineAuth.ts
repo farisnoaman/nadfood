@@ -109,7 +109,7 @@ export const storeOfflineCredentials = async (
     
     logger.info('Offline credentials stored successfully');
   } catch (error) {
-    console.error('Error storing offline credentials:', error);
+    logger.error('Error storing offline credentials:', error);
     throw error;
   }
 };
@@ -168,7 +168,7 @@ export const validateOfflineCredentials = async (
       userProfile: userProfile || undefined,
     };
   } catch (error) {
-    console.error('Error validating offline credentials:', error);
+    logger.error('Error validating offline credentials:', error);
     return { valid: false };
   }
 };
@@ -196,7 +196,7 @@ export const createOfflineSession = async (userId: string, email: string): Promi
     await saveToStore(AUTH_STORE, session);
     logger.info('Offline session created successfully');
   } catch (error) {
-    console.error('Error creating offline session:', error);
+    logger.error('Error creating offline session:', error);
     throw error;
   }
 };
@@ -222,7 +222,7 @@ export const getOfflineSession = async (): Promise<OfflineSession | null> => {
     
     return session.isActive ? session : null;
   } catch (error) {
-    console.error('Error getting offline session:', error);
+    logger.error('Error getting offline session:', error);
     return null;
   }
 };
@@ -235,7 +235,7 @@ export const getCachedUserProfile = async (): Promise<CachedUserProfile | null> 
     await initDB();
     return await getFromStore<CachedUserProfile>(AUTH_STORE, AUTH_KEYS.USER_PROFILE);
   } catch (error) {
-    console.error('Error getting cached user profile:', error);
+    logger.error('Error getting cached user profile:', error);
     return null;
   }
 };
@@ -256,7 +256,7 @@ export const clearOfflineSession = async (): Promise<void> => {
     
     logger.info('Offline session cleared');
   } catch (error) {
-    console.error('Error clearing offline session:', error);
+    logger.error('Error clearing offline session:', error);
   }
 };
 
@@ -274,7 +274,7 @@ export const clearOfflineAuth = async (): Promise<void> => {
     
     logger.info('Offline auth data cleared');
   } catch (error) {
-    console.error('Error clearing offline auth:', error);
+    logger.error('Error clearing offline auth:', error);
   }
 };
 
@@ -287,7 +287,7 @@ export const hasOfflineCredentials = async (): Promise<boolean> => {
     const credentials = await getFromStore<OfflineCredentials>(AUTH_STORE, AUTH_KEYS.CREDENTIALS);
     return credentials !== null;
   } catch (error) {
-    console.error('Error checking offline credentials:', error);
+    logger.error('Error checking offline credentials:', error);
     return false;
   }
 };
@@ -299,7 +299,7 @@ export const getLastOnlineLogin = async (): Promise<string | null> => {
   try {
     return await getMetadata<string | null>(AUTH_KEYS.LAST_ONLINE_LOGIN, null);
   } catch (error) {
-    console.error('Error getting last online login:', error);
+    logger.error('Error getting last online login:', error);
     return null;
   }
 };
@@ -322,7 +322,7 @@ export const shouldReauthenticateOnline = async (): Promise<boolean> => {
 
         return daysSinceLastLogin > 7;
     } catch (error) {
-        console.error('Error checking reauth requirement:', error);
+        logger.error('Error checking reauth requirement:', error);
         return false;
     }
 };

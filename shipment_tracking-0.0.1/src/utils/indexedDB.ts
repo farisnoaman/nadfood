@@ -4,6 +4,7 @@
  */
 
 import { encryptData, decryptData } from './encryption';
+import logger from './logger';
 
 const DB_NAME = 'ShipmentTrackerDB';
 const DB_VERSION = 2;
@@ -25,7 +26,7 @@ export const initDB = (): Promise<IDBDatabase> => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => {
-      console.error('IndexedDB initialization failed:', request.error);
+      logger.error('IndexedDB initialization failed:', request.error);
       reject(request.error);
     };
 
@@ -34,17 +35,17 @@ export const initDB = (): Promise<IDBDatabase> => {
 
       // Listen for database close events and reset instance
       dbInstance.onclose = () => {
-        console.warn('IndexedDB connection closed unexpectedly, resetting instance');
+        logger.warn('IndexedDB connection closed unexpectedly, resetting instance');
         dbInstance = null;
       };
 
       dbInstance.onversionchange = () => {
-        console.warn('IndexedDB version change detected, closing connection');
+        logger.warn('IndexedDB version change detected, closing connection');
         dbInstance?.close();
         dbInstance = null;
       };
 
-      console.log('IndexedDB initialized successfully');
+      logger.info('IndexedDB initialized successfully');
       resolve(dbInstance);
     };
 
@@ -102,7 +103,7 @@ export const initDB = (): Promise<IDBDatabase> => {
         db.createObjectStore(STORES.METADATA, { keyPath: 'key' });
       }
 
-      console.log('IndexedDB object stores created');
+      logger.info('IndexedDB object stores created');
     };
   });
 };
@@ -151,7 +152,7 @@ export const getAllFromStore = async <T>(storeName: string, timeoutMs: number = 
       };
     });
   } catch (error) {
-    console.error(`Error getting all from ${storeName}:`, error);
+    logger.error(`Error getting all from ${storeName}:`, error);
     throw error;
   }
 };
@@ -190,7 +191,7 @@ export const getFromStore = async <T>(storeName: string, key: string | number, t
       };
     });
   } catch (error) {
-    console.error(`Error getting from ${storeName}:`, error);
+    logger.error(`Error getting from ${storeName}:`, error);
     throw error;
   }
 };
@@ -210,7 +211,7 @@ export const saveToStore = async (storeName: string, data: any): Promise<void> =
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error(`Error saving to ${storeName}:`, error);
+    logger.error(`Error saving to ${storeName}:`, error);
     throw error;
   }
 };
@@ -230,7 +231,7 @@ export const deleteFromStore = async (storeName: string, key: string | number): 
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error(`Error deleting from ${storeName}:`, error);
+    logger.error(`Error deleting from ${storeName}:`, error);
     throw error;
   }
 };
@@ -250,7 +251,7 @@ export const clearStore = async (storeName: string): Promise<void> => {
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error(`Error clearing ${storeName}:`, error);
+    logger.error(`Error clearing ${storeName}:`, error);
     throw error;
   }
 };
@@ -283,13 +284,13 @@ export const saveAllToStore = async (storeName: string, data: any[]): Promise<vo
           }
         };
         request.onerror = () => {
-          console.error('Error saving item to store:', request.error);
+          logger.error('Error saving item to store:', request.error);
           reject(request.error);
         };
       });
     });
   } catch (error) {
-    console.error(`Error saving all to ${storeName}:`, error);
+    logger.error(`Error saving all to ${storeName}:`, error);
     throw error;
   }
 };
@@ -318,13 +319,13 @@ export const getMutationQueue = async (): Promise<any[]> => {
             return await decryptData(encryptedMutation);
           } else if (typeof encryptedMutation === 'object' && encryptedMutation !== null) {
             // Handle case where mutation is stored as object
-            console.warn('Found mutation stored as object instead of string, using as-is');
+            logger.warn('Found mutation stored as object instead of string, using as-is');
             return encryptedMutation;
           }
           // Invalid type - skip
           return null;
         } catch (error) {
-          console.error('Error decrypting mutation, skipping:', error);
+          logger.error('Error decrypting mutation, skipping:', error);
           return null; // Skip corrupted data
         }
       })
@@ -333,7 +334,7 @@ export const getMutationQueue = async (): Promise<any[]> => {
     // Filter out null values (corrupted data)
     return decryptedMutations.filter(mutation => mutation !== null);
   } catch (error) {
-    console.error('Error getting mutation queue:', error);
+    logger.error('Error getting mutation queue:', error);
     return []; // Return empty array on failure
   }
 };
@@ -345,7 +346,7 @@ export const addToMutationQueue = async (mutation: any): Promise<void> => {
     try {
       encryptedMutation = await encryptData(mutation);
     } catch (encryptError) {
-      console.warn('Encryption failed for mutation, storing unencrypted:', encryptError);
+      logger.warn('Encryption failed for mutation, storing unencrypted:', encryptError);
       encryptedMutation = JSON.stringify({ unencrypted: true, data: mutation });
     }
 
@@ -355,25 +356,42 @@ export const addToMutationQueue = async (mutation: any): Promise<void> => {
       const store = transaction.objectStore(STORES.MUTATION_QUEUE);
       const request = store.add(encryptedMutation);
 
-      request.onsuccess = () => {
-        // Trigger sync status update when mutation is added
-        try {
-          // Import syncQueue to update status (avoid circular import)
-          import('./syncQueue').then(({ updateSyncStatus }) => {
-            if (updateSyncStatus) updateSyncStatus();
-          }).catch(err => console.warn('Could not update sync status:', err));
-        } catch (statusError) {
-          console.warn('Could not update sync status after adding mutation:', statusError);
-        }
-        resolve();
-      };
+       request.onsuccess = () => {
+         // Trigger sync status update when mutation is added
+         try {
+           // Import syncQueue to update status (avoid circular import)
+           import('./syncQueue').then(({ updateSyncStatus }) => {
+             if (updateSyncStatus) updateSyncStatus();
+           }).catch(err => logger.warn('Could not update sync status:', err));
+         } catch (statusError) {
+           logger.warn('Could not update sync status after adding mutation:', statusError);
+         }
+
+         // Register background sync if available and user is offline
+         if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+           navigator.serviceWorker.ready.then((registration) => {
+             if (!navigator.onLine) {
+               // Only register if offline to avoid unnecessary sync attempts
+               registration.sync.register('background-sync')
+                 .then(() => {
+                   logger.info('Background sync registered for offline mutation');
+                 })
+                 .catch((error) => {
+                   logger.warn('Failed to register background sync:', error);
+                 });
+             }
+           }).catch(err => logger.warn('Service worker not ready for background sync:', err));
+         }
+
+         resolve();
+       };
       request.onerror = () => {
-        console.error('Error adding to mutation queue:', request.error);
+        logger.error('Error adding to mutation queue:', request.error);
         reject(request.error);
       };
     });
   } catch (error) {
-    console.error('Error in addToMutationQueue:', error);
+    logger.error('Error in addToMutationQueue:', error);
     // Don't throw - allow app to continue
   }
 };
@@ -382,7 +400,7 @@ export const clearMutationQueue = async (): Promise<void> => {
   try {
     await clearStore(STORES.MUTATION_QUEUE);
   } catch (error) {
-    console.error('Error clearing mutation queue:', error);
+    logger.error('Error clearing mutation queue:', error);
   }
 };
 
@@ -402,9 +420,9 @@ export const setMutationQueue = async (queue: any[]): Promise<void> => {
         try {
           import('./syncQueue').then(({ updateSyncStatus }) => {
             if (updateSyncStatus) updateSyncStatus();
-          }).catch(err => console.warn('Could not update sync status:', err));
+          }).catch(err => logger.warn('Could not update sync status:', err));
         } catch (statusError) {
-          console.warn('Could not update sync status after setting queue:', statusError);
+          logger.warn('Could not update sync status after setting queue:', statusError);
         }
       };
 
@@ -428,7 +446,7 @@ export const setMutationQueue = async (queue: any[]): Promise<void> => {
         };
 
         request.onerror = () => {
-          console.error('Error adding mutation to queue:', request.error);
+          logger.error('Error adding mutation to queue:', request.error);
           completed++;
           if (completed === total) {
             resolve();
@@ -437,7 +455,7 @@ export const setMutationQueue = async (queue: any[]): Promise<void> => {
       });
     });
   } catch (error) {
-    console.error('Error in setMutationQueue:', error);
+    logger.error('Error in setMutationQueue:', error);
     throw error;
   }
 };
@@ -450,7 +468,7 @@ export const getSetting = async <T>(key: string, defaultValue: T): Promise<T> =>
     const result = await getFromStore<{ key: string; value: T }>(STORES.SETTINGS, key);
     return result ? result.value : defaultValue;
   } catch (error) {
-    console.error(`Error getting setting ${key}:`, error);
+    logger.error(`Error getting setting ${key}:`, error);
     return defaultValue;
   }
 };
@@ -459,7 +477,7 @@ export const setSetting = async <T>(key: string, value: T): Promise<void> => {
   try {
     await saveToStore(STORES.SETTINGS, { key, value });
   } catch (error) {
-    console.error(`Error setting setting ${key}:`, error);
+    logger.error(`Error setting setting ${key}:`, error);
   }
 };
 
@@ -471,7 +489,7 @@ export const getMetadata = async <T>(key: string, defaultValue: T): Promise<T> =
     const result = await getFromStore<{ key: string; value: T }>(STORES.METADATA, key);
     return result ? result.value : defaultValue;
   } catch (error) {
-    console.error(`Error getting metadata ${key}:`, error);
+    logger.error(`Error getting metadata ${key}:`, error);
     return defaultValue;
   }
 };
@@ -480,7 +498,7 @@ export const setMetadata = async <T>(key: string, value: T): Promise<void> => {
   try {
     await saveToStore(STORES.METADATA, { key, value });
   } catch (error) {
-    console.error(`Error setting metadata ${key}:`, error);
+    logger.error(`Error setting metadata ${key}:`, error);
   }
 };
 
@@ -496,9 +514,9 @@ export const clearAllData = async (): Promise<void> => {
       storeNames.map(storeName => clearStore(storeName))
     );
 
-    console.log('All IndexedDB data cleared');
+    logger.info('All IndexedDB data cleared');
   } catch (error) {
-    console.error('Error clearing all data:', error);
+    logger.error('Error clearing all data:', error);
   }
 };
 
@@ -507,12 +525,12 @@ export const clearAllData = async (): Promise<void> => {
  */
 export const migrateFromLocalStorage = async (): Promise<void> => {
   try {
-    console.log('Starting migration from localStorage to IndexedDB...');
+    logger.info('Starting migration from localStorage to IndexedDB...');
 
     // Check if migration has already been done
     const migrated = await getMetadata<boolean>('migrated_from_localstorage', false);
     if (migrated) {
-      console.log('Migration already completed');
+      logger.info('Migration already completed');
       return;
     }
 
@@ -539,10 +557,10 @@ export const migrateFromLocalStorage = async (): Promise<void> => {
           } else {
             await saveAllToStore(storeName, parsed);
           }
-          console.log(`Migrated ${storeName} from localStorage`);
+          logger.info(`Migrated ${storeName} from localStorage`);
         }
       } catch (error) {
-        console.error(`Error migrating ${storeName}:`, error);
+        logger.error(`Error migrating ${storeName}:`, error);
       }
     }
 
@@ -563,10 +581,10 @@ export const migrateFromLocalStorage = async (): Promise<void> => {
         const value = localStorage.getItem(setting);
         if (value !== null) {
           await setSetting(setting, setting.includes('Print') || setting.includes('Widget') ? JSON.parse(value) : value);
-          console.log(`Migrated setting ${setting}`);
+          logger.info(`Migrated setting ${setting}`);
         }
       } catch (error) {
-        console.error(`Error migrating setting ${setting}:`, error);
+        logger.error(`Error migrating setting ${setting}:`, error);
       }
     }
 
@@ -574,9 +592,9 @@ export const migrateFromLocalStorage = async (): Promise<void> => {
     await setMetadata('migrated_from_localstorage', true);
     await setMetadata('migration_timestamp', new Date().toISOString());
 
-    console.log('Migration from localStorage to IndexedDB completed successfully');
+    logger.info('Migration from localStorage to IndexedDB completed successfully');
   } catch (error) {
-    console.error('Error during migration:', error);
+    logger.error('Error during migration:', error);
   }
 };
 
@@ -603,7 +621,7 @@ export const cleanupOrphanedMutations = async (supabase: any): Promise<number> =
             .single();
 
           if (error && error.code === 'PGRST116') { // Not found
-            console.warn(`Removing orphaned mutation for non-existent shipment ${shipmentId}`);
+            logger.warn(`Removing orphaned mutation for non-existent shipment ${shipmentId}`);
             orphanedCount++;
             continue; // Skip this mutation
           }
@@ -612,7 +630,7 @@ export const cleanupOrphanedMutations = async (supabase: any): Promise<number> =
         // Keep valid mutations
         validMutations.push(mutation);
       } catch (error) {
-        console.error('Error checking mutation validity:', error);
+        logger.error('Error checking mutation validity:', error);
         // Keep mutations we can't validate
         validMutations.push(mutation);
       }
@@ -620,12 +638,12 @@ export const cleanupOrphanedMutations = async (supabase: any): Promise<number> =
 
     if (orphanedCount > 0) {
       await setMutationQueue(validMutations);
-      console.log(`Cleaned up ${orphanedCount} orphaned mutations`);
+      logger.info(`Cleaned up ${orphanedCount} orphaned mutations`);
     }
 
     return orphanedCount;
   } catch (error) {
-    console.error('Error cleaning up orphaned mutations:', error);
+    logger.error('Error cleaning up orphaned mutations:', error);
     return 0;
   }
 };
@@ -650,12 +668,12 @@ export const cleanupOldMutations = async (maxAgeHours: number = 168): Promise<nu
 
     if (removedCount > 0) {
       await setMutationQueue(validMutations);
-      console.log(`Cleaned up ${removedCount} old mutations older than ${maxAgeHours} hours`);
+      logger.info(`Cleaned up ${removedCount} old mutations older than ${maxAgeHours} hours`);
     }
 
     return removedCount;
   } catch (error) {
-    console.error('Error cleaning up old mutations:', error);
+    logger.error('Error cleaning up old mutations:', error);
     return 0;
   }
 };

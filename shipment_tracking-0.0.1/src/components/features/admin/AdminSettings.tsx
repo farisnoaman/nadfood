@@ -80,7 +80,7 @@ const AdminSettings: React.FC = () => {
       setLastSync(new Date());
       return settingsMap;
     } catch (error: any) {
-      console.error('Error fetching company settings:', error);
+      logger.error('Error fetching company settings:', error);
 
       if (showError) {
         if (error.message?.includes('permission') || error.message?.includes('policy')) {
@@ -116,7 +116,7 @@ const AdminSettings: React.FC = () => {
 
       logger.info('AppContext updated from company settings');
     } catch (error) {
-      console.error('Failed to update AppContext from database:', error);
+      logger.error('Failed to update AppContext from database:', error);
     }
   }, [currentUser, setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible]);
 
@@ -147,7 +147,7 @@ const AdminSettings: React.FC = () => {
         logger.info('AdminSettings: Initialization completed successfully');
       })
       .catch((error) => {
-        console.error('AdminSettings: Initialization failed:', error);
+        logger.error('AdminSettings: Initialization failed:', error);
         // Error will be caught by ErrorBoundary
         throw error;
       });
@@ -237,7 +237,7 @@ const AdminSettings: React.FC = () => {
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
+        logger.error('Upload error:', uploadError);
         alert('فشل رفع الشعار: ' + uploadError.message);
         return;
       }
@@ -248,14 +248,14 @@ const AdminSettings: React.FC = () => {
         .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
-      console.log('Logo uploaded successfully:', publicUrl);
+      logger.info('Logo uploaded successfully:', publicUrl);
 
       // Update temp details with new logo URL
       setTempDetails(prev => ({ ...prev, logo: publicUrl }));
       alert('تم رفع الشعار بنجاح!');
 
     } catch (error) {
-      console.error('Error uploading logo:', error);
+      logger.error('Error uploading logo:', error);
       alert('حدث خطأ أثناء رفع الشعار. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsUploadingLogo(false);
@@ -302,7 +302,7 @@ const AdminSettings: React.FC = () => {
 
       alert('تم حفظ جميع الإعدادات بنجاح!');
     } catch (error) {
-      console.error('Error saving all settings:', error);
+      logger.error('Error saving all settings:', error);
       alert('حدث خطأ في حفظ الإعدادات. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsLoading(false);
@@ -320,7 +320,7 @@ const AdminSettings: React.FC = () => {
         // Save to database
         await SupabaseService.saveSetting(id, checked.toString());
       } catch (error) {
-        console.error('Error saving toggle setting:', id, error);
+        logger.error('Error saving toggle setting:', id, error);
         // Revert local state on error
         onToggle(!checked);
         alert('حدث خطأ في حفظ الإعداد. يرجى المحاولة مرة أخرى.');

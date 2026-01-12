@@ -1,10 +1,23 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { Shipment, Driver, User } from '../../types';
+import { Shipment, Driver, User, Installment, InstallmentPayment } from '../../types';
 import { sanitizeFilename } from './sanitization';
 import PrintableShipment from '../components/common/components/PrintableShipment';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import logger from './logger';
+// Lazy load PDF dependencies to reduce initial bundle size
+let jsPDF: any = null;
+let html2canvas: any = null;
+
+const loadPDFDependencies = async () => {
+  if (!jsPDF || !html2canvas) {
+    const [pdfModule, canvasModule] = await Promise.all([
+      import('jspdf'),
+      import('html2canvas')
+    ]);
+    jsPDF = pdfModule.default;
+    html2canvas = canvasModule.default;
+  }
+};
 import { TIMEOUTS, PDF, MESSAGES } from './constants';
 
 interface CompanyPrintDetails {
@@ -36,12 +49,12 @@ const getBase64FromUrl = async (url: string): Promise<string> => {
         resolve(dataURL);
       } catch (error) {
         // This usually happens if CORS headers are missing (tainted canvas)
-        console.warn('Canvas taint check failed:', error);
+        logger.warn('Canvas taint check failed:', error);
         resolve(url); // Fallback to URL if canvas fails, hoping html2canvas might have better luck or just show broken
       }
     };
     img.onerror = (error) => {
-      console.warn('Image load failed:', error);
+      logger.warn('Image load failed:', error);
       resolve(url); // Fallback to URL
     };
   });
@@ -66,6 +79,9 @@ const getBase64FromUrl = async (url: string): Promise<string> => {
  * @param currentUser - The user who is printing the report, for auditing purposes.
  */
 export const printShipmentDetails = async (shipment: Shipment, driver: Driver | undefined, companyDetails: CompanyPrintDetails, currentUser: User, regions: any[]): Promise<void> => {
+  // Lazy load PDF dependencies to reduce initial bundle size
+  await loadPDFDependencies();
+
   let printContainer: HTMLDivElement | null = null;
   let root: ReactDOM.Root | null = null;
 
@@ -79,7 +95,7 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
         document.body.removeChild(printContainer);
       }
     } catch (err) {
-      console.error('Cleanup error:', err);
+      logger.error('Cleanup error:', err);
     }
   };
 
@@ -90,7 +106,7 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
       try {
         logoBase64 = await getBase64FromUrl(companyDetails.companyLogo);
       } catch (err) {
-        console.warn('Failed to load logo:', err);
+        logger.warn('Failed to load logo:', err);
       }
     }
 
@@ -192,7 +208,7 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
 
     // Provide user-friendly error messages using centralized constants
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    console.error('PDF generation failed:', err);
+    logger.error('PDF generation failed:', err);
 
     if (errorMessage.includes('timeout')) {
       alert(MESSAGES.ERROR.PDF_TIMEOUT);
@@ -210,13 +226,16 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
  * Generates and triggers the download of a PDF report for an installment.
  */
 export const printInstallmentDetails = async (
-  installment: any,
-  payments: any[],
-  shipment: any | undefined,
+  installment: Installment,
+  payments: InstallmentPayment[],
+  shipment: Shipment | undefined,
   driverName: string,
   companyDetails: CompanyPrintDetails,
   currentUser: User
 ): Promise<void> => {
+  // Lazy load PDF dependencies to reduce initial bundle size
+  await loadPDFDependencies();
+
   // Dynamically import the component to avoid circular dependencies
   const PrintableInstallment = (await import('../components/common/components/PrintableInstallment')).default;
 
@@ -230,7 +249,7 @@ export const printInstallmentDetails = async (
         document.body.removeChild(printContainer);
       }
     } catch (err) {
-      console.error('Cleanup error:', err);
+      logger.error('Cleanup error:', err);
     }
   };
 
@@ -241,7 +260,7 @@ export const printInstallmentDetails = async (
       try {
         logoBase64 = await getBase64FromUrl(companyDetails.companyLogo);
       } catch (err) {
-        console.warn('Failed to load logo:', err);
+        logger.warn('Failed to load logo:', err);
       }
     }
 
@@ -332,7 +351,7 @@ export const printInstallmentDetails = async (
   } catch (err) {
     cleanup();
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Installment PDF generation failed:', err);
+    logger.error('Installment PDF generation failed:', err);
     alert(`فشل إنشاء ملف PDF: ${errorMessage}`);
     throw err;
   }

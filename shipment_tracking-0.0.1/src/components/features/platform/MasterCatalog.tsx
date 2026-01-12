@@ -26,7 +26,7 @@ const MasterCatalog: React.FC = () => {
             if (error) throw error;
             setItems(data || []);
         } catch (error) {
-            console.error('Error fetching catalog:', error);
+            logger.error('Error fetching catalog:', error);
             toast.error('فشل تحميل البيانات');
         } finally {
             setLoading(false);
@@ -54,7 +54,7 @@ const MasterCatalog: React.FC = () => {
             setNewItem({ name: '', unit_type: 'carton', default_price: 0, weight_kg: 1 });
             fetchItems();
         } catch (error: any) {
-            console.error('Error adding item:', error);
+            logger.error('Error adding item:', error);
             toast.error('فشل الإضافة: ' + error.message);
         }
     };

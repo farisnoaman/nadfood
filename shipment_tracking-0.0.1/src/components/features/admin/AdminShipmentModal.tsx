@@ -366,7 +366,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
+        logger.error('Upload error:', uploadError);
         alert('فشل رفع المرفق: ' + uploadError.message);
         return;
       }
@@ -377,14 +377,14 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
         .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
-      console.log('Attachment uploaded successfully:', publicUrl);
+      logger.info('Attachment uploaded successfully:', publicUrl);
 
       // Update shipment with attachment URL
       setCurrentShipment(prev => ({ ...prev, attachmentUrl: publicUrl }));
       alert('تم رفع المرفق بنجاح!');
 
     } catch (error) {
-      console.error('Error uploading attachment:', error);
+      logger.error('Error uploading attachment:', error);
       alert('حدث خطأ أثناء رفع المرفق. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsUploadingAttachment(false);
@@ -403,7 +403,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
       await addNotification({ message: `تم حفظ الشحنة (${draftShipment.salesOrder}) كمسودة.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ADMIN] });
       onClose();
     } catch (err) {
-      console.error('Save as draft failed:', err);
+      logger.error('Save as draft failed:', err);
 
       // Check if it's a network/CORS error and offer retry
       if (err.message && (err.message.includes('NetworkError') || err.message.includes('CORS') || err.message.includes('fetch'))) {
@@ -456,7 +456,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
       await addNotification({ message: `تم اعتماد الشحنة (${finalShipment.salesOrder}) بشكل نهائي.`, category: NotificationCategory.USER_ACTION, targetRoles: [Role.ACCOUNTANT] });
       onClose();
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       alert("فشل اعتماد الشحنة");
     } finally {
       setIsSubmitting(false);
@@ -499,7 +499,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
       alert('تم ترحيل الشحنة إلى التسديدات بنجاح');
       onClose();
     } catch (error: any) {
-      console.error('Failed to move to installments:', error);
+      logger.error('Failed to move to installments:', error);
       if (error.message === 'Installment already exists for this shipment') {
         await addNotification({
           message: `فشل في ترحيل الشحنة (${currentShipment.salesOrder}) - يوجد تسديدات مسبق لها`,
@@ -536,7 +536,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
 
       onClose();
     } catch (err) {
-      console.error("Failed to return to fleet:", err);
+      logger.error("Failed to return to fleet:", err);
       alert("فشل إرجاع الشحنة إلى مسؤول الحركة.");
     } finally {
       setIsSubmitting(false);

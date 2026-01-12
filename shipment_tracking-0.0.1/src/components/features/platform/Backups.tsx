@@ -22,7 +22,7 @@ const PlatformBackups: React.FC = () => {
             if (error) throw error;
             setBackups(data || []);
         } catch (error) {
-            console.error('Error fetching backups:', error);
+            logger.error('Error fetching backups:', error);
             toast.error('فشل تحميل النسخ الاحتياطية');
         } finally {
             setLoading(false);
@@ -42,7 +42,7 @@ const PlatformBackups: React.FC = () => {
                 toast.success('بدء التحميل...');
             }
         } catch (error) {
-            console.error('Download failed:', error);
+            logger.error('Download failed:', error);
             toast.error('فشل تحميل الملف');
         } finally {
             setDownloading(null);
