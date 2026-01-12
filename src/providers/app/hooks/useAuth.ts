@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { User, Role, NotificationCategory } from '../types';
+import { User, Role, NotificationCategory, Product } from '../types';
 import { supabase } from '../../utils/supabaseClient';
 import type { Session } from '@supabase/supabase-js';
 import * as IndexedDB from '../../utils/indexedDB';

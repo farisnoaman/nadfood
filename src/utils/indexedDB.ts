@@ -16,7 +16,7 @@ let dbInstance: IDBDatabase | null = null;
 /**
  * Initialize IndexedDB with all required object stores
  */
-export const initDB = (): Promise<IDBDatabase> => {
+export const initDB = (retryCount = 0): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     if (dbInstance) {
       resolve(dbInstance);
@@ -26,8 +26,37 @@ export const initDB = (): Promise<IDBDatabase> => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => {
-      logger.error('IndexedDB initialization failed:', request.error);
-      reject(request.error);
+      const errorMsg = request.error?.message || 'Unknown error';
+      logger.error('IndexedDB initialization failed:', {
+        error: request.error,
+        message: errorMsg,
+        retryCount
+      });
+
+      // If first attempt failed, try deleting and recreating the database
+      if (retryCount === 0) {
+        logger.warn('Attempting to recover by deleting corrupted database...');
+        const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+
+        deleteRequest.onsuccess = () => {
+          logger.info('Database deleted, retrying initialization...');
+          // Retry initialization after deletion
+          initDB(1).then(resolve).catch(reject);
+        };
+
+        deleteRequest.onerror = () => {
+          logger.error('Failed to delete database:', deleteRequest.error);
+          reject(new Error(`IndexedDB init failed: ${errorMsg}. Recovery failed: ${deleteRequest.error?.message}`));
+        };
+
+        deleteRequest.onblocked = () => {
+          logger.error('Database deletion blocked - please close other tabs');
+          reject(new Error('Database is blocked by other connections. Please close other tabs and reload.'));
+        };
+      } else {
+        // Already retried once, give up
+        reject(new Error(`IndexedDB initialization failed after retry: ${errorMsg}`));
+      }
     };
 
     request.onsuccess = () => {
@@ -356,35 +385,35 @@ export const addToMutationQueue = async (mutation: any): Promise<void> => {
       const store = transaction.objectStore(STORES.MUTATION_QUEUE);
       const request = store.add(encryptedMutation);
 
-       request.onsuccess = () => {
-         // Trigger sync status update when mutation is added
-         try {
-           // Import syncQueue to update status (avoid circular import)
-           import('./syncQueue').then(({ updateSyncStatus }) => {
-             if (updateSyncStatus) updateSyncStatus();
-           }).catch(err => logger.warn('Could not update sync status:', err));
-         } catch (statusError) {
-           logger.warn('Could not update sync status after adding mutation:', statusError);
-         }
+      request.onsuccess = () => {
+        // Trigger sync status update when mutation is added
+        try {
+          // Import syncQueue to update status (avoid circular import)
+          import('./syncQueue').then(({ updateSyncStatus }) => {
+            if (updateSyncStatus) updateSyncStatus();
+          }).catch(err => logger.warn('Could not update sync status:', err));
+        } catch (statusError) {
+          logger.warn('Could not update sync status after adding mutation:', statusError);
+        }
 
-         // Register background sync if available and user is offline
-         if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
-           navigator.serviceWorker.ready.then((registration) => {
-             if (!navigator.onLine) {
-               // Only register if offline to avoid unnecessary sync attempts
-               registration.sync.register('background-sync')
-                 .then(() => {
-                   logger.info('Background sync registered for offline mutation');
-                 })
-                 .catch((error) => {
-                   logger.warn('Failed to register background sync:', error);
-                 });
-             }
-           }).catch(err => logger.warn('Service worker not ready for background sync:', err));
-         }
+        // Register background sync if available and user is offline
+        if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+          navigator.serviceWorker.ready.then((registration) => {
+            if (!navigator.onLine) {
+              // Only register if offline to avoid unnecessary sync attempts
+              registration.sync.register('background-sync')
+                .then(() => {
+                  logger.info('Background sync registered for offline mutation');
+                })
+                .catch((error) => {
+                  logger.warn('Failed to register background sync:', error);
+                });
+            }
+          }).catch(err => logger.warn('Service worker not ready for background sync:', err));
+        }
 
-         resolve();
-       };
+        resolve();
+      };
       request.onerror = () => {
         logger.error('Error adding to mutation queue:', request.error);
         reject(request.error);
@@ -678,5 +707,9 @@ export const cleanupOldMutations = async (maxAgeHours: number = 168): Promise<nu
   }
 };
 
-// Initialize DB on module load
-initDB().catch(console.error);
+// Initialize DB on module load with error handling
+initDB().catch((error) => {
+  logger.error('Failed to initialize IndexedDB on module load:', error);
+  // Don't throw - allow the app to load and retry when needed
+  // The initDB function will attempt recovery on next call
+});
