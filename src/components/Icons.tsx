@@ -7,8 +7,9 @@ import {
     Package, Bell, Save, AlertTriangle, ChevronsRightLeft, Undo2, FileText, UserPlus,
     FileDown, CircleCheck, CircleX, Grid, List, Settings, ArrowRight, ArrowLeft, Printer,
     ArrowUp, ArrowDown, Share, BarChart3, WifiOff, RefreshCw, Wifi, CheckCircle, Info,
-    Eye, EyeOff, DollarSign, LayoutDashboard, Building, CreditCard, Database, ShieldCheck, Menu, Loader, ExternalLink
+    Eye, EyeOff, DollarSign, LayoutDashboard, Building, CreditCard, Database, ShieldCheck, Menu, Loader, ExternalLink, AlertCircle
 } from 'lucide-react';
+import logger from '../utils/logger';
 
 // Type guard to ensure all icons are valid components
 const validateIcon = (icon: React.ComponentType<{ className?: string }> | undefined, name: string) => {
@@ -52,6 +53,7 @@ export const Icons = {
     Bell: validateIcon(Bell, 'Bell'),
     Save: validateIcon(Save, 'Save'),
     AlertTriangle: validateIcon(AlertTriangle, 'AlertTriangle'),
+    AlertCircle: validateIcon(AlertCircle, 'AlertCircle'),
     ChevronsRightLeft: validateIcon(ChevronsRightLeft, 'ChevronsRightLeft'),
     Undo2: validateIcon(Undo2, 'Undo2'),
     FileText: validateIcon(FileText, 'FileText'),

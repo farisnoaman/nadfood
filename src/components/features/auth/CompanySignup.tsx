@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../utils/supabaseClient';
 import { Icons } from '../../../components/Icons';
+import logger from '../../../utils/logger';
 
 interface CompanyData {
   companyName: string;
@@ -22,12 +23,22 @@ interface FormData {
   confirmPassword: string;
 }
 
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  max_users: number | null;
+  max_drivers: number | null;
+  price_monthly: number;
+}
+
 const CompanySignup: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState('');
+
   const [companyData, setCompanyData] = useState<FormData>({
     companyName: '',
     slug: '',
@@ -37,14 +48,28 @@ const CompanySignup: React.FC = () => {
     confirmPassword: '',
   });
 
-  const plans = [
-    { id: 'free', name: 'مجاني', description: 'حتى 3 مستخدمين، 50 شحنة شهرياً', price: '0$' },
-    { id: 'starter', name: 'بداية', description: 'حتى 10 مستخدمين، 500 شحنة شهرياً', price: '29$' },
-    { id: 'professional', name: 'احترافي', description: 'حتى 50 مستخدم، 5000 شحنة شهرياً', price: '99$' },
-    { id: 'enterprise', name: 'مؤسسة', description: 'مستخدمون غير محدودين، شحنات غير محدودة', price: '299$' },
-  ];
+  // Fetch subscription plans from database
+  useEffect(() => {
+    fetchPlans();
+  }, []);
 
-  const [selectedPlan, setSelectedPlan] = useState('starter');
+  const fetchPlans = async () => {
+    try {
+      const { data, error } = await supabase.from('subscription_plans' as any).select('*');
+      if (error) throw error;
+
+      const plansData = (data || []) as SubscriptionPlan[];
+      setPlans(plansData);
+
+      // Set default plan to the first one (usually Free/cheapest)
+      if (plansData.length > 0) {
+        setSelectedPlan(plansData[1]?.id || plansData[0].id); // Default to second plan (starter) or first if only one exists
+      }
+    } catch (err) {
+      logger.error('Error fetching plans:', err);
+      setError('فشل تحميل باقات الاشتراك. يرجى المحاولة لاحقاً.');
+    }
+  };
 
   // Auto-generate slug from company name
   const generateSlug = (name: string) => {
@@ -69,11 +94,11 @@ const CompanySignup: React.FC = () => {
       case 1:
         return companyData.companyName && companyData.slug && companyData.adminName;
       case 2:
-        return companyData.adminEmail && 
-               companyData.adminPassword && 
-               companyData.confirmPassword &&
-               companyData.adminPassword === companyData.confirmPassword &&
-               companyData.adminPassword.length >= 6;
+        return companyData.adminEmail &&
+          companyData.adminPassword &&
+          companyData.confirmPassword &&
+          companyData.adminPassword === companyData.confirmPassword &&
+          companyData.adminPassword.length >= 6;
       case 3:
         return true; // Plan is always selected
       default:
@@ -128,9 +153,20 @@ const CompanySignup: React.FC = () => {
         throw new Error('تم إنشاء الشركة بنجاح، ولكن فشل تسجيل الدخول. يرجى المحاولة يدوياً.');
       }
 
-      // Navigate to dashboard
-      navigate('/manager');
-      
+      // Redirect to company subdomain
+      const currentHost = window.location.host;
+      const isLocalhost = currentHost.includes('localhost') || currentHost.includes('127.0.0.1');
+
+      if (isLocalhost) {
+        // For local development, redirect to slug.localhost:port
+        const port = window.location.port;
+        window.location.href = `http://${companyData.slug}.localhost${port ? ':' + port : ''}/manager`;
+      } else {
+        // For production, redirect to slug.domain.com
+        const baseDomain = currentHost.split('.').slice(-2).join('.'); // Get base domain (e.g., yourdomain.com)
+        window.location.href = `https://${companyData.slug}.${baseDomain}/manager`;
+      }
+
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -141,7 +177,7 @@ const CompanySignup: React.FC = () => {
   const renderStep1 = () => (
     <div className="space-y-6">
       <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">معلومات الشركة الأساسية</h3>
-      
+
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           اسم الشركة *
@@ -190,7 +226,7 @@ const CompanySignup: React.FC = () => {
   const renderStep2 = () => (
     <div className="space-y-6">
       <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">معلومات حساب المدير</h3>
-      
+
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           البريد الإلكتروني *
@@ -246,32 +282,39 @@ const CompanySignup: React.FC = () => {
   const renderStep3 = () => (
     <div className="space-y-6">
       <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">اختر الباقة</h3>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {plans.map((plan) => (
-          <div
-            key={plan.id}
-            onClick={() => setSelectedPlan(plan.id)}
-            className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
-              selectedPlan === plan.id
+
+      {plans.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500 dark:text-gray-400">جاري تحميل الباقات...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {plans.map((plan) => (
+            <div
+              key={plan.id}
+              onClick={() => setSelectedPlan(plan.id)}
+              className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${selectedPlan === plan.id
                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                 : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <div className="text-center">
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {plan.name}
-              </h4>
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 my-2">
-                {plan.price}
+                }`}
+            >
+              <div className="text-center">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {plan.name}
+                </h4>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 my-2">
+                  {plan.price_monthly === 0 ? 'مجاني' : `${plan.price_monthly} ر.س/شهر`}
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {plan.max_users ? `حتى ${plan.max_users} مستخدم` : 'مستخدمون غير محدودين'}
+                  <br />
+                  {plan.max_drivers ? `${plan.max_drivers} سائق` : 'سائقون غير محدودون'}
+                </p>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {plan.description}
-              </p>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -296,18 +339,16 @@ const CompanySignup: React.FC = () => {
               {[1, 2, 3].map((stepNumber) => (
                 <div key={stepNumber} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      step >= stepNumber
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= stepNumber
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                      }`}
                   >
                     {stepNumber}
                   </div>
                   <div
-                    className={`flex-1 h-1 mx-2 ${
-                      step > stepNumber ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}
+                    className={`flex-1 h-1 mx-2 ${step > stepNumber ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
                   />
                 </div>
               ))}
