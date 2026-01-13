@@ -538,6 +538,20 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
       } else {
         alert('فشل في ترحيل الشحنة إلى التسديدات');
       }
+
+      // Rollback shipment status
+      try {
+        await updateShipment(currentShipment.id, {
+          status: currentShipment.status, // Revert to original status
+          dueAmountAfterDiscount: currentShipment.dueAmountAfterDiscount,
+          totalDueAmount: currentShipment.totalDueAmount,
+          shortageValue: currentShipment.shortageValue,
+          damagedValue: currentShipment.damagedValue
+        });
+        logger.info('Rolled back shipment status after failed installment creation');
+      } catch (rollbackError) {
+        logger.error('Failed to rollback shipment status:', rollbackError);
+      }
     } finally {
       setIsSubmitting(false);
     }
