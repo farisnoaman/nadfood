@@ -453,12 +453,16 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
       // Calculate and save the final amount
       const finalAmount = calculateFinalAmount(currentShipment);
       const amountAfterDeductions = calculateAmountAfterDeductions(currentShipment);
+      const totalDamagedValue = currentShipment.products.reduce((acc, p) => acc + (p.damagedValue || 0), 0);
+      const totalShortageValue = currentShipment.products.reduce((acc, p) => acc + (p.shortageValue || 0), 0);
 
       const finalShipment = {
         ...currentShipment,
         status: finalStatus,
         dueAmountAfterDiscount: amountAfterDeductions,
         totalDueAmount: finalAmount,
+        shortageValue: totalShortageValue,
+        damagedValue: totalDamagedValue,
         ...modifiedFields
       };
 
@@ -488,6 +492,20 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
 
       // Convert negative amount to positive for debt collection
       const payableAmount = Math.abs(finalAmount);
+
+      // Update the shipment status and save totals
+      const amountAfterDeductions = calculateAmountAfterDeductions(currentShipment);
+      const totalDamagedValue = currentShipment.products.reduce((acc, p) => acc + (p.damagedValue || 0), 0);
+      const totalShortageValue = currentShipment.products.reduce((acc, p) => acc + (p.shortageValue || 0), 0);
+
+      await updateShipment(currentShipment.id, {
+        ...currentShipment,
+        status: ShipmentStatus.INSTALLMENTS,
+        dueAmountAfterDiscount: amountAfterDeductions,
+        totalDueAmount: finalAmount,
+        shortageValue: totalShortageValue,
+        damagedValue: totalDamagedValue
+      });
 
       await createInstallment({
         shipmentId: currentShipment.id,
@@ -707,13 +725,16 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
           ) : (
             // Show all buttons. If negative, "ترحيل الى التسديدات" is primary.
             <div className="grid grid-cols-2 gap-3">
-              {isFinal && (
-                <Button variant="secondary" onClick={handlePrint} className="w-full">
-                  <Icons.Printer className="ml-2 h-4 w-4" />
-                  طباعة
+              {/* Finalize / Move to Installments Button */}
+              {finalAmount < 0 ? (
+                <Button variant="secondary" onClick={handleMoveToInstallments} disabled={isSubmitting} className="w-full bg-red-200 dark:bg-red-900/50 text-red-900 dark:text-red-100 hover:bg-red-400 dark:hover:bg-red-800 border border-red-300 dark:border-red-700">
+                  {isSubmitting ? 'جاري الترحيل...' : <> <Icons.ArrowRight className="ml-2 h-4 w-4" /> ترحيل الى التسديدات </>}
+                </Button>
+              ) : (
+                <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting} className="w-full">
+                  {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'إغلاق نهائي'} </>}
                 </Button>
               )}
-              {!isFinal && <div></div>}
 
               <Button variant="secondary" onClick={onClose} disabled={isSubmitting} className="w-full">
                 إغلاق
@@ -727,14 +748,14 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
                 {isSubmitting ? 'جاري الإرجاع...' : <> <Icons.ArrowLeft className="ml-2 h-4 w-4" /> إرجاع الى مسؤول الحركة </>}
               </Button>
 
-              {finalAmount < 0 ? (
-                <Button variant="primary" onClick={handleMoveToInstallments} disabled={isSubmitting} className="w-full">
-                  {isSubmitting ? 'جاري الترحيل...' : <> <Icons.ArrowRight className="ml-2 h-4 w-4" /> ترحيل الى التسديدات </>}
+              {/* Print Button */}
+              {isFinal ? (
+                <Button variant="secondary" onClick={handlePrint} className="w-full">
+                  <Icons.Printer className="ml-2 h-4 w-4" />
+                  طباعة
                 </Button>
               ) : (
-                <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting} className="w-full">
-                  {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'إغلاق نهائي'} </>}
-                </Button>
+                <div></div>
               )}
             </div>
           )}

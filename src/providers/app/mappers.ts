@@ -73,7 +73,9 @@ export const productFromRow = (row: ProductRow): Product => ({
     id: row.id,
     name: row.name,
     isActive: row.is_active ?? true,
-    weightKg: (row as any).weight_kg ?? 0,
+    weightKg: row.weight_kg ?? 0,
+    masterProductId: row.master_product_id ?? null,
+    isCustom: row.is_custom ?? true,
 });
 
 export const driverFromRow = (row: DriverRow): Driver => ({
@@ -89,7 +91,9 @@ export const regionFromRow = (row: RegionRow): Region => ({
     dieselLiterPrice: row.diesel_liter_price,
     dieselLiters: row.diesel_liters,
     zaitriFee: row.zaitri_fee,
-    roadExpenses: (row as any).road_expenses || 0,
+    roadExpenses: row.road_expenses || 0,
+    masterRegionId: row.master_region_id ?? null,
+    isCustom: row.is_custom ?? true,
 });
 
 export const shipmentFromRow = (row: ShipmentRow, products: ShipmentProduct[]): Shipment => ({
@@ -137,6 +141,12 @@ export const shipmentProductFromRow = (row: ShipmentProductRow): ShipmentProduct
     productName: row.product_name,
     cartonCount: row.carton_count,
     productWagePrice: row.product_wage_price ?? undefined,
+    shortageCartons: row.shortage_cartons ?? undefined,
+    shortageExemptionRate: row.shortage_exemption_rate ?? undefined,
+    shortageValue: row.shortage_value ?? undefined,
+    damagedCartons: row.damaged_cartons ?? undefined,
+    damagedExemptionRate: row.damaged_exemption_rate ?? undefined,
+    damagedValue: row.damaged_value ?? undefined,
 });
 
 export const priceFromRow = (row: ProductPriceRow): ProductPrice => ({
@@ -242,3 +252,17 @@ export const shipmentToRow = (shipment: Partial<Shipment>): Partial<Database['pu
     }
     return rowData;
 };
+
+export const shipmentProductToRow = (product: ShipmentProduct, shipmentId: string): any => ({
+    shipment_id: shipmentId,
+    product_id: product.productId,
+    product_name: product.productName,
+    carton_count: product.cartonCount,
+    product_wage_price: product.productWagePrice,
+    shortage_cartons: product.shortageCartons || 0,
+    shortage_exemption_rate: product.shortageExemptionRate || 0,
+    shortage_value: product.shortageValue || 0,
+    damaged_cartons: product.damagedCartons || 0,
+    damaged_exemption_rate: product.damagedExemptionRate || 0,
+    damaged_value: product.damagedValue || 0,
+});

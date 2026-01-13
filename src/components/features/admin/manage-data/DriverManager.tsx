@@ -6,6 +6,7 @@ import Modal from '../../../common/ui/Modal';
 import { Icons } from '../../../Icons';
 import { useAppContext } from '../../../../providers/AppContext';
 import BatchImportModal from './BatchImportModal';
+import toast from 'react-hot-toast';
 
 const DriverManager: React.FC = () => {
     const { drivers, addDriver, updateDriver, deleteDriver, isOnline, checkLimit, hasFeature } = useAppContext();
@@ -63,12 +64,15 @@ const DriverManager: React.FC = () => {
         try {
             const newDriver: Omit<Driver, 'id'> = { name: newDriverName.trim(), plateNumber: newDriverPlate.trim(), isActive: true };
             await addDriver(newDriver);
+            toast.success('تم إضافة السائق بنجاح');
             handleCloseAddModal();
         } catch (err: any) {
             if (err?.message?.includes('duplicate key')) {
                 setError('اسم السائق هذا موجود بالفعل.');
             } else {
-                setError(`فشل إضافة السائق: ${err?.message || 'خطأ غير معروف'}`);
+                const errorMsg = `فشل إضافة السائق: ${err?.message || 'خطأ غير معروف'}`;
+                setError(errorMsg);
+                toast.error(errorMsg);
             }
         } finally {
             setIsSubmitting(false);
@@ -86,12 +90,15 @@ const DriverManager: React.FC = () => {
                 name: editDriverName.trim(),
                 plateNumber: editDriverPlate.trim()
             });
+            toast.success('تم تحديث السائق بنجاح');
             handleCloseEditModal();
         } catch (err: any) {
             if (err?.message?.includes('duplicate key')) {
                 setError('اسم السائق هذا موجود بالفعل.');
             } else {
-                setError(`فشل تحديث السائق: ${err?.message || 'خطأ غير معروف'}`);
+                const errorMsg = `فشل تحديث السائق: ${err?.message || 'خطأ غير معروف'}`;
+                setError(errorMsg);
+                toast.error(errorMsg);
             }
         } finally {
             setIsSubmitting(false);
@@ -103,9 +110,10 @@ const DriverManager: React.FC = () => {
         setIsSubmitting(true);
         try {
             await updateDriver(driverToToggleStatus.id, { isActive: !(driverToToggleStatus.isActive ?? true) });
+            toast.success('تم تحديث حالة السائق بنجاح');
             setDriverToToggleStatus(null);
         } catch (err: any) {
-            alert(`فشل تحديث السائق: ${err?.message || 'خطأ غير معروف'}`);
+            toast.error(`فشل تحديث السائق: ${err?.message || 'خطأ غير معروف'}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -116,9 +124,10 @@ const DriverManager: React.FC = () => {
         setIsSubmitting(true);
         try {
             await deleteDriver(driverToDelete.id);
+            toast.success('تم حذف السائق بنجاح');
             setDriverToDelete(null);
         } catch (err: any) {
-            alert(`فشل حذف السائق: ${err?.message || 'خطأ غير معروف'}`);
+            toast.error(`فشل حذف السائق: ${err?.message || 'خطأ غير معروف'}`);
         } finally {
             setIsSubmitting(false);
         }

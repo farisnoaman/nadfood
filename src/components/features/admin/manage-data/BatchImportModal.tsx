@@ -5,6 +5,7 @@ import { Icons } from '../../../Icons';
 import { parseCSV, formatDateForDB } from '../../../../utils/csvUtils';
 import { generatePricesCSV, generateRegionConfigsCSV, generateRegionsCSV, generateProductsCSV, generateDriversCSV } from '../../../../utils/templateGenerator';
 import { useAppContext } from '../../../../providers/AppContext';
+import toast from 'react-hot-toast';
 
 interface BatchImportModalProps {
     isOpen: boolean;
@@ -119,12 +120,19 @@ const BatchImportModal: React.FC<BatchImportModalProps> = ({ isOpen, onClose, ty
                     let isConflict = false;
                     let existingId: string | undefined;
 
-                    const regionName = row['المنطقة'];
-                    const region = regions.find(r => r.name === regionName);
-                    if (!region) errors.push(`المنطقة "${regionName}" غير موجودة`);
+                    let region: any = null;
+                    let effectiveFrom: string | null = null;
 
-                    const effectiveFrom = formatDateForDB(row['تاريخ السريان']);
-                    if (!effectiveFrom) errors.push(`تاريخ غير صالح: ${row['تاريخ السريان']}`);
+                    if (type === 'prices' || type === 'regionFees') {
+                        const regionName = row['المنطقة'];
+                        region = regions.find(r => r.name === regionName);
+                        if (!region) {
+                            errors.push(`المنطقة "${regionName}" غير موجودة`);
+                        }
+
+                        effectiveFrom = formatDateForDB(row['تاريخ السريان']);
+                        if (!effectiveFrom) errors.push(`تاريخ غير صالح: ${row['تاريخ السريان']}`);
+                    }
 
                     if (type === 'prices') {
                         const productName = row['المنتج'];
@@ -253,8 +261,26 @@ const BatchImportModal: React.FC<BatchImportModalProps> = ({ isOpen, onClose, ty
             }
             setStep('success');
         } catch (err: any) {
-            setError(`فشل الاستيراد: ${err.message}`);
+            // Translate common error messages to Arabic
+            let errorMessage = err.message || 'حدث خطأ غير متوقع';
+
+            // Translate quota exceeded messages
+            const quotaMatch = errorMessage.match(/Plan quota exceeded for (\w+)\. Limit: (\d+), Current: (\d+)/);
+            if (quotaMatch) {
+                const entityMap: Record<string, string> = {
+                    'drivers': 'السائقين',
+                    'products': 'المنتجات',
+                    'regions': 'المناطق',
+                    'shipments': 'الشحنات',
+                    'users': 'المستخدمين'
+                };
+                const entity = entityMap[quotaMatch[1]] || quotaMatch[1];
+                errorMessage = `تم تجاوز الحد المسموح لـ${entity}. الحد الأقصى: ${quotaMatch[2]}، الحالي: ${quotaMatch[3]}`;
+            }
+
+            setError(`فشل الاستيراد: ${errorMessage}`);
             setStep('preview');
+            toast.error(`فشل الاستيراد: ${errorMessage}`);
         }
     };
 
@@ -265,8 +291,16 @@ const BatchImportModal: React.FC<BatchImportModalProps> = ({ isOpen, onClose, ty
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
+    const handleClose = () => {
+        if (step === 'success') {
+            toast.success('تم الاستيراد بنجاح!');
+        }
+        reset();
+        onClose();
+    };
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={config.title} size="xl">
+        <Modal isOpen={isOpen} onClose={handleClose} title={config.title} size="xl">
             <div className="space-y-6">
                 {step === 'upload' && (
                     <div className="space-y-4">

@@ -6,6 +6,8 @@ import Modal from '../../../common/ui/Modal';
 import { Icons } from '../../../Icons';
 import { useAppContext } from '../../../../providers/AppContext';
 import BatchImportModal from './BatchImportModal';
+import MasterCatalogSelectionModal from './MasterCatalogSelectionModal';
+import toast from 'react-hot-toast';
 
 interface RegionManagerProps {
     onExport?: () => void;
@@ -22,6 +24,7 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isMasterCatalogOpen, setIsMasterCatalogOpen] = useState(false);
 
     // Feature Flags & Limits
     const canAddRegion = checkLimit('maxRegions', 1);
@@ -98,9 +101,10 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
         setIsSubmitting(true);
         try {
             await deleteRegion(regionToDelete.id);
+            toast.success('تم حذف المنطقة بنجاح');
             setRegionToDelete(null);
         } catch (err: any) {
-            alert(`فشل حذف المنطقة: ${err.message}`);
+            toast.error(`فشل حذف المنطقة: ${err.message}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -146,6 +150,16 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                             تصدير
                         </Button>
                     )}
+
+                    <Button
+                        variant="primary"
+                        onClick={() => setIsMasterCatalogOpen(true)}
+                        disabled={!isOnline || !canAddRegion}
+                        title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddRegion ? 'لا يمكنك الإضافة لأنك وصلت للحد الأقصى للمناطق' : '')}
+                    >
+                        <Icons.Database className="ml-2 h-4 w-4" />
+                        اختيار من الدليل الشامل
+                    </Button>
                 </div>
             </div>
             <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
@@ -154,7 +168,19 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                         {visibleRegions.map((r: Region) => (
                             <div key={r.id} className="flex justify-between items-center p-3 bg-secondary-100 dark:bg-secondary-800 rounded">
                                 <div>
-                                    <p className="font-semibold text-lg">{r.name}</p>
+                                    <p className="font-semibold text-lg">
+                                        {r.name}
+                                        {/* Master vs Custom Badge */}
+                                        {r.masterRegionId ? (
+                                            <span className="mx-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                من الدليل
+                                            </span>
+                                        ) : (
+                                            <span className="mx-2 px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                                                مخصص
+                                            </span>
+                                        )}
+                                    </p>
                                     <p className="text-xs text-secondary-500">لتعيين الرسوم، استخدم تبويب "رسوم المناطق"</p>
                                 </div>
                                 <div className="flex items-center space-x-1 rtl:space-x-reverse">
@@ -216,6 +242,15 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
                 type="regions"
+            />
+
+            <MasterCatalogSelectionModal
+                isOpen={isMasterCatalogOpen}
+                onClose={() => setIsMasterCatalogOpen(false)}
+                type="regions"
+                onSuccess={() => {
+                    // Refresh regions list - the context should auto-update
+                }}
             />
         </>
     );

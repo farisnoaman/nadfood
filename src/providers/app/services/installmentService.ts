@@ -62,6 +62,7 @@ export const installmentService = {
                 installment_type: installment.installmentType || 'regular',
                 original_amount: installment.originalAmount,
                 notes: installment.notes,
+                company_id: currentUser?.companyId,
                 created_by: currentUser?.id,
                 updated_by: currentUser?.id,
             });
@@ -120,6 +121,7 @@ export const installmentService = {
                 amount: payment.amount,
                 received_date: payment.receivedDate,
                 notes: payment.notes,
+                company_id: currentUser?.companyId,
                 created_by: currentUser?.id,
             });
 

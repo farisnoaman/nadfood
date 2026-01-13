@@ -95,6 +95,72 @@ export type Database = {
         }
         Relationships: []
       }
+      master_products: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          default_price: number | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          unit_type: string
+          updated_at: string | null
+          weight_kg: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          default_price?: number | null
+          description?: string | null
+          id: string
+          is_active?: boolean | null
+          name: string
+          unit_type: string
+          updated_at?: string | null
+          weight_kg: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          default_price?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          unit_type?: string
+          updated_at?: string | null
+          weight_kg?: number
+        }
+        Relationships: []
+      }
+      master_regions: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          region_code: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          is_active?: boolean | null
+          name: string
+          region_code?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          region_code?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           category: string
@@ -151,43 +217,64 @@ export type Database = {
       }
       products: {
         Row: {
+          company_id: string | null
           id: string
           is_active: boolean | null
+          is_custom: boolean | null
+          master_product_id: string | null
           name: string
+          weight_kg: number | null
         }
         Insert: {
+          company_id?: string | null
           id: string
           is_active?: boolean | null
+          is_custom?: boolean | null
+          master_product_id?: string | null
           name: string
+          weight_kg?: number | null
         }
         Update: {
+          company_id?: string | null
           id?: string
           is_active?: boolean | null
+          is_custom?: boolean | null
+          master_product_id?: string | null
           name?: string
+          weight_kg?: number | null
         }
         Relationships: []
       }
       regions: {
         Row: {
+          company_id: string | null
           diesel_liter_price: number | null
           diesel_liters: number | null
           id: string
+          is_custom: boolean | null
+          master_region_id: string | null
           name: string
           road_expenses: number
           zaitri_fee: number | null
         }
         Insert: {
+          company_id?: string | null
           diesel_liter_price?: number | null
           diesel_liters?: number | null
           id: string
+          is_custom?: boolean | null
+          master_region_id?: string | null
           name: string
           road_expenses?: number
           zaitri_fee?: number | null
         }
         Update: {
+          company_id?: string | null
           diesel_liter_price?: number | null
           diesel_liters?: number | null
           id?: string
+          is_custom?: boolean | null
+          master_region_id?: string | null
           name?: string
           road_expenses?: number
           zaitri_fee?: number | null
@@ -202,6 +289,12 @@ export type Database = {
           product_name: string
           product_wage_price: number | null
           shipment_id: string
+          shortage_cartons: number | null
+          shortage_exemption_rate: number | null
+          shortage_value: number | null
+          damaged_cartons: number | null
+          damaged_exemption_rate: number | null
+          damaged_value: number | null
         }
         Insert: {
           carton_count: number
@@ -210,6 +303,12 @@ export type Database = {
           product_name: string
           product_wage_price?: number | null
           shipment_id: string
+          shortage_cartons?: number | null
+          shortage_exemption_rate?: number | null
+          shortage_value?: number | null
+          damaged_cartons?: number | null
+          damaged_exemption_rate?: number | null
+          damaged_value?: number | null
         }
         Update: {
           carton_count?: number
@@ -218,6 +317,12 @@ export type Database = {
           product_name?: string
           product_wage_price?: number | null
           shipment_id?: string
+          shortage_cartons?: number | null
+          shortage_exemption_rate?: number | null
+          shortage_value?: number | null
+          damaged_cartons?: number | null
+          damaged_exemption_rate?: number | null
+          damaged_value?: number | null
         }
         Relationships: []
       }

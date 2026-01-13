@@ -9,3 +9,4 @@ export * from './regionService';
 export * from './notificationService';
 export * from './priceService';
 export * from './installmentService';
+export * from './masterCatalogService';

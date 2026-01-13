@@ -3,7 +3,7 @@ import { Shipment, User } from '../types';
 import { supabase } from '../../../utils/supabaseClient';
 import * as IndexedDB from '../../../utils/indexedDB';
 import { STORES } from '../../../utils/constants';
-import { shipmentToRow } from '../mappers';
+import { shipmentToRow, shipmentProductToRow } from '../mappers';
 import logger from '../../../utils/logger';
 
 export const useShipments = (
@@ -74,13 +74,7 @@ export const useShipments = (
 
         if (shipmentError) throw shipmentError;
 
-        const shipmentProductsToInsert = products.map(p => ({
-            shipment_id: newShipmentData.id,
-            product_id: p.productId,
-            product_name: p.productName,
-            carton_count: p.cartonCount,
-            product_wage_price: p.productWagePrice
-        }));
+        const shipmentProductsToInsert = products.map(p => shipmentProductToRow(p, newShipmentData.id));
 
         const { error: productsError } = await supabase
             .from('shipment_products')
@@ -140,13 +134,7 @@ export const useShipments = (
 
         if (products && products.length > 0) {
             await supabase.from('shipment_products').delete().eq('shipment_id', shipmentId);
-            const shipmentProductsToInsert = products.map(p => ({
-                shipment_id: shipmentId,
-                product_id: p.productId,
-                product_name: p.productName,
-                carton_count: p.cartonCount,
-                product_wage_price: p.productWagePrice
-            }));
+            const shipmentProductsToInsert = products.map(p => shipmentProductToRow(p, shipmentId));
 
             if (shipmentProductsToInsert.length > 0) {
                 const { error: productsError } = await supabase

@@ -114,4 +114,47 @@ export const productService = {
             });
         }
     },
+    async batchUpsertProducts(products: (Omit<Product, 'id'> & { id?: string })[], currentUser: any): Promise<void> {
+        if (!products.length) return;
+
+        const toInsert = products.filter(p => !p.id);
+        const toUpdate = products.filter(p => p.id);
+
+        // Insert new records
+        if (toInsert.length > 0) {
+            const insertData = toInsert.map(p => ({
+                id: window.crypto.randomUUID(),
+                name: p.name,
+                is_active: p.isActive,
+                weight_kg: p.weightKg,
+                company_id: currentUser?.companyId,
+            }));
+
+            const { error } = await supabase
+                .from('products')
+                .insert(insertData);
+
+            if (error) {
+                logger.error('Error batch inserting products:', error);
+                throw error;
+            }
+        }
+
+        // Update existing records
+        for (const product of toUpdate) {
+            const { error } = await supabase
+                .from('products')
+                .update({
+                    name: product.name,
+                    is_active: product.isActive,
+                    weight_kg: product.weightKg,
+                })
+                .eq('id', product.id);
+
+            if (error) {
+                logger.error('Error batch updating product:', error);
+                throw error;
+            }
+        }
+    },
 };

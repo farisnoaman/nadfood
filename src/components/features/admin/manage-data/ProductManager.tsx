@@ -6,6 +6,8 @@ import Modal from '../../../common/ui/Modal';
 import { Icons } from '../../../Icons';
 import { useAppContext } from '../../../../providers/AppContext';
 import BatchImportModal from './BatchImportModal';
+import MasterCatalogSelectionModal from './MasterCatalogSelectionModal';
+import toast from 'react-hot-toast';
 
 const ProductManager: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, isOnline, checkLimit, hasFeature } = useAppContext();
@@ -23,6 +25,7 @@ const ProductManager: React.FC = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isMasterCatalogOpen, setIsMasterCatalogOpen] = useState(false);
 
   // Feature Flags & Limits
   const canAddProduct = checkLimit('maxProducts', 1);
@@ -92,6 +95,7 @@ const ProductManager: React.FC = () => {
           name: productName.trim(),
           weightKg: productWeight ? Number(productWeight) : undefined
         });
+        toast.success('تم تحديث المنتج بنجاح');
       } else {
         const newProduct: Omit<Product, 'id'> = {
           name: productName.trim(),
@@ -99,10 +103,13 @@ const ProductManager: React.FC = () => {
           weightKg: productWeight ? Number(productWeight) : undefined
         };
         await addProduct(newProduct);
+        toast.success('تم إضافة المنتج بنجاح');
       }
       handleCloseModal();
     } catch (err: any) {
-      setError(`فشل حفظ المنتج: ${err.message}`);
+      const errorMsg = `فشل حفظ المنتج: ${err.message}`;
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -113,9 +120,10 @@ const ProductManager: React.FC = () => {
     setIsSubmitting(true);
     try {
       await updateProduct(productToToggleStatus.id, { isActive: !(productToToggleStatus.isActive ?? true) });
+      toast.success('تم تحديث حالة المنتج بنجاح');
       setProductToToggleStatus(null);
     } catch (err: any) {
-      alert(`فشل تحديث المنتج: ${err.message}`);
+      toast.error(`فشل تحديث المنتج: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -126,9 +134,10 @@ const ProductManager: React.FC = () => {
     setIsSubmitting(true);
     try {
       await deleteProduct(productToDelete.id);
+      toast.success('تم حذف المنتج بنجاح');
       setProductToDelete(null);
     } catch (err: any) {
-      alert(`فشل حذف المنتج: ${err.message}`);
+      toast.error(`فشل حذف المنتج: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -168,6 +177,16 @@ const ProductManager: React.FC = () => {
             </Button>
           )}
 
+          <Button
+            variant="primary"
+            onClick={() => setIsMasterCatalogOpen(true)}
+            disabled={!isOnline || !canAddProduct}
+            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddProduct ? 'لا يمكنك الإضافة لأنك وصلت للحد الأقصى للمنتجات' : '')}
+          >
+            <Icons.Database className="ml-2 h-4 w-4" />
+            اختيار من الدليل الشامل
+          </Button>
+
         </div>
       </div>
       <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
@@ -180,6 +199,16 @@ const ProductManager: React.FC = () => {
                   {p.weightKg && (
                     <span className="mx-2 text-sm text-secondary-500">
                       ({p.weightKg} كجم)
+                    </span>
+                  )}
+                  {/* Master vs Custom Badge */}
+                  {p.masterProductId ? (
+                    <span className="mx-1 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      من الدليل
+                    </span>
+                  ) : (
+                    <span className="mx-1 px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                      مخصص
                     </span>
                   )}
                   <span className={`mx-2 px-2 py-0.5 text-xs rounded-full ${p.isActive ?? true ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
@@ -277,6 +306,15 @@ const ProductManager: React.FC = () => {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         type="products"
+      />
+
+      <MasterCatalogSelectionModal
+        isOpen={isMasterCatalogOpen}
+        onClose={() => setIsMasterCatalogOpen(false)}
+        type="products"
+        onSuccess={() => {
+          // Refresh products list - the context should auto-update
+        }}
       />
     </>
   );

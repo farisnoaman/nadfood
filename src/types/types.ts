@@ -88,13 +88,46 @@ export interface User {
 }
 
 /**
+ * Represents a master product in the platform catalog.
+ * Managed by platform admins and can be linked to company products.
+ */
+export interface MasterProduct {
+  id: string; // UUID
+  name: string;
+  unitType: string; // 'carton', 'piece', 'kilo'
+  defaultPrice: number;
+  weightKg: number;
+  isActive: boolean;
+  category?: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Represents a master region in the platform catalog.
+ * Managed by platform admins and can be linked to company regions.
+ */
+export interface MasterRegion {
+  id: string; // UUID
+  name: string;
+  regionCode?: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
  * Represents a product that can be included in a shipment.
+ * Can be linked to a master product or be company-specific (custom).
  */
 export interface Product {
   id: string; // UUID from Supabase
   name: string;
   isActive?: boolean;
   weightKg?: number;
+  masterProductId?: string | null; // Reference to master catalog
+  isCustom?: boolean; // true = company-specific, false = linked to master
 }
 
 /**
@@ -109,6 +142,7 @@ export interface Driver {
 
 /**
  * Represents a geographical region, containing pricing factors.
+ * Can be linked to a master region or be company-specific (custom).
  */
 export interface Region {
   id: string; // UUID from Supabase
@@ -117,6 +151,8 @@ export interface Region {
   dieselLiters: number;
   zaitriFee: number;
   roadExpenses: number; // Fixed road expenses for this region
+  masterRegionId?: string | null; // Reference to master catalog
+  isCustom?: boolean; // true = company-specific, false = linked to master
 }
 
 /**
