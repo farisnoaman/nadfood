@@ -42,6 +42,7 @@ export const regionService = {
             diesel_liters: region.dieselLiters,
             zaitri_fee: region.zaitriFee,
             road_expenses: region.roadExpenses,
+            admin_expenses: region.adminExpenses,
             company_id: currentUser?.companyId,
         };
 
@@ -77,6 +78,7 @@ export const regionService = {
         if (updates.dieselLiters !== undefined) updateData.diesel_liters = updates.dieselLiters;
         if (updates.zaitriFee !== undefined) updateData.zaitri_fee = updates.zaitriFee;
         if (updates.roadExpenses !== undefined) updateData.road_expenses = updates.roadExpenses;
+        if (updates.adminExpenses !== undefined) updateData.admin_expenses = updates.adminExpenses;
 
         if (isOnline) {
             const { error } = await supabase
@@ -161,6 +163,7 @@ export const regionService = {
             dieselLiters: row.diesel_liters,
             zaitriFee: row.zaitri_fee,
             roadExpenses: row.road_expenses,
+            adminExpenses: row.admin_expenses || 0,
             effectiveFrom: row.effective_from,
         }));
     },
@@ -173,6 +176,7 @@ export const regionService = {
             diesel_liters: config.dieselLiters,
             zaitri_fee: config.zaitriFee,
             road_expenses: config.roadExpenses,
+            admin_expenses: config.adminExpenses,
             effective_from: config.effectiveFrom,
             company_id: currentUser?.companyId,
         };
@@ -197,6 +201,7 @@ export const regionService = {
         if (updates.dieselLiters !== undefined) updateData.diesel_liters = updates.dieselLiters;
         if (updates.zaitriFee !== undefined) updateData.zaitri_fee = updates.zaitriFee;
         if (updates.roadExpenses !== undefined) updateData.road_expenses = updates.roadExpenses;
+        if (updates.adminExpenses !== undefined) updateData.admin_expenses = updates.adminExpenses;
         if (updates.effectiveFrom !== undefined) updateData.effective_from = updates.effectiveFrom;
 
         if (isOnline) {
@@ -239,6 +244,7 @@ export const regionService = {
                 diesel_liters: config.dieselLiters,
                 zaitri_fee: config.zaitriFee,
                 road_expenses: config.roadExpenses,
+                admin_expenses: config.adminExpenses,
                 effective_from: config.effectiveFrom,
                 company_id: currentUser?.companyId
             }));
@@ -262,6 +268,7 @@ export const regionService = {
                     diesel_liters: config.dieselLiters,
                     zaitri_fee: config.zaitriFee,
                     road_expenses: config.roadExpenses,
+                    admin_expenses: config.adminExpenses,
                     effective_from: config.effectiveFrom
                 })
                 .eq('id', config.id);

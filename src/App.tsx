@@ -42,7 +42,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[]
 };
 
 const AppRoutes: React.FC = () => {
-    const { currentUser, loading, error, isProfileLoaded, syncOfflineMutations } = useAppContext();
+    const { currentUser, loading, error, isProfileLoaded, syncOfflineMutations, isSubscriptionActive } = useAppContext();
     const [loadingTimeout, setLoadingTimeout] = useState(false);
     const loadingTimeoutRef = useRef<{ primary: NodeJS.Timeout; emergency: NodeJS.Timeout } | null>(null);
 
@@ -177,40 +177,61 @@ const AppRoutes: React.FC = () => {
                         {/* Main App Routes */}
                         <Route path="/*" element={
                             currentUser ? (
-                                <Layout>
-                                    <Suspense fallback={<PageLoading title="جاري تحميل الصفحة..." />}>
-                                        <Routes>
-                                            <Route path="/" element={
-                                                !isProfileLoaded ? (
-                                                    <div className="flex items-center justify-center min-h-screen bg-secondary-100 dark:bg-secondary-900">
-                                                        <div className="flex flex-col items-center">
-                                                            <Icons.Truck className="h-16 w-16 text-primary-600 animate-pulse" />
-                                                            <p className="mt-4 text-lg font-semibold text-secondary-700 dark:text-secondary-300">
-                                                                جاري تحميل الملف الشخصي...
-                                                            </p>
+                                !isSubscriptionActive && currentUser.role !== Role.SUPER_ADMIN ? (
+                                    <div className="flex items-center justify-center min-h-screen bg-secondary-100 dark:bg-secondary-900">
+                                        <div className="flex flex-col items-center text-center p-8 bg-white dark:bg-secondary-800 rounded-lg shadow-lg max-w-md mx-4">
+                                            <div className="bg-red-100 dark:bg-red-900/30 p-4 rounded-full mb-4">
+                                                <Icons.AlertCircle className="h-12 w-12 text-red-600 dark:text-red-400" />
+                                            </div>
+                                            <h2 className="text-2xl font-bold text-secondary-900 dark:text-white mb-2">
+                                                الحساب متوقف
+                                            </h2>
+                                            <p className="text-secondary-600 dark:text-secondary-300 mb-6">
+                                                عذراً، تم إيقاف حساب الشركة أو انتهاء فترة الاشتراك. يرجى التواصل مع الإدارة لإعادة التفعيل.
+                                            </p>
+                                            <button
+                                                onClick={() => window.location.reload()}
+                                                className="px-6 py-2 bg-secondary-200 dark:bg-secondary-700 text-secondary-800 dark:text-white rounded-lg hover:bg-secondary-300 dark:hover:bg-secondary-600 transition-colors"
+                                            >
+                                                تحديث الصفحة
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Layout>
+                                        <Suspense fallback={<PageLoading title="جاري تحميل الصفحة..." />}>
+                                            <Routes>
+                                                <Route path="/" element={
+                                                    !isProfileLoaded ? (
+                                                        <div className="flex items-center justify-center min-h-screen bg-secondary-100 dark:bg-secondary-900">
+                                                            <div className="flex flex-col items-center">
+                                                                <Icons.Truck className="h-16 w-16 text-primary-600 animate-pulse" />
+                                                                <p className="mt-4 text-lg font-semibold text-secondary-700 dark:text-secondary-300">
+                                                                    جاري تحميل الملف الشخصي...
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        {currentUser.role === Role.SALES && <Navigate to="/fleet" />}
-                                                        {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
-                                                        {currentUser.role === Role.ADMIN && <Navigate to="/manager" />}
+                                                    ) : (
+                                                        <>
+                                                            {currentUser.role === Role.SALES && <Navigate to="/fleet" />}
+                                                            {currentUser.role === Role.ACCOUNTANT && <Navigate to="/accountant" />}
+                                                            {currentUser.role === Role.ADMIN && <Navigate to="/manager" />}
 
-                                                        {/* On Root Domain (Platform), redirect Super Admin to /platform */}
-                                                        {currentUser.role === Role.SUPER_ADMIN && <Navigate to="/platform" />}
-                                                    </>
-                                                )
-                                            } />
+                                                            {/* On Root Domain (Platform), redirect Super Admin to /platform */}
+                                                            {currentUser.role === Role.SUPER_ADMIN && <Navigate to="/platform" />}
+                                                        </>
+                                                    )
+                                                } />
 
-                                            {/* Tenant Routes */}
-                                            <Route path="/fleet/*" element={<ProtectedRoute allowedRoles={[Role.SALES]}><FleetDashboard /></ProtectedRoute>} />
-                                            <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
-                                            <Route path="/manager/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN, Role.SUPER_ADMIN]}><AdminDashboard /></ProtectedRoute>} />
-                                        </Routes>
-                                    </Suspense>
-                                    <SyncStatusIndicator onSync={syncOfflineMutations} />
-                                </Layout>
-                            ) : (
+                                                {/* Tenant Routes */}
+                                                <Route path="/fleet/*" element={<ProtectedRoute allowedRoles={[Role.SALES]}><FleetDashboard /></ProtectedRoute>} />
+                                                <Route path="/accountant/*" element={<ProtectedRoute allowedRoles={[Role.ACCOUNTANT]}><AccountantDashboard /></ProtectedRoute>} />
+                                                <Route path="/manager/*" element={<ProtectedRoute allowedRoles={[Role.ADMIN, Role.SUPER_ADMIN]}><AdminDashboard /></ProtectedRoute>} />
+                                            </Routes>
+                                        </Suspense>
+                                        <SyncStatusIndicator onSync={syncOfflineMutations} />
+                                    </Layout>
+                                )) : (
                                 <Login />
                             )
                         } />

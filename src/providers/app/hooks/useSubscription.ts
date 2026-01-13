@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '../../../utils/supabaseClient';
 import { Company, User } from '../../../types';
 import { CompanyRow, companyFromRow } from '../mappers';
@@ -23,6 +23,12 @@ export const useSubscription = (currentUser: User | null) => {
             logger.error('Error fetching company:', error);
         }
     }, []);
+    // Auto-fetch company when user logs in
+    useEffect(() => {
+        if (currentUser?.companyId) {
+            fetchCompanyCallback(currentUser.companyId);
+        }
+    }, [currentUser?.companyId, fetchCompanyCallback]);
 
     // Derived Logic
     const isSubscriptionActive = useMemo(() => {
@@ -31,6 +37,9 @@ export const useSubscription = (currentUser: User | null) => {
         const status = company.subscriptionStatus || 'active';
         const endDate = company.subscriptionEndDate ? new Date(company.subscriptionEndDate) : null;
         const now = new Date();
+
+        // Critical: Check if company is manually deactivated
+        if (company.isActive === false) return false;
 
         if (status === 'suspended' || status === 'cancelled' || status === 'expired') return false;
         if (endDate && now > endDate) return false;

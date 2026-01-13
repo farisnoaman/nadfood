@@ -92,6 +92,7 @@ export const regionFromRow = (row: RegionRow): Region => ({
     dieselLiters: row.diesel_liters,
     zaitriFee: row.zaitri_fee,
     roadExpenses: row.road_expenses || 0,
+    adminExpenses: (row as any).admin_expenses || 0,
     masterRegionId: row.master_region_id ?? null,
     isCustom: row.is_custom ?? true,
 });

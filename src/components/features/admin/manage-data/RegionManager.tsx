@@ -81,7 +81,8 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                     dieselLiterPrice: 0,
                     dieselLiters: 0,
                     zaitriFee: 0,
-                    roadExpenses: 0
+                    roadExpenses: 0,
+                    adminExpenses: 0
                 });
             }
             handleCloseRegionModal();

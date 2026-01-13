@@ -151,6 +151,7 @@ export interface Region {
   dieselLiters: number;
   zaitriFee: number;
   roadExpenses: number; // Fixed road expenses for this region
+  adminExpenses: number; // Default admin expenses for this region
   masterRegionId?: string | null; // Reference to master catalog
   isCustom?: boolean; // true = company-specific, false = linked to master
 }
@@ -165,6 +166,7 @@ export interface RegionConfig {
   dieselLiters: number;
   zaitriFee: number;
   roadExpenses: number;
+  adminExpenses: number;
   effectiveFrom: string;
   company_id?: string;
 }

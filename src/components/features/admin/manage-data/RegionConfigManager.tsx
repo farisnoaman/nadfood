@@ -22,6 +22,7 @@ const RegionConfigManager: React.FC = () => {
         dieselLiters: 0,
         zaitriFee: 0,
         roadExpenses: 0,
+        adminExpenses: 0,
         effectiveFrom: new Date().toISOString().split('T')[0],
     });
     const [error, setError] = useState('');
@@ -58,6 +59,7 @@ const RegionConfigManager: React.FC = () => {
                 dieselLiters: config.dieselLiters,
                 zaitriFee: config.zaitriFee,
                 roadExpenses: config.roadExpenses,
+                adminExpenses: config.adminExpenses,
                 effectiveFrom: config.effectiveFrom
             }
             : {
@@ -66,6 +68,7 @@ const RegionConfigManager: React.FC = () => {
                 dieselLiters: 0,
                 zaitriFee: 0,
                 roadExpenses: 0,
+                adminExpenses: 0,
                 effectiveFrom: new Date().toISOString().split('T')[0]
             }
         );
@@ -169,6 +172,7 @@ const RegionConfigManager: React.FC = () => {
                                         <div className="text-sm">
                                             <p><span className="text-secondary-500">رسوم الوزارة:</span> {c.zaitriFee} ر.ي</p>
                                             <p><span className="text-secondary-500">مخاسير الطريق:</span> {c.roadExpenses} ر.ي</p>
+                                            <p><span className="text-secondary-500">مصروفات إدارية:</span> {c.adminExpenses} ر.ي</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-1 rtl:space-x-reverse">
@@ -237,6 +241,14 @@ const RegionConfigManager: React.FC = () => {
                             name="roadExpenses"
                             type="number"
                             value={formData.roadExpenses}
+                            onChange={e => handleFormChange(e.target.name, e.target.value, e.target.type)}
+                            required
+                        />
+                        <Input
+                            label="مصروفات إدارية"
+                            name="adminExpenses"
+                            type="number"
+                            value={formData.adminExpenses}
                             onChange={e => handleFormChange(e.target.name, e.target.value, e.target.type)}
                             required
                         />

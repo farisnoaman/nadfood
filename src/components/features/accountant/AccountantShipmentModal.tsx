@@ -213,6 +213,9 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
       if (!updatedShipment.zaitriFee && regionConfig.zaitriFee) {
         updatedShipment.zaitriFee = regionConfig.zaitriFee;
       }
+      if (!updatedShipment.adminExpenses && regionConfig.adminExpenses) {
+        updatedShipment.adminExpenses = regionConfig.adminExpenses;
+      }
 
       // Recalculate dueAmount
       const tWage = updatedShipment.totalWage || 0;
@@ -258,7 +261,7 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
       const tDiesel = newState.totalDiesel || 0;
       const tWage = newState.totalWage || 0;
       const zFee = newState.zaitriFee || 0;
-      const aExp = newState.adminExpenses || 0;
+      const aExp = newState.adminExpenses ?? (regionConfig?.adminExpenses || 0);
 
       newState.dueAmount = tWage - tDiesel - zFee - aExp - rExp;
       return newState;
