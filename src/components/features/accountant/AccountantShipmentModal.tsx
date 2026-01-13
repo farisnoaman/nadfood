@@ -174,6 +174,7 @@ interface AccountantShipmentModalProps {
 const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipment, isOpen, onClose, isEditable }) => {
   const {
     updateShipment, addNotification, accountantPrintAccess, drivers, productPrices, regions,
+    regionConfigs,
     isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, currentUser, products
   } = useAppContext();
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });
@@ -183,11 +184,47 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMissingPrice, setHasMissingPrice] = useState(false);
 
-  const shipmentRegion = regions.find((r) => r.id === shipment.regionId);
-  const roadExpenses = currentShipment.roadExpenses ?? (shipmentRegion?.roadExpenses || 0);
+  // Get region config based on order date (for versioned pricing)
+  const getRegionConfig = (regionId: string, orderDate: string) => {
+    const relevantConfigs = regionConfigs.filter(rc =>
+      rc.regionId === regionId &&
+      rc.effectiveFrom <= orderDate
+    );
+
+    return relevantConfigs.sort((a, b) =>
+      new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+    )[0];
+  };
+
+  const regionConfig = getRegionConfig(shipment.regionId, shipment.orderDate);
+  const roadExpenses = currentShipment.roadExpenses ?? (regionConfig?.roadExpenses || 0);
 
   useEffect(() => {
-    setCurrentShipment({ ...shipment });
+    const updatedShipment = { ...shipment };
+
+    // Auto-calculate defaults from RegionConfig if missing or zero
+    if (regionConfig) {
+      if (!updatedShipment.totalDiesel && regionConfig.dieselLiters && regionConfig.dieselLiterPrice) {
+        updatedShipment.totalDiesel = regionConfig.dieselLiters * regionConfig.dieselLiterPrice;
+      }
+      if (!updatedShipment.roadExpenses && regionConfig.roadExpenses) {
+        updatedShipment.roadExpenses = regionConfig.roadExpenses;
+      }
+      if (!updatedShipment.zaitriFee && regionConfig.zaitriFee) {
+        updatedShipment.zaitriFee = regionConfig.zaitriFee;
+      }
+
+      // Recalculate dueAmount
+      const tWage = updatedShipment.totalWage || 0;
+      const tDiesel = updatedShipment.totalDiesel || 0;
+      const zFee = updatedShipment.zaitriFee || 0;
+      const aExp = updatedShipment.adminExpenses || 0;
+      const rExp = updatedShipment.roadExpenses || 0;
+
+      updatedShipment.dueAmount = tWage - tDiesel - zFee - aExp - rExp;
+    }
+
+    setCurrentShipment(updatedShipment);
     setIsProductsExpanded(false);
 
     // Check for missing prices using date-based lookup
@@ -210,14 +247,14 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
       }
     }
     setHasMissingPrice(missingPrice);
-  }, [shipment, productPrices]);
+  }, [shipment, productPrices, regionConfigs]);
 
   const updateFinancials = (updates: Partial<Shipment>) => {
     setCurrentShipment(prev => {
       const newState = { ...prev, ...updates };
       // Recalculate dueAmount
       // dueAmount = totalWage - totalDiesel - zaitriFee - adminExpenses - roadExpenses
-      const rExp = newState.roadExpenses ?? (shipmentRegion?.roadExpenses || 0);
+      const rExp = newState.roadExpenses ?? (regionConfig?.roadExpenses || 0);
       const tDiesel = newState.totalDiesel || 0;
       const tWage = newState.totalWage || 0;
       const zFee = newState.zaitriFee || 0;
