@@ -165,7 +165,7 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
             'مصروفات إدارية': shipment.adminExpenses,
             'خرج الطريق': shipment.roadExpenses,
           }).map(([label, value]) => (
-            <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#e8f5e8', textAlign: 'center' }}>
+            <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#e8f5e8', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{label}:</div>
               <div style={{ fontSize: '12px', color: '#2d5a2d', fontWeight: 'bold' }}>{(value ?? 0).toLocaleString()} ر.ي</div>
             </div>
@@ -183,7 +183,7 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
             'قيمة النقص': totalShortageValue,
             'مبالغ أخرى': shipment.otherAmounts,
           }).map(([label, value]) => (
-            <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#ffebee', textAlign: 'center' }}>
+            <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#ffebee', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#d32f2f' }}>{label}:</div>
               <div style={{ fontSize: '12px', color: '#d32f2f', fontWeight: 'bold' }}>{(value ?? 0).toLocaleString()} ر.ي</div>
             </div>
@@ -199,7 +199,7 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
             'ممسى ': shipment.eveningAllowance,
             'رسوم التحويل': shipment.transferFee,
           }).map(([label, value]) => (
-            <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#e8f5e8', textAlign: 'center' }}>
+            <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#e8f5e8', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#2e7d32' }}>{label}:</div>
               <div style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold' }}>
                 {`${(typeof value === 'number' ? value : 0).toLocaleString()} ر.ي`}
