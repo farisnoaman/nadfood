@@ -369,7 +369,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from('shipment-attachments')
+        .from('company-assets')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true
@@ -383,7 +383,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('shipment-attachments')
+        .from('company-assets')
         .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
