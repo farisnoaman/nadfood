@@ -166,7 +166,7 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
             'خرج الطريق': shipment.roadExpenses,
           }).map(([label, value]) => (
             <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#e8f5e8', textAlign: 'center' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '2px', fontSize: '11px' }}>{label}:</div>
+              <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{label}:</div>
               <div style={{ fontSize: '12px', color: '#2d5a2d', fontWeight: 'bold' }}>{(value ?? 0).toLocaleString()} ر.ي</div>
             </div>
           ))}
@@ -225,7 +225,7 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
                 background: label === 'المبلغ النهائي' ? '#fef5e7' : '#e3f2fd',
                 textAlign: 'center'
               }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>{label}:</div>
+                <div style={{ fontWeight: 'bold', fontSize: '12px' }}>{label}:</div>
                 <div style={{
                   fontSize: '16px',
                   fontWeight: 'bold',
