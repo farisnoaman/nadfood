@@ -34,6 +34,7 @@ export const useInstallments = (
         }
 
         await installmentService.createInstallment(installment, isOnline, currentUser);
+        await updateShipment(installment.shipmentId, { status: ShipmentStatus.INSTALLMENTS });
         await onRefresh();
     }, [isOnline, currentUser, onRefresh, shipments, updateShipment]);
 

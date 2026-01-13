@@ -23,6 +23,32 @@ export enum ShipmentStatus {
   INSTALLMENTS = 'تسديد دين', // Transferred to installments for debt collection
 }
 
+export interface CompanyFeatures {
+  canImportData: boolean;
+  canExportData: boolean;
+  import_export: boolean; // Combined flag for legacy or simple gating
+  canManageDrivers: boolean;
+  canManageRegions: boolean;
+  canManageProducts: boolean;
+  canManagePrices: boolean;
+}
+
+export interface UsageLimits {
+  maxUsers: number;
+  maxDrivers: number;
+  maxRegions: number;
+  maxProducts: number;
+  maxStorageMb: number;
+}
+
+export interface CurrentUsage {
+  users: number;
+  drivers: number;
+  regions: number;
+  products: number;
+  storageMb: number;
+}
+
 /**
  * Represents a company/tenant in the multi-tenant system.
  */
@@ -36,6 +62,16 @@ export interface Company {
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
+
+  // Subscription Fields
+  subscriptionPlan: string;
+  subscriptionStatus: 'active' | 'suspended' | 'cancelled' | 'expired';
+  subscriptionStartDate?: string;
+  subscriptionEndDate?: string;
+  billingCycle: 'monthly' | 'quarterly' | 'annually';
+  usageLimits: UsageLimits;
+  currentUsage: CurrentUsage;
+  features: CompanyFeatures;
 }
 
 /**
@@ -81,6 +117,20 @@ export interface Region {
   dieselLiters: number;
   zaitriFee: number;
   roadExpenses: number; // Fixed road expenses for this region
+}
+
+/**
+ * Represents a versioned configuration for a region.
+ */
+export interface RegionConfig {
+  id: string;
+  regionId: string;
+  dieselLiterPrice: number;
+  dieselLiters: number;
+  zaitriFee: number;
+  roadExpenses: number;
+  effectiveFrom: string;
+  company_id?: string;
 }
 
 /**
@@ -186,6 +236,7 @@ export enum NotificationCategory {
  */
 export interface Notification {
   id: string; // UUID from Supabase
+  companyId?: string;
   message: string;
   timestamp: string;
   read: boolean;

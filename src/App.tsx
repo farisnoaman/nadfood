@@ -10,6 +10,7 @@ import Layout from './components/layout/Layout';
 import SyncStatusIndicator from './components/common/display/SyncStatusIndicator';
 import { Icons } from './components/Icons';
 import { PageLoading } from './components/common/ui/LoadingComponents';
+import { Toaster } from 'react-hot-toast';
 
 // Lazy load heavy components
 const Login = lazy(() => import('./components/features/auth/Login'));
@@ -271,6 +272,28 @@ const App: React.FC = () => (
             <ThemeProvider>
                 <AppProvider>
                     <AppRoutes />
+                    <Toaster
+                        position="top-center"
+                        toastOptions={{
+                            duration: 4000,
+                            style: {
+                                direction: 'rtl',
+                                fontFamily: 'inherit',
+                            },
+                            success: {
+                                iconTheme: {
+                                    primary: '#10b981',
+                                    secondary: '#fff',
+                                },
+                            },
+                            error: {
+                                iconTheme: {
+                                    primary: '#ef4444',
+                                    secondary: '#fff',
+                                },
+                            },
+                        }}
+                    />
                 </AppProvider>
             </ThemeProvider>
         </TenantGuard>

@@ -78,7 +78,7 @@ const getBase64FromUrl = async (url: string): Promise<string> => {
  * @param companyDetails - Company information for the print header.
  * @param currentUser - The user who is printing the report, for auditing purposes.
  */
-export const printShipmentDetails = async (shipment: Shipment, driver: Driver | undefined, companyDetails: CompanyPrintDetails, currentUser: User, regions: any[]): Promise<void> => {
+export const printShipmentDetails = async (shipment: Shipment, driver: Driver | undefined, companyDetails: CompanyPrintDetails, currentUser: User, regions: any[], allProducts: any[]): Promise<void> => {
   // Lazy load PDF dependencies to reduce initial bundle size
   await loadPDFDependencies();
 
@@ -109,6 +109,12 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
         logger.warn('Failed to load logo:', err);
       }
     }
+
+    // Process product weights
+    const productWeights: Record<string, number> = {};
+    allProducts.forEach(p => {
+      productWeights[p.id] = p.weightKg || 0;
+    });
 
     // Step 1: Create a temporary container for rendering the printable component.
     printContainer = document.createElement('div');
@@ -141,6 +147,7 @@ export const printShipmentDetails = async (shipment: Shipment, driver: Driver | 
         printTimestamp: printTimestamp,
         ...companyDetails,
         companyLogo: logoBase64 || companyDetails.companyLogo, // Use base64 if available
+        productWeights
       })
     );
 

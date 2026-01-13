@@ -20,11 +20,17 @@ export const useProducts = (isOnline: boolean, currentUser: User | null, onRefre
         await onRefresh();
     }, [isOnline, onRefresh]);
 
+    const batchUpsertProducts = useCallback(async (products: (Omit<Product, 'id'> & { id?: string })[]) => {
+        await productService.batchUpsertProducts(products, currentUser);
+        await onRefresh();
+    }, [currentUser, onRefresh]);
+
     return {
         products,
         setProducts,
         addProduct,
         updateProduct,
-        deleteProduct
+        deleteProduct,
+        batchUpsertProducts
     };
 };

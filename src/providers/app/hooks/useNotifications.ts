@@ -1,13 +1,13 @@
 import { useState, useCallback } from 'react';
-import { Notification } from '../types';
+import { Notification, User } from '../types';
 import { notificationService } from '../services';
 
-export const useNotifications = (isOnline: boolean) => {
+export const useNotifications = (isOnline: boolean, currentUser: User | null) => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
 
     const addNotification = useCallback(async (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
-        await notificationService.create(notification, isOnline);
-    }, [isOnline]);
+        await notificationService.create(notification, isOnline, currentUser?.companyId);
+    }, [isOnline, currentUser?.companyId]);
 
     const markNotificationAsRead = useCallback(async (notificationId: string) => {
         // Optimistic update

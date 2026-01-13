@@ -5,24 +5,28 @@ import Input from '../../../common/ui/Input';
 import Modal from '../../../common/ui/Modal';
 import { Icons } from '../../../Icons';
 import { useAppContext } from '../../../../providers/AppContext';
+import BatchImportModal from './BatchImportModal';
 
 interface RegionManagerProps {
     onExport?: () => void;
 }
 
 const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
-    const { regions, addRegion, updateRegion, deleteRegion, isOnline } = useAppContext();
+    const { regions, addRegion, updateRegion, deleteRegion, isOnline, checkLimit, hasFeature } = useAppContext();
     const [searchTerm, setSearchTerm] = useState('');
     const [visibleCount, setVisibleCount] = useState(20);
     const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
     const [editingRegion, setEditingRegion] = useState<Region | null>(null);
     const [regionToDelete, setRegionToDelete] = useState<Region | null>(null);
-    const [regionFormData, setRegionFormData] = useState<Omit<Region, 'id'>>({
-        name: '', dieselLiterPrice: 0, dieselLiters: 0, zaitriFee: 0, roadExpenses: 0,
-    });
+    const [regionName, setRegionName] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+    // Feature Flags & Limits
+    const canAddRegion = checkLimit('maxRegions', 1);
+    const canImport = hasFeature('import_export');
+
     const filteredRegions = useMemo(() => {
         if (!searchTerm.trim()) return regions;
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
@@ -40,7 +44,7 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
 
     const handleOpenRegionModal = (region: Region | null) => {
         setEditingRegion(region);
-        setRegionFormData(region ? { name: region.name, dieselLiterPrice: region.dieselLiterPrice, dieselLiters: region.dieselLiters, zaitriFee: region.zaitriFee, roadExpenses: region.roadExpenses || 0 } : { name: '', dieselLiterPrice: 0, dieselLiters: 0, zaitriFee: 0, roadExpenses: 0 });
+        setRegionName(region ? region.name : '');
         setIsRegionModalOpen(true);
         setError('');
     };
@@ -50,31 +54,36 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
         setEditingRegion(null);
     };
 
-    const handleRegionFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type } = e.target;
-        setRegionFormData(prev => ({
-            ...prev,
-            [name]: type === 'number' ? Math.max(0, parseFloat(value)) || 0 : value,
-        }));
-    };
-
     const handleSaveRegion = async () => {
         setError('');
-        if (!regionFormData.name.trim() || regionFormData.dieselLiterPrice <= 0 || regionFormData.dieselLiters <= 0 || regionFormData.zaitriFee < 0 || regionFormData.roadExpenses < 0) {
-            setError('يرجى ملء جميع الحقول بقيم صحيحة وأكبر من صفر (ما عدا رسوم زعيتري وخرج الطريق).');
+        if (!regionName.trim()) {
+            setError('يرجى إدخال اسم المنطقة.');
             return;
         }
+
+        if (!editingRegion && !canAddRegion) {
+            setError('لقد تجاوزت الحد المسموح به للمناطق في باقتك الحالية.');
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
             if (editingRegion) {
-                await updateRegion(editingRegion.id, regionFormData);
+                await updateRegion(editingRegion.id, { name: regionName });
             } else {
-                await addRegion(regionFormData);
+                // Add region with just the name - fees will be set in Region Fees tab
+                await addRegion({
+                    name: regionName,
+                    dieselLiterPrice: 0,
+                    dieselLiters: 0,
+                    zaitriFee: 0,
+                    roadExpenses: 0
+                });
             }
             handleCloseRegionModal();
-        } catch(err: any) {
-             if (err.message.includes('duplicate key')) {
+        } catch (err: any) {
+            if (err.message.includes('duplicate key')) {
                 setError('اسم المنطقة هذا موجود بالفعل.');
             } else {
                 setError(`فشل حفظ المنطقة: ${err.message}`);
@@ -90,7 +99,7 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
         try {
             await deleteRegion(regionToDelete.id);
             setRegionToDelete(null);
-        } catch(err: any) {
+        } catch (err: any) {
             alert(`فشل حذف المنطقة: ${err.message}`);
         } finally {
             setIsSubmitting(false);
@@ -108,18 +117,36 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                         Icon={Icons.Search}
                     />
                 </div>
-                 <div className="flex flex-wrap gap-2">
-                     <Button variant="secondary" onClick={() => handleOpenRegionModal(null)} disabled={!isOnline} title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}>
-                         <Icons.Plus className="ml-2 h-4 w-4" />
-                         إضافة منطقة جديدة
-                     </Button>
-                     {onExport && (
-                         <Button onClick={onExport}>
-                             <Icons.FileOutput className="ml-2 h-4 w-4" />
-                             تصدير
-                         </Button>
-                     )}
-                 </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        variant="secondary"
+                        onClick={() => handleOpenRegionModal(null)}
+                        disabled={!isOnline || !canAddRegion}
+                        title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddRegion ? 'عفواً، لقد تجاوزت الحد المسموح به في باقتك' : '')}
+                    >
+                        <Icons.Plus className="ml-2 h-4 w-4" />
+                        إضافة منطقة جديدة
+                    </Button>
+
+                    {canImport && (
+                        <Button
+                            variant="ghost"
+                            onClick={() => setIsImportModalOpen(true)}
+                            disabled={!isOnline || !canAddRegion}
+                            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddRegion ? 'لا يمكنك الاستيراد لأنك وصلت للحد الأقصى للمناطق' : '')}
+                        >
+                            <Icons.FileDown className="ml-2 h-4 w-4" />
+                            استيراد CSV
+                        </Button>
+                    )}
+
+                    {onExport && (
+                        <Button onClick={onExport}>
+                            <Icons.FileOutput className="ml-2 h-4 w-4" />
+                            تصدير
+                        </Button>
+                    )}
+                </div>
             </div>
             <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
                 {visibleRegions.length > 0 ? (
@@ -127,15 +154,11 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                         {visibleRegions.map((r: Region) => (
                             <div key={r.id} className="flex justify-between items-center p-3 bg-secondary-100 dark:bg-secondary-800 rounded">
                                 <div>
-                                    <p className="font-semibold">{r.name}</p>
-                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-secondary-600 dark:text-secondary-400 mt-1">
-                                        <span>{`الديزل: ${r.dieselLiters} لتر بسعر ${r.dieselLiterPrice}/لتر`}</span>
-                                        <span>رسوم زعيتري: {r.zaitriFee}</span>
-                                        <span>خرج الطريق: {r.roadExpenses || 0}</span>
-                                    </div>
+                                    <p className="font-semibold text-lg">{r.name}</p>
+                                    <p className="text-xs text-secondary-500">لتعيين الرسوم، استخدم تبويب "رسوم المناطق"</p>
                                 </div>
                                 <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                    <Button size="sm" variant="ghost" onClick={() => handleOpenRegionModal(r)} title="تعديل" disabled={!isOnline}>
+                                    <Button size="sm" variant="ghost" onClick={() => handleOpenRegionModal(r)} title="تعديل الاسم" disabled={!isOnline}>
                                         <Icons.Edit className="h-5 w-5 text-blue-500" />
                                     </Button>
                                     <Button size="sm" variant="destructive" onClick={() => setRegionToDelete(r)} title="حذف" disabled={!isOnline}>
@@ -157,16 +180,19 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                 )}
             </div>
 
-            <Modal isOpen={isRegionModalOpen} onClose={handleCloseRegionModal} title={editingRegion ? 'تعديل منطقة' : 'إضافة منطقة جديدة'}>
+            <Modal isOpen={isRegionModalOpen} onClose={handleCloseRegionModal} title={editingRegion ? 'تعديل اسم المنطقة' : 'إضافة منطقة جديدة'}>
                 <div className="space-y-4">
                     {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-                    <Input label="اسم المنطقة" name="name" value={regionFormData.name} onChange={handleRegionFormChange} required />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="رسوم مكتب زعيتري" name="zaitriFee" type="number" min="0" value={regionFormData.zaitriFee} onChange={handleRegionFormChange} required />
-                        <Input label="خرج الطريق" name="roadExpenses" type="number" min="0" value={regionFormData.roadExpenses} onChange={handleRegionFormChange} required />
-                        <Input label="عدد اللترات ديزل" name="dieselLiters" type="number" min="0" value={regionFormData.dieselLiters} onChange={handleRegionFormChange} required />
-                        <Input label="سعر الليتر ديزل" name="dieselLiterPrice" type="number" min="0" step="0.01" value={regionFormData.dieselLiterPrice} onChange={handleRegionFormChange} required />
-                    </div>
+                    <Input
+                        label="اسم المنطقة"
+                        value={regionName}
+                        onChange={e => setRegionName(e.target.value)}
+                        required
+                        placeholder="مثال: صنعاء، عدن، تعز..."
+                    />
+                    <p className="text-xs text-secondary-500">
+                        💡 بعد إضافة المنطقة، يمكنك تعيين الرسوم (الديزل، خرج الطريق، رسوم زعيتري) من تبويب "رسوم المناطق"
+                    </p>
                     <div className="flex justify-end gap-3 pt-4">
                         <Button variant="secondary" onClick={handleCloseRegionModal} disabled={isSubmitting}>إلغاء</Button>
                         <Button onClick={handleSaveRegion} disabled={isSubmitting}>{isSubmitting ? 'جاري الحفظ...' : 'حفظ'}</Button>
@@ -185,6 +211,12 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                     </div>
                 </div>
             </Modal>
+
+            <BatchImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                type="regions"
+            />
         </>
     );
 };

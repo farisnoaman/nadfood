@@ -7,7 +7,7 @@ import { encryptData, decryptData } from './encryption';
 import logger from './logger';
 
 const DB_NAME = 'ShipmentTrackerDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 import { STORES } from './constants';
 
@@ -96,6 +96,10 @@ export const initDB = (retryCount = 0): Promise<IDBDatabase> => {
 
       if (!db.objectStoreNames.contains(STORES.REGIONS)) {
         db.createObjectStore(STORES.REGIONS, { keyPath: 'id' });
+      }
+
+      if (!db.objectStoreNames.contains(STORES.REGION_CONFIGS)) {
+        db.createObjectStore(STORES.REGION_CONFIGS, { keyPath: 'id' });
       }
 
       if (!db.objectStoreNames.contains(STORES.SHIPMENTS)) {

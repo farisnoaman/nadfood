@@ -13,6 +13,24 @@ export const useShipments = (
 ) => {
     const [shipments, setShipments] = useState<Shipment[]>([]);
 
+    const checkShipmentExists = useCallback(async (orderNumber: string, companyId: string | undefined) => {
+        if (!companyId) return false;
+
+        const { data, error } = await supabase
+            .from('shipments')
+            .select('id')
+            .eq('sales_order', orderNumber)
+            .eq('company_id', companyId)
+            .maybeSingle();
+
+        if (error) {
+            logger.error('Error checking for duplicate shipment:', error);
+            return false; // Fail open to avoid blocking valid creations on network error
+        }
+
+        return !!data;
+    }, []);
+
     const addShipment = useCallback(async (shipment: Omit<Shipment, 'id'>) => {
         if (!isOnline) {
             logger.info('Offline: Queuing shipment creation.');
@@ -42,6 +60,12 @@ export const useShipments = (
             company_id: currentUser?.companyId
         } as any;
 
+        // Pre-flight check for duplicates
+        const exists = await checkShipmentExists(shipmentData.salesOrder, currentUser?.companyId);
+        if (exists) {
+            throw new Error('رقم الشحنة موجود بالفعل لهذه الشركة');
+        }
+
         const { data: newShipmentData, error: shipmentError } = await supabase
             .from('shipments')
             .insert(shipmentToInsert)
@@ -68,7 +92,7 @@ export const useShipments = (
         }
 
         await onRefresh();
-    }, [currentUser, onRefresh, isOnline]);
+    }, [currentUser, onRefresh, isOnline, checkShipmentExists]);
 
     const updateShipment = useCallback(async (shipmentId: string, updates: Partial<Shipment>) => {
         if (!isOnline) {

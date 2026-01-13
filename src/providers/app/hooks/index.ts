@@ -5,3 +5,4 @@ export * from './useRegions';
 export * from './useNotifications';
 export * from './useShipments';
 
+export * from './useSubscription';

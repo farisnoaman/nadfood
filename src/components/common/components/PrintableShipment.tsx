@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shipment } from '../../../types/types';
+import { Shipment } from '../../../types';
 
 interface PrintableShipmentProps {
   shipment: Shipment;
@@ -13,6 +13,7 @@ interface PrintableShipmentProps {
   companyPhone: string;
   companyLogo: string;
   isPrintHeaderEnabled: boolean;
+  productWeights: Record<string, number>;
 }
 
 const PrintableShipment: React.FC<PrintableShipmentProps> = ({
@@ -27,7 +28,11 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
   companyPhone,
   companyLogo,
   isPrintHeaderEnabled,
+  productWeights,
 }) => {
+  const totalDamagedValue = shipment.products.reduce((sum, p) => sum + (p.damagedValue || 0), 0);
+  const totalShortageValue = shipment.products.reduce((sum, p) => sum + (p.shortageValue || 0), 0);
+
   return (
     <div className="print-container" style={{ fontFamily: 'Arial, sans-serif', direction: 'rtl', padding: '15px', backgroundColor: '#f9f9f9' }}>
       {isPrintHeaderEnabled && (
@@ -115,6 +120,7 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
               <th style={{ padding: '6px', textAlign: 'right', border: '1px solid #ddd', fontWeight: 'bold' }}>المنتج</th>
               <th style={{ padding: '6px', textAlign: 'center', border: '1px solid #ddd', fontWeight: 'bold' }}>الكمية</th>
               <th style={{ padding: '6px', textAlign: 'center', border: '1px solid #ddd', fontWeight: 'bold' }}>السعر</th>
+              <th style={{ padding: '6px', textAlign: 'center', border: '1px solid #ddd', fontWeight: 'bold' }}>إجمالي الوزن بالطن</th>
             </tr>
           </thead>
           <tbody>
@@ -125,9 +131,27 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
                 <td style={{ padding: '6px', textAlign: 'center', border: '1px solid #ddd' }}>
                   {product.productWagePrice ? `${product.productWagePrice.toLocaleString()} ر.ي` : 'غير محدد'}
                 </td>
+                <td style={{ padding: '6px', textAlign: 'center', border: '1px solid #ddd' }}>
+                  {(((productWeights[product.productId] ?? 0) * product.cartonCount) / 1000).toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+                </td>
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr style={{ background: '#e9ecef', fontWeight: 'bold' }}>
+              <td colSpan={2} style={{ padding: '6px', textAlign: 'right', border: '1px solid #ddd' }}>الإجمالي</td>
+              <td style={{ padding: '6px', textAlign: 'center', border: '1px solid #ddd' }}>
+                {shipment.products.reduce((sum, product) => sum + (product.productWagePrice || 0), 0) > 0 &&
+                  `${shipment.products.reduce((sum, product) => sum + (product.productWagePrice || 0), 0).toLocaleString()} ر.ي`
+                }
+              </td>
+              <td style={{ padding: '6px', textAlign: 'center', border: '1px solid #ddd' }}>
+                {shipment.products.reduce((sum, product) => sum + ((productWeights[product.productId] ?? 0) * product.cartonCount), 0) / 1000 > 0 &&
+                  (shipment.products.reduce((sum, product) => sum + ((productWeights[product.productId] ?? 0) * product.cartonCount), 0) / 1000).toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+                }
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
 
@@ -152,11 +176,11 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
 
 
       <div style={{ marginBottom: '15px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #d32f2f', paddingBottom: '3px', color: '#d32f2f' }}>الخصومات</h3>
+        <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #d32f2f', paddingBottom: '3px', color: '#d32f2f' }}>الاستقطاعات</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '6px' }}>
           {Object.entries({
-            'قيمة التالف': shipment.damagedValue,
-            'قيمة النقص': shipment.shortageValue,
+            'قيمة التالف': totalDamagedValue,
+            'قيمة النقص': totalShortageValue,
             'مبالغ أخرى': shipment.otherAmounts,
           }).map(([label, value]) => (
             <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#ffebee', textAlign: 'center' }}>
@@ -168,21 +192,17 @@ const PrintableShipment: React.FC<PrintableShipmentProps> = ({
       </div>
 
       <div style={{ marginBottom: '15px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #2e7d32', paddingBottom: '3px', color: '#2e7d32' }}>الإضافات</h3>
+        <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', borderBottom: '2px solid #2e7d32', paddingBottom: '3px', color: '#2e7d32' }}>الاستحقاقات</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '6px' }}>
           {Object.entries({
             'سندات تحسين': shipment.improvementBonds,
-            'بدل مسائي': shipment.eveningAllowance,
+            'ممسى ': shipment.eveningAllowance,
             'رسوم التحويل': shipment.transferFee,
-            'معدل الضريبة': shipment.taxRate ? `${shipment.taxRate}%` : null,
           }).map(([label, value]) => (
             <div key={label} style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', background: '#e8f5e8', textAlign: 'center' }}>
               <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#2e7d32' }}>{label}:</div>
               <div style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold' }}>
-                {label === 'معدل الضريبة'
-                  ? (value ? value : '0%')
-                  : `${(typeof value === 'number' ? value : 0).toLocaleString()} ر.ي`
-                }
+                {`${(typeof value === 'number' ? value : 0).toLocaleString()} ر.ي`}
               </div>
             </div>
           ))}

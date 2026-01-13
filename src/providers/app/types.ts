@@ -7,7 +7,7 @@ import { Database } from '../../supabase/database.types';
 import {
     User, Role, Product, Region, Driver, Shipment, ProductPrice,
     DeductionPrice, Notification, NotificationCategory, ShipmentProduct,
-    ShipmentStatus, Installment, InstallmentPayment
+    ShipmentStatus, Installment, InstallmentPayment, RegionConfig
 } from '../../types';
 
 // Type alias for Supabase row types
@@ -61,6 +61,7 @@ export type DeductionPriceRow = {
 export interface AppContextType {
     // Auth
     currentUser: User | null;
+    company: import('../../types').Company | null;
     handleLogout: () => Promise<void>;
     loadOfflineUser: () => Promise<void>;
 
@@ -83,9 +84,13 @@ export interface AppContextType {
 
     // Regions
     regions: Region[];
+    regionConfigs: RegionConfig[];
     addRegion: (region: Omit<Region, 'id'>) => Promise<void>;
     updateRegion: (regionId: string, updates: Partial<Region>) => Promise<void>;
     deleteRegion: (regionId: string) => Promise<void>;
+    addRegionConfig: (config: Omit<RegionConfig, 'id'>) => Promise<void>;
+    updateRegionConfig: (configId: string, updates: Partial<RegionConfig>) => Promise<void>;
+    deleteRegionConfig: (configId: string) => Promise<void>;
 
     // Shipments
     shipments: Shipment[];
@@ -101,6 +106,13 @@ export interface AppContextType {
     addDeductionPrice: (price: Omit<DeductionPrice, 'id'>) => Promise<void>;
     updateDeductionPrice: (priceId: string, updates: Partial<DeductionPrice>) => Promise<void>;
     deleteDeductionPrice: (priceId: string) => Promise<void>;
+
+    // Batch Operations (for CSV import)
+    batchUpsertProductPrices: (prices: (Omit<ProductPrice, 'id'> & { id?: string })[]) => Promise<void>;
+    batchUpsertRegionConfigs: (configs: (Omit<RegionConfig, 'id'> & { id?: string })[]) => Promise<void>;
+    batchUpsertRegions: (regions: (Omit<Region, 'id'> & { id?: string })[]) => Promise<void>;
+    batchUpsertProducts: (products: (Omit<Product, 'id'> & { id?: string })[]) => Promise<void>;
+    batchUpsertDrivers: (drivers: (Omit<Driver, 'id'> & { id?: number })[]) => Promise<void>;
 
     // Notifications
     notifications: Notification[];
@@ -144,11 +156,16 @@ export interface AppContextType {
     // Sync
     refreshAllData: () => Promise<void>;
     syncOfflineMutations: () => Promise<void>;
+
+    // Subscription & Access Control
+    isSubscriptionActive: boolean;
+    checkLimit: (entity: keyof import('../../types').UsageLimits, countToAdd?: number) => boolean;
+    hasFeature: (feature: keyof import('../../types').CompanyFeatures) => boolean;
 }
 
 // Re-export types from types module for convenience
 export type {
     User, Role, Product, Region, Driver, Shipment, ProductPrice,
     DeductionPrice, Notification, NotificationCategory, ShipmentProduct,
-    ShipmentStatus, Installment, InstallmentPayment
+    ShipmentStatus, Installment, InstallmentPayment, RegionConfig
 };

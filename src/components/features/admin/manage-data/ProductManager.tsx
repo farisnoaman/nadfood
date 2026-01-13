@@ -5,9 +5,10 @@ import Input from '../../../common/ui/Input';
 import Modal from '../../../common/ui/Modal';
 import { Icons } from '../../../Icons';
 import { useAppContext } from '../../../../providers/AppContext';
+import BatchImportModal from './BatchImportModal';
 
 const ProductManager: React.FC = () => {
-  const { products, addProduct, updateProduct, deleteProduct, isOnline } = useAppContext();
+  const { products, addProduct, updateProduct, deleteProduct, isOnline, checkLimit, hasFeature } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleCount, setVisibleCount] = useState(20);
 
@@ -21,6 +22,11 @@ const ProductManager: React.FC = () => {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // Feature Flags & Limits
+  const canAddProduct = checkLimit('maxProducts', 1);
+  const canImport = hasFeature('import_export');
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) return products;
@@ -73,6 +79,12 @@ const ProductManager: React.FC = () => {
       setError('يرجى ملء اسم المنتج.');
       return;
     }
+
+    if (!editingProduct && !canAddProduct) {
+      setError('لقد تجاوزت الحد المسموح به للمنتجات في باقتك الحالية.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       if (editingProduct) {
@@ -134,10 +146,28 @@ const ProductManager: React.FC = () => {
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={handleOpenAddModal} disabled={!isOnline} title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}>
+          <Button
+            variant="secondary"
+            onClick={handleOpenAddModal}
+            disabled={!isOnline || !canAddProduct}
+            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddProduct ? 'عفواً، لقد تجاوزت الحد المسموح به في باقتك' : '')}
+          >
             <Icons.Plus className="ml-2 h-4 w-4" />
             إضافة منتج جديد
           </Button>
+
+          {canImport && (
+            <Button
+              variant="ghost"
+              onClick={() => setIsImportModalOpen(true)}
+              disabled={!isOnline || !canAddProduct}
+              title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddProduct ? 'لا يمكنك الاستيراد لأنك وصلت للحد الأقصى للمنتجات' : '')}
+            >
+              <Icons.FileDown className="ml-2 h-4 w-4" />
+              استيراد CSV
+            </Button>
+          )}
+
         </div>
       </div>
       <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
@@ -242,6 +272,12 @@ const ProductManager: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      <BatchImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        type="products"
+      />
     </>
   );
 };

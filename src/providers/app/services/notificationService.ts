@@ -10,17 +10,23 @@ import * as IndexedDB from '../../../utils/indexedDB';
 import { STORES } from '../../../utils/constants';
 
 export const notificationService = {
-    async fetchAll(signal?: AbortSignal): Promise<Notification[]> {
+    async fetchAll(signal?: AbortSignal, companyId?: string): Promise<Notification[]> {
         let query = supabase
             .from('notifications')
             .select('*')
             .order('timestamp', { ascending: false });
+
+        if (companyId) {
+            query = query.or(`company_id.eq.${companyId},company_id.is.null`);
+        }
 
         if (signal) {
             query = query.abortSignal(signal);
         }
 
         const { data, error } = await query;
+
+        logger.debug(`Fetched ${data?.length || 0} notifications for companyId: ${companyId || 'none'}`);
 
         if (error) {
             logger.error('Error fetching notifications:', error);
@@ -30,7 +36,7 @@ export const notificationService = {
         return (data || []).map(notificationFromRow);
     },
 
-    async create(notification: Omit<Notification, 'id' | 'timestamp' | 'read'>, isOnline: boolean): Promise<void> {
+    async create(notification: Omit<Notification, 'id' | 'timestamp' | 'read'>, isOnline: boolean, companyId?: string): Promise<void> {
         const notificationData = {
             id: window.crypto.randomUUID(),
             message: notification.message,
@@ -39,6 +45,7 @@ export const notificationService = {
             target_user_ids: notification.targetUserIds,
             timestamp: new Date().toISOString(),
             read: false,
+            company_id: companyId || null,
         };
 
         if (isOnline) {

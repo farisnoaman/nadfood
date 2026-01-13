@@ -8,6 +8,7 @@ import { Icons } from '../../Icons';
 import { printShipmentDetails } from '../../../utils/print';
 import { useAppContext } from '../../../providers/AppContext';
 import { supabase } from '../../../utils/supabaseClient';
+import logger from '../../../utils/logger';
 
 import FieldValue from '../../common/components/FieldValue';
 import ProductDetails from '../../common/components/ProductDetails';
@@ -180,8 +181,9 @@ const FinalCalculationSection: React.FC<{ finalAmount: number; shipment: Shipmen
   <div className="space-y-3 bg-green-50 dark:bg-green-900/20 p-3 rounded-md border-2 border-green-200 dark:border-green-800">
     <div className="flex flex-col sm:flex-row justify-between items-center text-center sm:text-right gap-2">
       <span className="font-bold text-xl text-secondary-800 dark:text-secondary-100">إجمالي المبلغ المستحق النهائي</span>
-      <span className="font-extrabold text-3xl text-green-700 dark:text-green-400">
-        {finalAmount.toLocaleString('en-US')} ر.ي
+      <span className={`font-extrabold text-3xl ${finalAmount < 0 ? 'text-red-600' : 'text-green-700 dark:text-green-400'}`}>
+        {finalAmount < 0 ? 'عليه ' : 'له '}
+        {Math.abs(finalAmount).toLocaleString('en-US')} ر.ي
       </span>
     </div>
     {((shipment.modifiedBy && shipment.modifiedAt)) && (
@@ -244,7 +246,8 @@ interface AdminShipmentModalProps {
 const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpen, onClose }) => {
   const {
     updateShipment, createInstallment, currentUser, addNotification, drivers, regions,
-    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, installments, products, deductionPrices
+    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, installments, products, deductionPrices,
+    checkLimit
   } = useAppContext();
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
@@ -343,9 +346,16 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
       return;
     }
 
-    // Validate file size (1MB max)
-    if (file.size > 1 * 1024 * 1024) {
-      alert('حجم الملف كبير جداً. الحد الأقصى هو 1 ميجابايت');
+    // Validate file size
+    if (file.size > 5 * 1024 * 1024) {
+      alert('حجم الملف كبير جداً. الحد الأقصى هو 5 ميجابايت');
+      return;
+    }
+
+    // CHECK PLAN STORAGE LIMIT
+    const fileSizeMb = file.size / (1024 * 1024);
+    if (!checkLimit('maxStorageMb', fileSizeMb)) {
+      alert('عفواً، لقد تجاوزت مساحة التخزين المسموح بها في باقتك الحالية. لا يمكن رفع المزيد من الملفات.');
       return;
     }
 
@@ -467,7 +477,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
     if (!currentUser) return;
     const driver = drivers.find((d: Driver) => d.id === currentShipment.driverId);
     const companyDetails = { companyName, companyAddress, companyPhone, companyLogo, isPrintHeaderEnabled };
-    printShipmentDetails(currentShipment, driver, companyDetails, currentUser, regions);
+    printShipmentDetails(currentShipment, driver, companyDetails, currentUser, regions, products);
   };
 
   const handleMoveToInstallments = async () => {
@@ -552,7 +562,14 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
     <Modal isOpen={isOpen} onClose={onClose} title={`إدارة الشحنة: ${shipment.salesOrder}`} size="xl">
       <div className="space-y-4 p-1">
 
-        <ShipmentStepper status={currentShipment.status} />
+        <ShipmentStepper
+          status={currentShipment.status}
+          dates={{
+            traffic: currentShipment.orderDate,
+            accounting: currentShipment.modifiedAt,
+            admin: currentShipment.updated_at
+          }}
+        />
 
         <ProductDetails
           products={currentShipment.products}
@@ -658,7 +675,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
               </div>
             ) : (
               <div className="text-sm text-secondary-500 dark:text-secondary-400">
-                لا يوجد مرفق (الحد الأقصى 1 ميجابايت - PDF أو صورة)
+                لا يوجد مرفق (الحد الأقصى 5 ميجابايت - PDF أو صورة)
               </div>
             )}
           </div>
@@ -687,20 +704,8 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
                 إغلاق
               </Button>
             </div>
-          ) : finalAmount < 0 ? (
-            // Show only "ترحيل الى التسديدات" button for negative amounts
-            <div className="flex justify-center">
-              <Button
-                variant="primary"
-                onClick={handleMoveToInstallments}
-                disabled={isSubmitting}
-                className="px-8 py-3 text-lg font-semibold"
-              >
-                {isSubmitting ? 'جاري الترحيل...' : <> <Icons.ArrowRight className="ml-2 h-5 w-5" /> ترحيل الى التسديدات </>}
-              </Button>
-            </div>
           ) : (
-            // Show normal buttons for non-negative amounts
+            // Show all buttons. If negative, "ترحيل الى التسديدات" is primary.
             <div className="grid grid-cols-2 gap-3">
               {isFinal && (
                 <Button variant="secondary" onClick={handlePrint} className="w-full">
@@ -708,7 +713,7 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
                   طباعة
                 </Button>
               )}
-              {!isFinal && <div></div>} {/* Empty space when print button is hidden */}
+              {!isFinal && <div></div>}
 
               <Button variant="secondary" onClick={onClose} disabled={isSubmitting} className="w-full">
                 إغلاق
@@ -722,9 +727,15 @@ const AdminShipmentModal: React.FC<AdminShipmentModalProps> = ({ shipment, isOpe
                 {isSubmitting ? 'جاري الإرجاع...' : <> <Icons.ArrowLeft className="ml-2 h-4 w-4" /> إرجاع الى مسؤول الحركة </>}
               </Button>
 
-              <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting} className="w-full">
-                {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'إغلاق نهائي'} </>}
-              </Button>
+              {finalAmount < 0 ? (
+                <Button variant="primary" onClick={handleMoveToInstallments} disabled={isSubmitting} className="w-full">
+                  {isSubmitting ? 'جاري الترحيل...' : <> <Icons.ArrowRight className="ml-2 h-4 w-4" /> ترحيل الى التسديدات </>}
+                </Button>
+              ) : (
+                <Button variant="primary" onClick={handleFinalize} disabled={isSubmitting} className="w-full">
+                  {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Check className="ml-2 h-4 w-4" /> {shipment.status === ShipmentStatus.FINAL || shipment.status === ShipmentStatus.FINAL_MODIFIED ? 'تأكيد التعديل' : 'إغلاق نهائي'} </>}
+                </Button>
+              )}
             </div>
           )}
         </div>

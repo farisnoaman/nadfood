@@ -6,6 +6,7 @@ import FleetShipmentModal from './FleetShipmentModal';
 import ReturnedShipmentsTab from './ReturnedShipmentsTab';
 
 import { IconsWithFallback } from '../../Icons';
+import logger from '../../../utils/logger';
 
 type Tab = 'create' | 'returned';
 
@@ -40,7 +41,7 @@ const FleetDashboard: React.FC = () => {
       if (!shipments || !Array.isArray(shipments) || shipments.length === 0) {
         return [];
       }
-      
+
       const filtered = shipments
         .filter((s: Shipment) => {
           // Validate shipment object
@@ -54,7 +55,7 @@ const FleetDashboard: React.FC = () => {
           const dateB = new Date(b?.entryTimestamp || b?.createdAt || 0).getTime();
           return dateB - dateA;
         });
-      
+
       return filtered;
     } catch (error) {
       logger.error('Error filtering returned shipments:', error);
@@ -89,11 +90,10 @@ const FleetDashboard: React.FC = () => {
     return (
       <button
         onClick={handleClick}
-        className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors relative ${
-          activeTab === tabId
+        className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors relative ${activeTab === tabId
             ? 'bg-primary-600 text-white'
             : 'text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'
-        }`}
+          }`}
       >
         {Icon && typeof Icon === 'function' && <Icon className="ml-2 h-5 w-5" />}
         {label}
@@ -111,16 +111,16 @@ const FleetDashboard: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="hidden sm:block text-2xl font-bold">لوحة تحكم مسؤول الحركة</h1>
       </div>
-      
+
       {/* Tabs */}
       <div className="mb-6">
         <div className="flex flex-wrap gap-2 border-b border-secondary-200 dark:border-secondary-700 pb-2">
           <TabButton tabId="create" label="إنشاء شحنة جديدة" icon={IconsWithFallback.FilePlus} />
-          <TabButton 
-            tabId="returned" 
-            label="المرتجعة" 
-            icon={IconsWithFallback.Undo2} 
-            badge={returnedShipments.length} 
+          <TabButton
+            tabId="returned"
+            label="المرتجعة"
+            icon={IconsWithFallback.Undo2}
+            badge={returnedShipments.length}
           />
         </div>
       </div>
@@ -133,7 +133,7 @@ const FleetDashboard: React.FC = () => {
       )}
 
       {activeTab === 'returned' && (
-        <ReturnedShipmentsTab 
+        <ReturnedShipmentsTab
           returnedShipments={returnedShipments}
           drivers={drivers}
           regions={regions}

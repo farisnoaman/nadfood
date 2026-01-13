@@ -11,6 +11,8 @@ import { Icons } from '../../Icons';
 import SearchableSelect from '../../common/forms/SearchableSelect';
 import { useAppContext } from '../../../providers/AppContext';
 import { checkDuplicateSalesOrder } from '../../../utils/validation';
+import toast from 'react-hot-toast';
+import logger from '../../../utils/logger';
 
 /**
  * Enhanced SearchableSelect for drivers that allows searching by name or plate number
@@ -217,8 +219,6 @@ const NewFleetShipmentForm: React.FC = () => {
   const [regionId, setRegionId] = useState(regions[0]?.id || '');
   const [driverId, setDriverId] = useState<number>(0);
   const [selectedProducts, setSelectedProducts] = useState<ShipmentProduct[]>([{ productId: '', productName: '', cartonCount: 0 }]);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showMissingPriceModal, setShowMissingPriceModal] = useState(false);
   const [missingPriceProducts, setMissingPriceProducts] = useState<string[]>([]);
@@ -260,7 +260,7 @@ const NewFleetShipmentForm: React.FC = () => {
     const sanitizedSalesOrder = sanitizeInput(salesOrder);
 
     if (!orderDate || !sanitizedSalesOrder || !regionId || driverId === 0 || selectedProducts.some(p => !p.productId || p.cartonCount <= 0)) {
-      setError('يرجى ملء جميع الحقول المطلوبة والتأكد من أن عدد الكراتين أكبر من صفر.');
+      toast.error('يرجى ملء جميع الحقول المطلوبة والتأكد من أن عدد الكراتين أكبر من صفر.');
       setSubmitting(false);
       return;
     }
@@ -268,7 +268,7 @@ const NewFleetShipmentForm: React.FC = () => {
     // Check for duplicate sales order
     const duplicateCheck = checkDuplicateSalesOrder(sanitizedSalesOrder, shipments);
     if (!duplicateCheck.isValid) {
-      setError(duplicateCheck.error);
+      toast.error(duplicateCheck.error || 'رقم الشحنة موجود بالفعل');
       setSubmitting(false);
       return;
     }
@@ -364,7 +364,8 @@ const NewFleetShipmentForm: React.FC = () => {
 
       await Promise.all(notificationPromises);
 
-      setSuccess(`تم إرسال الشحنة بنجاح! رقم الأمر: ${newShipment.salesOrder}`);
+      // Show success toast
+      toast.success(`تم إرسال الشحنة بنجاح! رقم الأمر: ${newShipment.salesOrder}`);
 
       // Reset the form
       setSalesOrder('');
@@ -374,7 +375,12 @@ const NewFleetShipmentForm: React.FC = () => {
 
     } catch (err: any) {
       logger.error("Failed to submit shipment:", err);
-      setError(`فشل إرسال الشحنة: ${err.message}`);
+      // Show error toast - do NOT reset form
+      if (err.message.includes('رقم الشحنة موجود')) {
+        toast.error(err.message);
+      } else {
+        toast.error(`فشل إرسال الشحنة: ${err.message}`);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -384,8 +390,6 @@ const NewFleetShipmentForm: React.FC = () => {
     <>
       <Card title="بيانات الشحنة الجديدة">
         <form onSubmit={handleSubmit} className="space-y-8">
-          {error && <div className="p-3 bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 rounded-md">{error}</div>}
-          {success && <div className="p-3 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 rounded-md">{success}</div>}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <ArabicDatePicker label="تاريخ الأمر" value={orderDate} onChange={setOrderDate} required />

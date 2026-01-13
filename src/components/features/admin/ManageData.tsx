@@ -6,16 +6,19 @@ import DriverManager from './manage-data/DriverManager';
 import RegionManager from './manage-data/RegionManager';
 import PriceManager from './manage-data/PriceManager';
 import DeductionPriceManager from './manage-data/DeductionPriceManager';
+import RegionConfigManager from './manage-data/RegionConfigManager';
 import SearchableSelect from '../../common/forms/SearchableSelect';
 import { supabase } from '../../../utils/supabaseClient';
+import logger from '../../../utils/logger';
 
-type DataType = 'products' | 'drivers' | 'regions' | 'prices' | 'deductionPrices';
+type DataType = 'products' | 'drivers' | 'regions' | 'prices' | 'regionFees' | 'deductionPrices';
 
 const TABS: { id: DataType; label: string; icon: React.ElementType }[] = [
     { id: 'products', label: 'المنتجات', icon: Icons.Package },
     { id: 'drivers', label: 'السائقون', icon: Icons.User },
     { id: 'regions', label: 'المناطق', icon: Icons.MapPin },
     { id: 'prices', label: 'الأسعار', icon: Icons.ChevronsRightLeft },
+    { id: 'regionFees', label: 'رسوم المناطق', icon: Icons.DollarSign },
     { id: 'deductionPrices', label: 'أسعار العقوبات', icon: Icons.AlertTriangle },
 ];
 
@@ -104,6 +107,7 @@ const ManageData: React.FC = () => {
         drivers: <DriverManager />,
         regions: <RegionManager onExport={handleExport} />,
         prices: <PriceManager />,
+        regionFees: <RegionConfigManager />,
         deductionPrices: <DeductionPriceManager />,
     };
 

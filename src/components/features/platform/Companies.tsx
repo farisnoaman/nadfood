@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../utils/supabaseClient';
 import { Icons } from '../../Icons';
 import toast from 'react-hot-toast';
+import logger from '../../../utils/logger';
+import CompanyEditModal from './CompanyEditModal';
 
 const PlatformCompanies: React.FC = () => {
     const [companies, setCompanies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [snapshotting, setSnapshotting] = useState<string | null>(null);
+    const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchCompanies();
@@ -79,6 +82,13 @@ const PlatformCompanies: React.FC = () => {
 
     const ActionButtons = ({ co }: { co: any }) => (
         <div className="flex items-center gap-2">
+            <button
+                onClick={() => setEditingCompanyId(co.id)}
+                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-600 transition-colors"
+                title="تعديل الباقة والحدود"
+            >
+                <Icons.Edit className="w-5 h-5" />
+            </button>
             <button
                 onClick={() => toggleStatus(co.id, co.is_active)}
                 className={`p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${co.is_active ? 'text-red-500' : 'text-emerald-500'}`}
@@ -210,6 +220,16 @@ const PlatformCompanies: React.FC = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Edit Modal */}
+            {editingCompanyId && (
+                <CompanyEditModal
+                    isOpen={!!editingCompanyId}
+                    onClose={() => setEditingCompanyId(null)}
+                    companyId={editingCompanyId}
+                    onSave={fetchCompanies}
+                />
+            )}
         </div>
     );
 };

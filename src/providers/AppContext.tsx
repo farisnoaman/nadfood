@@ -1,25 +1,15 @@
-
 import React, { createContext, useState, useEffect, useContext, useMemo, useCallback, useRef } from 'react';
-import { User, Product, Region, Driver, Shipment, ProductPrice, Notification, ShipmentProduct, Installment, InstallmentPayment } from '../types';
+import { User, Product, Region, Driver, Shipment, ProductPrice, Notification, ShipmentProduct, Installment, InstallmentPayment, RegionConfig } from '../types';
 import { supabase } from '../utils/supabaseClient';
-
 import * as IndexedDB from '../utils/indexedDB';
 import { STORES } from '../utils/constants';
 import logger from '../utils/logger';
-
-// Import types and mappers
 import { AppContextType } from './app/types';
-import {
-    shipmentFromRow, shipmentProductFromRow,
-} from './app/mappers';
-
-// Service modules
+import { shipmentFromRow, shipmentProductFromRow, companyFromRow } from './app/mappers';
 import {
     userService, productService, driverService,
     regionService, notificationService, priceService, installmentService
 } from './app/services';
-
-// Hooks
 import { useAuth } from './app/hooks/useAuth';
 import { useProducts } from './app/hooks/useProducts';
 import { useDrivers } from './app/hooks/useDrivers';
@@ -30,9 +20,9 @@ import { usePrices } from './app/hooks/usePrices';
 import { useInstallments } from './app/hooks/useInstallments';
 import { useSettings } from './app/hooks/useSettings';
 import { useSync } from './app/hooks/useSync';
+import { useSubscription } from './app/hooks/useSubscription';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // 1. Refs for breaking circular dependencies
     const fetchAllDataRef = useRef<() => Promise<void>>(async () => { });
@@ -48,6 +38,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const clearDataRef = useRef<() => void>(() => { });
     const clearDataWrapper = useCallback(() => clearDataRef.current(), []);
 
+    // Ref to hold the current user, updated synchronously when currentUser changes
+    const currentUserRef = useRef<User | null>(null);
+
     // 2. Settings Hook (Independent)
     const {
         accountantPrintAccess, setAccountantPrintAccess, isPrintHeaderEnabled, setIsPrintHeaderEnabled,
@@ -61,45 +54,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isProfileLoaded, handleLogout, loadOfflineUser
     } = useAuth({
         clearData: clearDataWrapper,
-        loadData: async (
+        loadData: useCallback(async (
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            _hasCachedData,
+            _hasCachedData: boolean,
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            _isOnline,
+            _isOnline: boolean,
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            _offlineSession,
+            _offlineSession: any,
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            _userProfile
+            _userProfile: User | null
         ) => {
             // This is a minimal implementation of loadData expected by useAuth
             // Ideally useAuth should just call refreshWrapper if it needs full data load
             await refreshWrapper();
-        },
+        }, [refreshWrapper]),
         addNotification: addNotificationWrapper
     });
 
     // 4. Sync Hook (Provides isOnline)
     const { isOnline, isSyncing, syncOfflineMutations, error: syncError } = useSync(currentUser, refreshWrapper, addNotificationWrapper);
 
-    // 5. Notification Hook (Provides addNotification implementation)
-    const { notifications, setNotifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead } = useNotifications(isOnline);
+    // 5. Subscription Hook (New)
+    const {
+        company, fetchCompany, isSubscriptionActive, checkLimit, hasFeature
+    } = useSubscription(currentUser);
+
+    // 6. Notification Hook (Provides addNotification implementation)
+    const { notifications, setNotifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead } = useNotifications(isOnline, currentUser);
 
     // Update notification ref
     useEffect(() => {
         addNotificationRef.current = addNotification;
     }, [addNotification]);
 
+    // Sync currentUserRef when currentUser changes
+    useEffect(() => {
+        currentUserRef.current = currentUser;
+    }, [currentUser]);
+
     // 6. Data Hooks
-    const { products, setProducts, addProduct, updateProduct, deleteProduct } = useProducts(isOnline, currentUser, refreshWrapper);
-    const { drivers, setDrivers, addDriver, updateDriver, deleteDriver } = useDrivers(isOnline, currentUser, refreshWrapper);
-    const { regions, setRegions, addRegion, updateRegion, deleteRegion } = useRegions(isOnline, currentUser, refreshWrapper);
+    const { products, setProducts, addProduct, updateProduct, deleteProduct, batchUpsertProducts } = useProducts(isOnline, currentUser, refreshWrapper);
+    const { drivers, setDrivers, addDriver, updateDriver, deleteDriver, batchUpsertDrivers } = useDrivers(isOnline, currentUser, refreshWrapper);
+    const { regions, setRegions, regionConfigs, setRegionConfigs, addRegion, updateRegion, deleteRegion, addRegionConfig, updateRegionConfig, deleteRegionConfig, batchUpsertRegionConfigs, batchUpsertRegions } = useRegions(isOnline, currentUser, refreshWrapper);
     const { shipments, setShipments, addShipment, updateShipment } = useShipments(isOnline, currentUser, refreshWrapper);
 
 
     // 7. New Hooks
     const {
         productPrices, setProductPrices, deductionPrices, setDeductionPrices,
-        addProductPrice, updateProductPrice, deleteProductPrice,
+        addProductPrice, updateProductPrice, deleteProductPrice, batchUpsertProductPrices,
         addDeductionPrice, updateDeductionPrice, deleteDeductionPrice
     } = usePrices(isOnline, currentUser, refreshWrapper);
 
@@ -141,6 +144,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setNotifications([]);
         setInstallments([]);
         setInstallmentPayments([]);
+        setRegionConfigs([]);
         // Settings are not necessarily cleared on logout? 
     }, [setProducts, setDrivers, setRegions, setShipments, setProductPrices, setDeductionPrices, setNotifications, setInstallments, setInstallmentPayments]);
 
@@ -160,7 +164,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 const [
                     cachedUsers, cachedProducts, cachedDrivers, cachedRegions,
                     cachedShipments, cachedPrices, cachedNotifications,
-                    cachedInstallments, cachedInstallmentPayments
+                    cachedInstallments, cachedInstallmentPayments, cachedRegionConfigs
                 ] = await Promise.all([
                     IndexedDB.getAllFromStore<User>(STORES.USERS),
                     IndexedDB.getAllFromStore<Product>(STORES.PRODUCTS),
@@ -170,7 +174,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     IndexedDB.getAllFromStore<ProductPrice>(STORES.PRODUCT_PRICES),
                     IndexedDB.getAllFromStore<Notification>(STORES.NOTIFICATIONS),
                     IndexedDB.getAllFromStore<Installment>(STORES.INSTALLMENTS),
-                    IndexedDB.getAllFromStore<InstallmentPayment>(STORES.INSTALLMENT_PAYMENTS)
+                    IndexedDB.getAllFromStore<InstallmentPayment>(STORES.INSTALLMENT_PAYMENTS),
+                    IndexedDB.getAllFromStore<RegionConfig>(STORES.REGION_CONFIGS)
                 ]);
 
                 if (cachedUsers.length > 0) setUsers(cachedUsers);
@@ -182,6 +187,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 if (cachedNotifications.length > 0) setNotifications(cachedNotifications);
                 if (cachedInstallments.length > 0) setInstallments(cachedInstallments);
                 if (cachedInstallmentPayments.length > 0) setInstallmentPayments(cachedInstallmentPayments);
+                if (cachedRegionConfigs.length > 0) setRegionConfigs(cachedRegionConfigs);
 
                 logger.info('Offline data loaded from cache');
                 return;
@@ -196,11 +202,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 20000);
 
+        // Use ref to get the latest companyId (avoids stale closure)
+        const companyId = currentUserRef.current?.companyId;
+
         try {
             // Prepare queries
             let shipmentsQuery: any = supabase.from('shipments').select('*');
-            if (currentUser?.companyId) {
-                shipmentsQuery = shipmentsQuery.eq('company_id', currentUser.companyId);
+            if (companyId) {
+                shipmentsQuery = shipmentsQuery.eq('company_id', companyId);
             }
 
             // Using services where available
@@ -211,23 +220,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 shipmentsRes, shipmentProductsRes,
                 newPrices, // using service for prices
                 settingsRes,
-                newInstallments, newInstallmentPayments // using service
+                newInstallments, newInstallmentPayments,
+                newRegionConfigs
             ] = await Promise.all([
-                userService.fetchAll(controller.signal, currentUser?.companyId),
-                productService.fetchAll(controller.signal, currentUser?.companyId),
-                driverService.fetchAll(controller.signal, currentUser?.companyId),
-                regionService.fetchAll(controller.signal, currentUser?.companyId),
-                notificationService.fetchAll(controller.signal),
+                userService.fetchAll(controller.signal, companyId),
+                productService.fetchAll(controller.signal, companyId),
+                driverService.fetchAll(controller.signal, companyId),
+                regionService.fetchAll(controller.signal, companyId),
+                notificationService.fetchAll(controller.signal, companyId),
                 shipmentsQuery.abortSignal(controller.signal),
                 supabase.from('shipment_products').select('*').abortSignal(controller.signal),
-                priceService.fetchAllProductPrices(controller.signal, currentUser?.companyId),
+                priceService.fetchAllProductPrices(controller.signal, companyId),
                 (supabase as any).from('company_settings').select('*').maybeSingle().abortSignal(controller.signal),
                 installmentService.fetchAllInstallments(controller.signal),
-                installmentService.fetchAllPayments(controller.signal)
+                installmentService.fetchAllPayments(controller.signal),
+                regionService.fetchAllConfigs(controller.signal, companyId)
             ]);
 
             // Deduction Prices
-            const newDeductionPrices = await priceService.fetchAllDeductionPrices(controller.signal, currentUser?.companyId);
+            const newDeductionPrices = await priceService.fetchAllDeductionPrices(controller.signal, companyId);
 
             clearTimeout(timeoutId);
 
@@ -247,6 +258,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setProducts(newProducts as Product[]); await IndexedDB.saveAllToStore(STORES.PRODUCTS, newProducts as Product[]);
             setDrivers(newDrivers as Driver[]); await IndexedDB.saveAllToStore(STORES.DRIVERS, newDrivers as Driver[]);
             setRegions(newRegions as Region[]); await IndexedDB.saveAllToStore(STORES.REGIONS, newRegions as Region[]);
+            setRegionConfigs(newRegionConfigs as RegionConfig[]); await IndexedDB.saveAllToStore(STORES.REGION_CONFIGS, newRegionConfigs as RegionConfig[]);
 
             setProductPrices(newPrices); await IndexedDB.saveAllToStore(STORES.PRODUCT_PRICES, newPrices);
             setDeductionPrices(newDeductionPrices); // No IDB store for deduction prices yet per previous analysis
@@ -306,7 +318,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 } catch (e) { }
             }
         }
-    }, [isOnline, currentUser, setUsers, setProducts, setDrivers, setRegions, setShipments, setProductPrices, setDeductionPrices, setNotifications, setInstallments, setInstallmentPayments, setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible, setAuthError]);
+    }, [isOnline, currentUser, setUsers, setProducts, setDrivers, setRegions, setRegionConfigs, setShipments, setProductPrices, setDeductionPrices, setNotifications, setInstallments, setInstallmentPayments, setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible, setAuthError]);
 
     useEffect(() => { fetchAllDataRef.current = fetchAllData; }, [fetchAllData]);
 
@@ -348,13 +360,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         initializeData();
     }, [setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible]);
 
+    // Old logic removed, now using useSubscription hook
+
     const value = useMemo(() => ({
-        currentUser, handleLogout, loadOfflineUser, users, addUser, updateUser,
-        products, addProduct, updateProduct, deleteProduct,
-        drivers, addDriver, updateDriver, deleteDriver,
-        regions, addRegion, updateRegion, deleteRegion,
+        currentUser, company, handleLogout, loadOfflineUser, users, addUser, updateUser,
+        products, addProduct, updateProduct, deleteProduct, batchUpsertProducts,
+        drivers, addDriver, updateDriver, deleteDriver, batchUpsertDrivers,
+        regions, regionConfigs, addRegion, updateRegion, deleteRegion, addRegionConfig, updateRegionConfig, deleteRegionConfig, batchUpsertRegionConfigs, batchUpsertRegions,
         shipments, addShipment, updateShipment,
-        productPrices, addProductPrice, updateProductPrice, deleteProductPrice,
+        productPrices, addProductPrice, updateProductPrice, deleteProductPrice, batchUpsertProductPrices,
         deductionPrices, addDeductionPrice, updateDeductionPrice, deleteDeductionPrice,
         notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
         installments, createInstallment, updateInstallment, installmentPayments, addInstallmentPayment, updateInstallmentPayment,
@@ -364,19 +378,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loading, error: authError || syncError, isOnline, isSyncing, isProfileLoaded,
         refreshAllData: refreshWrapper,
         syncOfflineMutations,
+        isSubscriptionActive, checkLimit, hasFeature
     }), [
-        currentUser, handleLogout, loadOfflineUser, users, addUser, updateUser,
-        products, addProduct, updateProduct, deleteProduct,
-        drivers, addDriver, updateDriver, deleteDriver,
-        regions, addRegion, updateRegion, deleteRegion,
+        currentUser, company, handleLogout, loadOfflineUser, users, addUser, updateUser,
+        products, addProduct, updateProduct, deleteProduct, batchUpsertProducts,
+        drivers, addDriver, updateDriver, deleteDriver, batchUpsertDrivers,
+        regions, regionConfigs, addRegion, updateRegion, deleteRegion, addRegionConfig, updateRegionConfig, deleteRegionConfig, batchUpsertRegionConfigs, batchUpsertRegions,
         shipments, addShipment, updateShipment,
-        productPrices, addProductPrice, updateProductPrice, deleteProductPrice,
+        productPrices, addProductPrice, updateProductPrice, deleteProductPrice, batchUpsertProductPrices,
         deductionPrices, addDeductionPrice, updateDeductionPrice, deleteDeductionPrice,
         notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
         installments, createInstallment, updateInstallment, installmentPayments, addInstallmentPayment, updateInstallmentPayment,
         accountantPrintAccess, isPrintHeaderEnabled, appName, companyName, companyAddress, companyPhone, companyLogo, isTimeWidgetVisible,
         loading, authError, syncError, isOnline, isSyncing, isProfileLoaded, setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible,
-        refreshWrapper, syncOfflineMutations
+        refreshWrapper, syncOfflineMutations, isSubscriptionActive, checkLimit, hasFeature
     ]);
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

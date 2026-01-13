@@ -14,8 +14,50 @@ import {
     ShipmentProductRow, ProductPriceRow, NotificationRow,
     InstallmentRow, InstallmentPaymentRow, DeductionPriceRow
 } from './types';
+import { Company } from '../../types';
+
+export interface CompanyRow {
+    id: string;
+    name: string;
+    slug: string;
+    logo_url: string | null;
+    brand_color: string | null;
+    settings: any;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    // Subscription fields
+    subscription_plan: string;
+    subscription_status: string;
+    subscription_start_date: string | null;
+    subscription_end_date: string | null;
+    billing_cycle: string;
+    usage_limits: any;
+    current_usage: any;
+    features: any;
+}
 
 // --- Row to Model Mapping ---
+
+export const companyFromRow = (row: CompanyRow): Company => ({
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    logoUrl: row.logo_url,
+    brandColor: row.brand_color || '#000000',
+    settings: row.settings,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    subscriptionPlan: row.subscription_plan,
+    subscriptionStatus: row.subscription_status as any,
+    subscriptionStartDate: row.subscription_start_date ?? undefined,
+    subscriptionEndDate: row.subscription_end_date ?? undefined,
+    billingCycle: row.billing_cycle as any,
+    usageLimits: row.usage_limits,
+    currentUsage: row.current_usage,
+    features: row.features,
+});
 
 export const userFromRow = (row: UserRow): User => ({
     id: row.id,
@@ -115,6 +157,7 @@ export const deductionPriceFromRow = (row: DeductionPriceRow): DeductionPrice =>
 
 export const notificationFromRow = (row: NotificationRow): Notification => ({
     id: row.id,
+    companyId: row.company_id ?? undefined,
     message: row.message,
     timestamp: row.timestamp,
     read: row.read ?? false,

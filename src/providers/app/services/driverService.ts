@@ -104,12 +104,27 @@ export const driverService = {
                 logger.error('Error deleting driver:', error);
                 throw error;
             }
-        } else {
-            await IndexedDB.addToMutationQueue({
-                type: 'DELETE',
-                table: 'drivers',
-                id: driverId.toString(),
-            });
+        }
+    },
+
+    async batchUpsertDrivers(drivers: (Omit<Driver, 'id'> & { id?: number })[], currentUser: any): Promise<void> {
+        if (!drivers.length) return;
+
+        const driversData = drivers.map(d => ({
+            ...(d.id ? { id: d.id } : {}),
+            name: d.name,
+            plate_number: d.plateNumber,
+            is_active: d.isActive,
+            company_id: currentUser?.companyId,
+        }));
+
+        const { error } = await supabase
+            .from('drivers')
+            .upsert(driversData, { onConflict: 'id' });
+
+        if (error) {
+            logger.error('Error batch upserting drivers:', error);
+            throw error;
         }
     },
 };

@@ -9,6 +9,7 @@ import ArabicDatePicker from '../../common/ui/ArabicDatePicker';
 import { Icons } from '../../Icons';
 import { useAppContext } from '../../../providers/AppContext';
 import { checkDuplicateSalesOrder } from '../../../utils/validation';
+import logger from '../../../utils/logger';
 
 interface FleetShipmentModalProps {
   shipment: Shipment;
@@ -37,7 +38,7 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
 
   useEffect(() => {
     setCurrentShipment({ ...shipment });
-    
+
     // Initialize driver search fields
     const driver = drivers.find((d: Driver) => d.id === shipment.driverId);
     if (driver) {
@@ -52,7 +53,7 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
 
   const handleDriverSearch = (searchValue: string) => {
     setDriverSearchText(searchValue);
-    const driver = drivers.find((d: Driver) => 
+    const driver = drivers.find((d: Driver) =>
       d.name.toLowerCase().includes(searchValue.toLowerCase())
     );
     if (driver) {
@@ -63,7 +64,7 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
 
   const handlePlateSearch = (searchValue: string) => {
     setPlateSearchText(searchValue);
-    const driver = drivers.find((d: Driver) => 
+    const driver = drivers.find((d: Driver) =>
       d.plateNumber.toLowerCase().includes(searchValue.toLowerCase())
     );
     if (driver) {
@@ -168,7 +169,7 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
       };
 
       await updateShipment(updatedShipment.id, updatedShipment);
-      
+
       await addNotification({
         message: `تم تعديل الشحنة (${updatedShipment.salesOrder}) من قبل مسؤول الحركة وإعادة إرسالها للمراجعة.`,
         category: NotificationCategory.USER_ACTION,
@@ -220,26 +221,26 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
           <h3 className="font-bold text-lg border-b pb-2">
             المعلومات الأساسية
           </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             {/* Sales Order - Always editable */}
-             <Input
-               label="رقم أمر البيع (اختياري)"
-               placeholder="أدخل رقم أمر البيع"
-               value={currentShipment.salesOrder || ''}
-               onChange={e => handleValueChange('salesOrder', e.target.value)}
-             />
 
-             {/* Order Date - Only for returned shipments */}
-             {isReturnedShipment && (
-               <ArabicDatePicker
-                 label="تاريخ الأمر *"
-                 value={currentShipment.orderDate || ''}
-                 onChange={(value) => handleValueChange('orderDate', value)}
-                 required
-               />
-             )}
-           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Sales Order - Always editable */}
+            <Input
+              label="رقم أمر البيع (اختياري)"
+              placeholder="أدخل رقم أمر البيع"
+              value={currentShipment.salesOrder || ''}
+              onChange={e => handleValueChange('salesOrder', e.target.value)}
+            />
+
+            {/* Order Date - Only for returned shipments */}
+            {isReturnedShipment && (
+              <ArabicDatePicker
+                label="تاريخ الأمر *"
+                value={currentShipment.orderDate || ''}
+                onChange={(value) => handleValueChange('orderDate', value)}
+                required
+              />
+            )}
+          </div>
 
           {/* Region - Always editable */}
           <SearchableSelect
@@ -256,7 +257,7 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
         {/* Driver Information */}
         <div className="space-y-4">
           <h3 className="font-bold text-lg border-b pb-2">معلومات السائق</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
@@ -327,24 +328,24 @@ const FleetShipmentModal: React.FC<FleetShipmentModalProps> = ({ shipment, isOpe
                     )}
                   </div>
 
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                     <SearchableSelect
-                       label="المنتج *"
-                       options={productOptions}
-                       value={product.productId}
-                       onChange={(val) => handleProductChange(index, 'productId', String(val))}
-                       placeholder="اختر المنتج"
-                     />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <SearchableSelect
+                      label="المنتج *"
+                      options={productOptions}
+                      value={product.productId}
+                      onChange={(val) => handleProductChange(index, 'productId', String(val))}
+                      placeholder="اختر المنتج"
+                    />
 
-                     <Input
-                       label="عدد الكراتين *"
-                       type="number"
-                       min="1"
-                       placeholder="أدخل عدد الكراتين"
-                       value={product.cartonCount === null || product.cartonCount === 0 ? '' : product.cartonCount}
-                       onChange={e => handleProductChange(index, 'cartonCount', e.target.value)}
-                     />
-                   </div>
+                    <Input
+                      label="عدد الكراتين *"
+                      type="number"
+                      min="1"
+                      placeholder="أدخل عدد الكراتين"
+                      value={product.cartonCount === null || product.cartonCount === 0 ? '' : product.cartonCount}
+                      onChange={e => handleProductChange(index, 'cartonCount', e.target.value)}
+                    />
+                  </div>
                 </div>
               ))}
             </div>

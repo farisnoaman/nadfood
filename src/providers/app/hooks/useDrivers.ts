@@ -20,11 +20,17 @@ export const useDrivers = (isOnline: boolean, currentUser: User | null, onRefres
         await onRefresh();
     }, [isOnline, onRefresh]);
 
+    const batchUpsertDrivers = useCallback(async (drivers: (Omit<Driver, 'id'> & { id?: number })[]) => {
+        await driverService.batchUpsertDrivers(drivers, currentUser);
+        await onRefresh();
+    }, [currentUser, onRefresh]);
+
     return {
         drivers,
         setDrivers,
         addDriver,
         updateDriver,
-        deleteDriver
+        deleteDriver,
+        batchUpsertDrivers
     };
 };

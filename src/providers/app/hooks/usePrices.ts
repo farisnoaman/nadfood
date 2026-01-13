@@ -22,6 +22,11 @@ export const usePrices = (isOnline: boolean, currentUser: User | null, onRefresh
         await onRefresh();
     }, [isOnline, onRefresh]);
 
+    const batchUpsertProductPrices = useCallback(async (prices: (Omit<ProductPrice, 'id'> & { id?: string })[]) => {
+        await priceService.batchUpsertProductPrices(prices, currentUser);
+        await onRefresh();
+    }, [currentUser, onRefresh]);
+
     // --- Deduction Prices ---
     const addDeductionPrice = useCallback(async (price: Omit<DeductionPrice, 'id'>) => {
         await priceService.createDeductionPrice(price, isOnline, currentUser);
@@ -46,6 +51,7 @@ export const usePrices = (isOnline: boolean, currentUser: User | null, onRefresh
         addProductPrice,
         updateProductPrice,
         deleteProductPrice,
+        batchUpsertProductPrices,
         addDeductionPrice,
         updateDeductionPrice,
         deleteDeductionPrice

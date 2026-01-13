@@ -120,7 +120,50 @@ export const priceService = {
         }
     },
 
+    async batchUpsertProductPrices(prices: any[], currentUser: any): Promise<void> {
+        const toInsert = prices.filter(p => !p.id);
+        const toUpdate = prices.filter(p => p.id);
+
+        // Insert new records
+        if (toInsert.length > 0) {
+            const insertData = toInsert.map(price => ({
+                id: window.crypto.randomUUID(),
+                region_id: price.regionId,
+                product_id: price.productId,
+                price: price.price,
+                effective_from: price.effectiveFrom,
+                company_id: currentUser?.companyId
+            }));
+
+            const { error } = await supabase
+                .from('product_prices')
+                .insert(insertData);
+
+            if (error) {
+                logger.error('Error batch inserting product prices:', error);
+                throw error;
+            }
+        }
+
+        // Update existing records
+        for (const price of toUpdate) {
+            const { error } = await supabase
+                .from('product_prices')
+                .update({
+                    price: price.price,
+                    effective_from: price.effectiveFrom
+                })
+                .eq('id', price.id);
+
+            if (error) {
+                logger.error('Error batch updating product price:', error);
+                throw error;
+            }
+        }
+    },
+
     // --- Deduction Prices ---
+
 
     async fetchAllDeductionPrices(signal?: AbortSignal, companyId?: string): Promise<DeductionPrice[]> {
         try {

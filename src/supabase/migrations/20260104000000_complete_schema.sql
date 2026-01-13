@@ -314,7 +314,7 @@ STABLE
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.users 
-    WHERE id = auth.uid() AND role = 'super_admin'
+    WHERE id = auth.uid() AND role = 'platform_admin'
   );
 $$;
 

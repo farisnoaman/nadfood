@@ -3,6 +3,7 @@ import { Shipment, ShipmentStatus, Role, NotificationCategory, Driver } from '..
 import { printShipmentDetails } from '../../../utils/print';
 import { formatDateForDisplay } from '../../../utils/dateFormatter';
 import { useAppContext } from '../../../providers/AppContext';
+import logger from '../../../utils/logger';
 import Modal from '../../common/ui/Modal';
 import Button from '../../common/ui/Button';
 import { Icons } from '../../Icons';
@@ -307,7 +308,7 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
     if (!currentUser) return;
     const driver = drivers.find((d: Driver) => d.id === currentShipment.driverId);
     const companyDetails = { companyName, companyAddress, companyPhone, companyLogo, isPrintHeaderEnabled };
-    printShipmentDetails(currentShipment, driver, companyDetails, currentUser, regions);
+    printShipmentDetails(currentShipment, driver, companyDetails, currentUser, regions, products);
   };
 
   const isFinal = currentShipment.status === ShipmentStatus.FINAL || currentShipment.status === ShipmentStatus.FINAL_MODIFIED;
@@ -319,7 +320,14 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
           <div className="text-sm text-secondary-500 dark:text-secondary-400">
             تاريخ الطلب: {formatDateForDisplay(shipment.orderDate)}
           </div>
-          <ShipmentStepper status={currentShipment.status} />
+          <ShipmentStepper
+            status={currentShipment.status}
+            dates={{
+              traffic: currentShipment.orderDate,
+              accounting: currentShipment.modifiedAt,
+              admin: currentShipment.updated_at
+            }}
+          />
 
           <ProductDetails
             products={currentShipment.products}
