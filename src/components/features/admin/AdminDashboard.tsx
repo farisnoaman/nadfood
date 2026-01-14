@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import AdminShipmentList from './AdminShipmentList';
 import AdminInstallments from './AdminInstallments';
 import AdminReports from './AdminReports';
@@ -10,32 +10,32 @@ import { Shipment, ShipmentStatus } from '../../../types/types';
 import AdminSettings from './AdminSettings';
 import { useAppContext } from '../../../providers/AppContext';
 import ErrorBoundary from '../../common/ui/ErrorBoundary';
+import { usePersistedState } from '../../../hooks/usePersistedState';
 
 type Tab = 'reports' | 'received' | 'all_shipments' | 'installments' | 'data_management' | 'user_management' | 'settings';
 
 const AdminDashboard: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<Tab>('received');
+    const [activeTab, setActiveTab] = usePersistedState<Tab>('adminDashboard_activeTab', 'received');
     const { shipments, installments } = useAppContext();
 
     const receivedShipments = useMemo(() =>
         shipments.filter((s: Shipment) => s.status === ShipmentStatus.SENT_TO_ADMIN && !installments.some(i => i.shipmentId === s.id)),
-    [shipments, installments]);
+        [shipments, installments]);
 
 
 
-    const TabButton: React.FC<{tabId: Tab; label: string; icon: React.ElementType}> = ({ tabId, label, icon: Icon }) => (
+    const TabButton: React.FC<{ tabId: Tab; label: string; icon: React.ElementType }> = ({ tabId, label, icon: Icon }) => (
         <button
-           onClick={() => setActiveTab(tabId)}
-           className={`flex items-center px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-colors w-full sm:w-auto ${
-             activeTab === tabId
-               ? 'bg-primary-600 text-white'
-               : 'text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'
-           }`}
-         >
-           <Icon className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5" />
-           {label}
-       </button>
-     );
+            onClick={() => setActiveTab(tabId)}
+            className={`flex items-center px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-colors w-full sm:w-auto ${activeTab === tabId
+                ? 'bg-primary-600 text-white'
+                : 'text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'
+                }`}
+        >
+            <Icon className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+            {label}
+        </button>
+    );
 
     return (
         <div>
@@ -68,14 +68,14 @@ const AdminDashboard: React.FC = () => {
             <div>
                 {activeTab === 'reports' && <AdminReports />}
                 {activeTab === 'received' && <AdminShipmentList shipments={receivedShipments} />}
-                 {activeTab === 'all_shipments' && <AdminShipmentList shipments={shipments} defaultStatusFilter={[ShipmentStatus.DRAFT, ShipmentStatus.FINAL, ShipmentStatus.FINAL_MODIFIED, ShipmentStatus.INSTALLMENTS]} />}
+                {activeTab === 'all_shipments' && <AdminShipmentList shipments={shipments} defaultStatusFilter={[ShipmentStatus.DRAFT, ShipmentStatus.FINAL, ShipmentStatus.FINAL_MODIFIED, ShipmentStatus.INSTALLMENTS]} />}
                 {activeTab === 'installments' && <AdminInstallments />}
                 {activeTab === 'data_management' && <ManageData />}
                 {activeTab === 'user_management' && <ManageUsers />}
                 {activeTab === 'settings' && (
-                  <ErrorBoundary>
-                    <AdminSettings />
-                  </ErrorBoundary>
+                    <ErrorBoundary>
+                        <AdminSettings />
+                    </ErrorBoundary>
                 )}
             </div>
         </div>

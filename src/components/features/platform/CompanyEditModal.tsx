@@ -6,6 +6,7 @@ import Input from '../../common/ui/Input';
 import toast from 'react-hot-toast';
 import { Company, CompanyFeatures, UsageLimits } from '../../../types/types';
 import { companyFromRow, CompanyRow } from '../../../providers/app/mappers';
+import { usePersistedState } from '../../../hooks/usePersistedState';
 
 interface SubscriptionPlan {
     id: string;
@@ -33,7 +34,7 @@ const BILLING_CYCLES = [
 const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, companyId, onSave }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState<'plan' | 'limits' | 'features'>('plan');
+    const [activeTab, setActiveTab] = usePersistedState<'plan' | 'limits' | 'features'>('companyEditModal_activeTab', 'plan');
     const [company, setCompany] = useState<Company | null>(null);
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Shipment, ShipmentStatus } from '../../../types/types';
 import { useAppContext } from '../../../providers/AppContext';
 import NewFleetShipmentForm from './NewFleetShipmentForm';
@@ -7,14 +7,15 @@ import ReturnedShipmentsTab from './ReturnedShipmentsTab';
 
 import { IconsWithFallback } from '../../Icons';
 import logger from '../../../utils/logger';
+import { usePersistedState } from '../../../hooks/usePersistedState';
 
 type Tab = 'create' | 'returned';
 
 const FleetDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('create');
+  const [activeTab, setActiveTab] = usePersistedState<Tab>('fleetDashboard_activeTab', 'create');
   const { shipments, drivers, regions } = useAppContext();
-  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedShipment, setSelectedShipment] = usePersistedState<Shipment | null>('fleetDashboard_selectedShipment', null);
+  const [isModalOpen, setIsModalOpen] = usePersistedState('fleetDashboard_isModalOpen', false);
 
   // Helper functions to get display names
   const getDriverName = (driverId: number) => {
@@ -91,8 +92,8 @@ const FleetDashboard: React.FC = () => {
       <button
         onClick={handleClick}
         className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors relative ${activeTab === tabId
-            ? 'bg-primary-600 text-white'
-            : 'text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'
+          ? 'bg-primary-600 text-white'
+          : 'text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'
           }`}
       >
         {Icon && typeof Icon === 'function' && <Icon className="ml-2 h-5 w-5" />}

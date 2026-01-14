@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from '../../Icons';
 import { supabase } from '../../../utils/supabaseClient';
 import toast from 'react-hot-toast';
+import logger from '../../../utils/logger';
+import { usePersistedState } from '../../../hooks/usePersistedState';
 
 type Tab = 'products' | 'regions';
 
 const MasterCatalog: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<Tab>('products');
+    const [activeTab, setActiveTab] = usePersistedState<Tab>('masterCatalog_activeTab', 'products');
     const [loading, setLoading] = useState(false);
     const [items, setItems] = useState<any[]>([]);
 

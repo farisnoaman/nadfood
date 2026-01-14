@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Card from '../../common/display/Card';
 import { Icons } from '../../Icons';
 import ProductManager from './manage-data/ProductManager';
@@ -10,6 +10,7 @@ import RegionConfigManager from './manage-data/RegionConfigManager';
 import SearchableSelect from '../../common/forms/SearchableSelect';
 import { supabase } from '../../../utils/supabaseClient';
 import logger from '../../../utils/logger';
+import { usePersistedState } from '../../../hooks/usePersistedState';
 
 type DataType = 'products' | 'drivers' | 'regions' | 'prices' | 'regionFees' | 'deductionPrices';
 
@@ -35,7 +36,7 @@ const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
 };
 
 const ManageData: React.FC = () => {
-    const [activeType, setActiveType] = useState<DataType>('products');
+    const [activeType, setActiveType] = usePersistedState<DataType>('manageData_activeTab', 'products');
 
     const handleExport = async () => {
         try {

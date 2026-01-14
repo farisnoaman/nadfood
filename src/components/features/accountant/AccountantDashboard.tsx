@@ -10,12 +10,13 @@ import { useAppContext } from '../../../providers/AppContext';
 import { useShipmentFilter } from '../../../hooks/useShipmentFilter';
 import SearchableSelect from '../../common/forms/SearchableSelect';
 import logger from '../../../utils/logger';
+import { usePersistedState } from '../../../hooks/usePersistedState';
 
 type Tab = 'received' | 'sent' | 'reports';
 type SortOption = 'newest' | 'oldest' | 'highest_due' | 'lowest_due';
 
 const AccountantDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('received');
+  const [activeTab, setActiveTab] = usePersistedState<Tab>('accountantDashboard_activeTab', 'received');
   const { shipments, regions, drivers } = useAppContext();
   const [view, setView] = useState<'grid' | 'list'>(window.innerWidth < 768 ? 'list' : 'grid');
   const [isDateFilterVisible, setIsDateFilterVisible] = useState(false);
@@ -63,8 +64,8 @@ const AccountantDashboard: React.FC = () => {
     <button
       onClick={() => setActiveTab(tabId)}
       className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === tabId
-          ? 'bg-primary-600 text-white'
-          : 'text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'
+        ? 'bg-primary-600 text-white'
+        : 'text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-700'
         }`}
     >
       <Icon className="ml-2 h-5 w-5" />
