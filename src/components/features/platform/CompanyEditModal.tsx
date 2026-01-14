@@ -5,6 +5,17 @@ import Button from '../../common/ui/Button';
 import Input from '../../common/ui/Input';
 import toast from 'react-hot-toast';
 import { Company, CompanyFeatures, UsageLimits } from '../../../types/types';
+import { companyFromRow, CompanyRow } from '../../../providers/app/mappers';
+
+interface SubscriptionPlan {
+    id: string;
+    name: string;
+    max_users: number;
+    max_products: number;
+    max_drivers: number;
+    max_storage_mb: number | null;
+    monthly_price: number;
+}
 
 interface CompanyEditModalProps {
     isOpen: boolean;
@@ -13,15 +24,25 @@ interface CompanyEditModalProps {
     onSave: () => void;
 }
 
+const BILLING_CYCLES = [
+    { value: 'monthly', label: 'شهري', months: 1 },
+    { value: 'quarterly', label: 'ربع سنوي', months: 3 },
+    { value: 'annually', label: 'سنوي', months: 12 },
+];
+
 const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, companyId, onSave }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState<'plan' | 'limits' | 'features'>('plan');
     const [company, setCompany] = useState<Company | null>(null);
+    const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
 
     // Form State
-    const [plan, setPlan] = useState('');
-    const [status, setStatus] = useState<any>('active');
+    const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+    const [status, setStatus] = useState<string>('active');
+    const [billingCycle, setBillingCycle] = useState<string>('monthly');
+    const [startDate, setStartDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState<string>('');
     const [limits, setLimits] = useState<UsageLimits>({
         maxUsers: 0,
         maxDrivers: 0,
@@ -36,14 +57,43 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
         canManageDrivers: false,
         canManageRegions: false,
         canManageProducts: false,
-        canManagePrices: false
+        canManagePrices: false,
+        canManageRegionFees: false,
     });
 
     useEffect(() => {
         if (isOpen && companyId) {
+            fetchPlans();
             fetchCompanyDetails();
         }
     }, [isOpen, companyId]);
+
+    // Auto-calculate end date when start date or billing cycle changes
+    useEffect(() => {
+        if (startDate && billingCycle) {
+            const start = new Date(startDate);
+            const cycle = BILLING_CYCLES.find(c => c.value === billingCycle);
+            if (cycle) {
+                start.setMonth(start.getMonth() + cycle.months);
+                setEndDate(start.toISOString().split('T')[0]);
+            }
+        }
+    }, [startDate, billingCycle]);
+
+    const fetchPlans = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('subscription_plans' as any)
+                .select('*')
+                .eq('is_active', true)
+                .order('monthly_price');
+
+            if (error) throw error;
+            setPlans((data || []) as unknown as SubscriptionPlan[]);
+        } catch (error) {
+            console.error('Error fetching plans:', error);
+        }
+    };
 
     const fetchCompanyDetails = async () => {
         setLoading(true);
@@ -56,12 +106,14 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
 
             if (error) throw error;
 
-            const co = data as unknown as Company;
+            const co = companyFromRow(data as unknown as CompanyRow);
             setCompany(co);
-            setPlan(co.subscriptionPlan || 'free_trial');
+            setSelectedPlanId(co.planId || null);
             setStatus(co.subscriptionStatus || 'active');
+            setBillingCycle(co.billingCycle || 'monthly');
+            setStartDate(co.subscriptionStartDate?.split('T')[0] || new Date().toISOString().split('T')[0]);
+            setEndDate(co.subscriptionEndDate?.split('T')[0] || '');
 
-            // Ensure we handle potentially missing keys by merging with defaults
             setLimits({
                 maxUsers: co.usageLimits?.maxUsers ?? 3,
                 maxDrivers: co.usageLimits?.maxDrivers ?? 3,
@@ -78,6 +130,7 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
                 canManageRegions: co.features?.canManageRegions ?? true,
                 canManageProducts: co.features?.canManageProducts ?? true,
                 canManagePrices: co.features?.canManagePrices ?? true,
+                canManageRegionFees: co.features?.canManageRegionFees ?? true,
             });
 
         } catch (error) {
@@ -89,14 +142,36 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
         }
     };
 
+    const handlePlanChange = (planId: string) => {
+        setSelectedPlanId(planId);
+        const selectedPlan = plans.find(p => p.id === planId);
+        if (selectedPlan) {
+            // Auto-populate limits from plan
+            setLimits({
+                maxUsers: selectedPlan.max_users || limits.maxUsers,
+                maxDrivers: selectedPlan.max_drivers || limits.maxDrivers,
+                maxRegions: limits.maxRegions, // Keep existing, plan may not define this
+                maxProducts: selectedPlan.max_products || limits.maxProducts,
+                maxStorageMb: selectedPlan.max_storage_mb || limits.maxStorageMb
+            });
+        }
+    };
+
     const handleSave = async () => {
         setSaving(true);
         try {
+            const selectedPlan = plans.find(p => p.id === selectedPlanId);
+            const planSlug = selectedPlan?.name?.toLowerCase().replace(/\s+/g, '_') || 'free_trial';
+
             const { error } = await supabase
                 .from('companies' as any)
                 .update({
-                    subscription_plan: plan,
+                    plan_id: selectedPlanId,
+                    subscription_plan: planSlug,
                     subscription_status: status,
+                    billing_cycle: billingCycle,
+                    subscription_start_date: startDate,
+                    subscription_end_date: endDate,
                     usage_limits: limits,
                     features: features
                 })
@@ -116,6 +191,8 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
     };
 
     if (!isOpen) return null;
+
+    const selectedPlan = plans.find(p => p.id === selectedPlanId);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -168,14 +245,14 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الباقة</label>
                                             <select
-                                                value={plan}
-                                                onChange={(e) => setPlan(e.target.value)}
+                                                value={selectedPlanId || ''}
+                                                onChange={(e) => handlePlanChange(e.target.value)}
                                                 className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 p-2.5"
                                             >
-                                                <option value="free_trial">تجربة مجانية</option>
-                                                <option value="basic">أساسي</option>
-                                                <option value="pro">احترافي</option>
-                                                <option value="enterprise">مؤسسات</option>
+                                                <option value="">-- اختر باقة --</option>
+                                                {plans.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                                ))}
                                             </select>
                                         </div>
                                         <div>
@@ -192,8 +269,55 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
                                             </select>
                                         </div>
                                     </div>
+
+                                    {/* Billing Cycle & Dates */}
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">دورة الفوترة</label>
+                                            <select
+                                                value={billingCycle}
+                                                onChange={(e) => setBillingCycle(e.target.value)}
+                                                className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 p-2.5"
+                                            >
+                                                {BILLING_CYCLES.map(c => (
+                                                    <option key={c.value} value={c.value}>{c.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">تاريخ البدء</label>
+                                            <input
+                                                type="date"
+                                                value={startDate}
+                                                onChange={(e) => setStartDate(e.target.value)}
+                                                className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 p-2.5"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">تاريخ الانتهاء</label>
+                                            <input
+                                                type="date"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                                className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 p-2.5"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {selectedPlan && (
+                                        <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-sm">
+                                            <p className="font-medium text-emerald-700 dark:text-emerald-300 mb-2">تفاصيل الباقة: {selectedPlan.name}</p>
+                                            <div className="grid grid-cols-2 gap-2 text-emerald-600 dark:text-emerald-400">
+                                                <span>المستخدمين: {selectedPlan.max_users}</span>
+                                                <span>السائقين: {selectedPlan.max_drivers}</span>
+                                                <span>المنتجات: {selectedPlan.max_products}</span>
+                                                <span>التخزين: {selectedPlan.max_storage_mb || 'غير محدود'} MB</span>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-700 dark:text-blue-300">
-                                        <p>تغيير الباقة لا يحدّث الحدود تلقائياً. يرجى تحديث الحدود في تبويب "حدود الاستخدام" إذا لزم الأمر.</p>
+                                        <p>💡 عند اختيار باقة جديدة، سيتم تحديث الحدود تلقائياً. يمكنك تعديلها يدوياً من تبويب "حدود الاستخدام".</p>
                                     </div>
                                 </div>
                             )}
@@ -248,7 +372,6 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
                                 <div className="space-y-4">
                                     <div className="space-y-4">
                                         {Object.entries(features).map(([key, value]) => {
-                                            // Arabic labels for feature flags
                                             const featureLabels: Record<string, string> = {
                                                 canImportData: 'استيراد البيانات',
                                                 canExportData: 'تصدير البيانات',
@@ -256,7 +379,8 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
                                                 canManageDrivers: 'إدارة السائقين',
                                                 canManageRegions: 'إدارة المناطق',
                                                 canManageProducts: 'إدارة المنتجات',
-                                                canManagePrices: 'إدارة الأسعار'
+                                                canManagePrices: 'إدارة الأسعار',
+                                                canManageRegionFees: 'إدارة رسوم المناطق'
                                             };
 
                                             return (
@@ -274,9 +398,6 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
                                                 </div>
                                             );
                                         })}
-                                    </div>
-                                    <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-                                        <p className="text-xs text-slate-500">ملاحظة: المميزات الجديدة المضافة إلى تعريف الأنواع ستظهر هنا تلقائياً.</p>
                                     </div>
                                 </div>
                             )}

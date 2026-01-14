@@ -10,7 +10,7 @@ import ArabicDatePicker from '../../../common/ui/ArabicDatePicker';
 import BatchImportModal from './BatchImportModal';
 
 const RegionConfigManager: React.FC = () => {
-    const { regions, regionConfigs, addRegionConfig, updateRegionConfig, deleteRegionConfig, isOnline } = useAppContext();
+    const { regions, regionConfigs, addRegionConfig, updateRegionConfig, deleteRegionConfig, isOnline, hasFeature } = useAppContext();
     const [searchTerm, setSearchTerm] = useState('');
     const [visibleCount, setVisibleCount] = useState(20);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,6 +28,11 @@ const RegionConfigManager: React.FC = () => {
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+    // Feature Flags & Limits
+    // Use the NEW flag for Region Fees
+    const canManageRegionFees = hasFeature('canManageRegionFees');
+    const canImport = hasFeature('import_export');
 
     const filteredConfigs = useMemo(() => {
         // Sort by effective date descending
@@ -90,6 +95,12 @@ const RegionConfigManager: React.FC = () => {
 
     const handleSave = async () => {
         setError('');
+
+        if (!editingConfig && !canManageRegionFees) {
+            setError('عفواً، ليس لديك صلاحية لإضافة إعدادات رسوم المناطق.');
+            return;
+        }
+
         const { regionId } = formData;
         if (!regionId) {
             setError('يرجى اختيار المنطقة.');
@@ -140,14 +151,20 @@ const RegionConfigManager: React.FC = () => {
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Button variant="secondary" onClick={() => handleOpenModal(null)} disabled={!isOnline}>
-                        <Icons.Plus className="ml-2 h-4 w-4" />
-                        إضافة إعدادات جديدة
-                    </Button>
-                    <Button variant="ghost" onClick={() => setIsImportModalOpen(true)} disabled={!isOnline} title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}>
-                        <Icons.FileDown className="ml-2 h-4 w-4" />
-                        استيراد CSV
-                    </Button>
+                    {/* ADD BUTTON: HIDDEN IF FLAG OFF */}
+                    {canManageRegionFees && (
+                        <Button variant="secondary" onClick={() => handleOpenModal(null)} disabled={!isOnline}>
+                            <Icons.Plus className="ml-2 h-4 w-4" />
+                            إضافة إعدادات جديدة
+                        </Button>
+                    )}
+
+                    {canImport && (
+                        <Button variant="ghost" onClick={() => setIsImportModalOpen(true)} disabled={!isOnline} title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}>
+                            <Icons.FileDown className="ml-2 h-4 w-4" />
+                            استيراد CSV
+                        </Button>
+                    )}
                 </div>
             </div>
             <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
@@ -155,6 +172,9 @@ const RegionConfigManager: React.FC = () => {
                     <>
                         {visibleConfigs.map((c: RegionConfig) => {
                             const regionName = regions.find((r: Region) => r.id === c.regionId)?.name || 'غير معروف';
+                            // Buttons disabled, not hidden
+                            const isEditable = canManageRegionFees;
+
                             return (
                                 <div key={c.id} className="flex justify-between items-start p-3 bg-secondary-100 dark:bg-secondary-800 rounded">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
@@ -176,10 +196,22 @@ const RegionConfigManager: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                        <Button size="sm" variant="ghost" onClick={() => handleOpenModal(c)} title="تعديل" disabled={!isOnline}>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => handleOpenModal(c)}
+                                            title={!isEditable ? 'الخاصية غير مفعلة' : 'تعديل'}
+                                            disabled={!isOnline || !isEditable}
+                                        >
                                             <Icons.Edit className="h-5 w-5 text-blue-500" />
                                         </Button>
-                                        <Button size="sm" variant="destructive" onClick={() => setConfigToDelete(c)} title="حذف" disabled={!isOnline}>
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={() => setConfigToDelete(c)}
+                                            title={!isEditable ? 'الخاصية غير مفعلة' : 'حذف'}
+                                            disabled={!isOnline || !isEditable}
+                                        >
                                             <Icons.Trash2 className="h-4 w-4" />
                                         </Button>
                                     </div>

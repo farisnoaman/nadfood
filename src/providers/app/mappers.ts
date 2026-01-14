@@ -50,13 +50,23 @@ export const companyFromRow = (row: CompanyRow): Company => ({
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     subscriptionPlan: row.subscription_plan,
+    planId: (row as any).plan_id ?? undefined,
     subscriptionStatus: row.subscription_status as any,
     subscriptionStartDate: row.subscription_start_date ?? undefined,
     subscriptionEndDate: row.subscription_end_date ?? undefined,
     billingCycle: row.billing_cycle as any,
     usageLimits: row.usage_limits,
     currentUsage: row.current_usage,
-    features: row.features,
+    features: {
+        canImportData: row.features?.canImportData ?? false,
+        canExportData: row.features?.canExportData ?? false,
+        import_export: row.features?.import_export ?? false,
+        canManageDrivers: row.features?.canManageDrivers ?? true,
+        canManageRegions: row.features?.canManageRegions ?? true,
+        canManageProducts: row.features?.canManageProducts ?? true,
+        canManagePrices: row.features?.canManagePrices ?? true,
+        canManageRegionFees: row.features?.canManageRegionFees ?? true,
+    },
 });
 
 export const userFromRow = (row: UserRow): User => ({

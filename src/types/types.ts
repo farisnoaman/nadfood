@@ -31,6 +31,7 @@ export interface CompanyFeatures {
   canManageRegions: boolean;
   canManageProducts: boolean;
   canManagePrices: boolean;
+  canManageRegionFees: boolean;
 }
 
 export interface UsageLimits {
@@ -64,6 +65,7 @@ export interface Company {
   updatedAt?: string;
 
   // Subscription Fields
+  planId?: string; // Foreign key to subscription_plans
   subscriptionPlan: string;
   subscriptionStatus: 'active' | 'suspended' | 'cancelled' | 'expired';
   subscriptionStartDate?: string;

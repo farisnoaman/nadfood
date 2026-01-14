@@ -10,7 +10,7 @@ import ArabicDatePicker from '../../../common/ui/ArabicDatePicker';
 import BatchImportModal from './BatchImportModal';
 
 const PriceManager: React.FC = () => {
-    const { productPrices, addProductPrice, updateProductPrice, deleteProductPrice, regions, products, isOnline } = useAppContext();
+    const { productPrices, addProductPrice, updateProductPrice, deleteProductPrice, regions, products, isOnline, hasFeature } = useAppContext();
     const [searchTerm, setSearchTerm] = useState('');
     const [visibleCount, setVisibleCount] = useState(20);
     const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
@@ -22,6 +22,10 @@ const PriceManager: React.FC = () => {
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+    // Feature Flags & Limits
+    const canManagePrices = hasFeature('canManagePrices');
+    const canImport = hasFeature('import_export');
 
     const filteredPrices = useMemo(() => {
         if (!searchTerm.trim()) return productPrices;
@@ -68,6 +72,12 @@ const PriceManager: React.FC = () => {
 
     const handleSavePrice = async () => {
         setError('');
+
+        if (!editingPrice && !canManagePrices) {
+            setError('عفواً، ليس لديك صلاحية لإضافة أسعار جديدة.');
+            return;
+        }
+
         const { regionId, productId, price } = priceFormData;
         if (!regionId || !productId || price <= 0) {
             setError('يرجى اختيار منطقة ومنتج وإدخال سعر صحيح أكبر من صفر.');
@@ -118,14 +128,20 @@ const PriceManager: React.FC = () => {
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Button variant="secondary" onClick={() => handleOpenPriceModal(null)} disabled={!isOnline} title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}>
-                        <Icons.Plus className="ml-2 h-4 w-4" />
-                        إضافة سعر جديد
-                    </Button>
-                    <Button variant="ghost" onClick={() => setIsImportModalOpen(true)} disabled={!isOnline} title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}>
-                        <Icons.FileDown className="ml-2 h-4 w-4" />
-                        استيراد CSV
-                    </Button>
+                    {/* ADD BUTTON: HIDDEN IF FLAG OFF */}
+                    {canManagePrices && (
+                        <Button variant="secondary" onClick={() => handleOpenPriceModal(null)} disabled={!isOnline} title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}>
+                            <Icons.Plus className="ml-2 h-4 w-4" />
+                            إضافة سعر جديد
+                        </Button>
+                    )}
+
+                    {canImport && (
+                        <Button variant="ghost" onClick={() => setIsImportModalOpen(true)} disabled={!isOnline} title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}>
+                            <Icons.FileDown className="ml-2 h-4 w-4" />
+                            استيراد CSV
+                        </Button>
+                    )}
                 </div>
             </div>
             <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
@@ -134,6 +150,9 @@ const PriceManager: React.FC = () => {
                         {visiblePrices.map((p: ProductPrice) => {
                             const regionName = regions.find((r: Region) => r.id === p.regionId)?.name || 'غير معروف';
                             const productName = products.find((prod: Product) => prod.id === p.productId)?.name || 'غير معروف';
+                            // Buttons disabled, not hidden (as per plan/spec)
+                            const isEditable = canManagePrices;
+
                             return (
                                 <div key={p.id} className="flex justify-between items-center p-3 bg-secondary-100 dark:bg-secondary-800 rounded">
                                     <div>
@@ -147,10 +166,22 @@ const PriceManager: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                        <Button size="sm" variant="ghost" onClick={() => handleOpenPriceModal(p)} title="تعديل" disabled={!isOnline}>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => handleOpenPriceModal(p)}
+                                            title={!isEditable ? 'الخاصية غير مفعلة' : 'تعديل'}
+                                            disabled={!isOnline || !isEditable}
+                                        >
                                             <Icons.Edit className="h-5 w-5 text-blue-500" />
                                         </Button>
-                                        <Button size="sm" variant="destructive" onClick={() => setPriceToDelete(p)} title="حذف" disabled={!isOnline}>
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={() => setPriceToDelete(p)}
+                                            title={!isEditable ? 'الخاصية غير مفعلة' : 'حذف'}
+                                            disabled={!isOnline || !isEditable}
+                                        >
                                             <Icons.Trash2 className="h-4 w-4" />
                                         </Button>
                                     </div>

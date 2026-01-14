@@ -25,7 +25,12 @@ const DriverManager: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     // Feature Flags & Limits
-    const canAddDriver = checkLimit('maxDrivers', 1);
+    // Can add if: 1. Feature is enabled AND 2. Limit is not reached
+    const isFeatureEnabled = hasFeature('canManageDrivers');
+    const isLimitReached = !checkLimit('maxDrivers', 1);
+    const canAdd = isFeatureEnabled && !isLimitReached;
+
+    // Import: Feature enabled
     const canImport = hasFeature('import_export');
 
     const handleCloseAddModal = () => {
@@ -51,8 +56,8 @@ const DriverManager: React.FC = () => {
     };
 
     const handleAddNewDriver = async () => {
-        if (!canAddDriver) {
-            setError('لقد تجاوزت الحد المسموح به لعدد السائقين في باقتك الحالية.');
+        if (!canAdd) {
+            setError('لا يمكن إضافة سائق: تجاوزت الحد أو الخاصية غير مفعلة.');
             return;
         }
 
@@ -140,22 +145,25 @@ const DriverManager: React.FC = () => {
         <>
             <div className="flex flex-col sm:flex-row flex-wrap justify-end items-start sm:items-center gap-4 mb-4">
                 <div className="flex flex-wrap gap-2">
-                    <Button
-                        variant="secondary"
-                        onClick={() => setIsAddModalOpen(true)}
-                        disabled={!isOnline || !canAddDriver}
-                        title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddDriver ? 'عفواً، لقد تجاوزت الحد المسموح به في باقتك' : '')}
-                    >
-                        <Icons.Plus className="ml-2 h-4 w-4" />
-                        إضافة سائق جديد
-                    </Button>
+                    {/* ADD BUTTON: HIDDEN */}
+                    {canAdd && (
+                        <Button
+                            variant="secondary"
+                            onClick={() => setIsAddModalOpen(true)}
+                            disabled={!isOnline}
+                            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}
+                        >
+                            <Icons.Plus className="ml-2 h-4 w-4" />
+                            إضافة سائق جديد
+                        </Button>
+                    )}
 
                     {canImport && (
                         <Button
                             variant="ghost"
                             onClick={() => setIsImportModalOpen(true)}
-                            disabled={!isOnline || !canAddDriver}
-                            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddDriver ? 'لا يمكنك الاستيراد لأنك وصلت للحد الأقصى للسائقين' : '')}
+                            disabled={!isOnline}
+                            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}
                         >
                             <Icons.FileDown className="ml-2 h-4 w-4" />
                             استيراد CSV
@@ -175,16 +183,34 @@ const DriverManager: React.FC = () => {
                                     </span>
                                 </div>
                                 <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                    <Button size="sm" variant="ghost" onClick={() => handleEditDriver(d)} title="تعديل" disabled={!isOnline}>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleEditDriver(d)}
+                                        title={!isFeatureEnabled ? 'الخاصية غير مفعلة' : 'تعديل'}
+                                        disabled={!isOnline || !isFeatureEnabled}
+                                    >
                                         <Icons.Edit className="h-5 w-5 text-blue-500" />
                                     </Button>
-                                    <Button size="sm" variant="ghost" onClick={() => setDriverToToggleStatus(d)} title={d.isActive ?? true ? 'تعطيل' : 'تفعيل'} disabled={!isOnline}>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => setDriverToToggleStatus(d)}
+                                        title={!isFeatureEnabled ? 'الخاصية غير مفعلة' : (d.isActive ?? true ? 'تعطيل' : 'تفعيل')}
+                                        disabled={!isOnline || !isFeatureEnabled}
+                                    >
                                         {d.isActive ?? true
                                             ? <Icons.CircleX className="h-5 w-5 text-red-500" />
                                             : <Icons.CircleCheck className="h-5 w-5 text-green-500" />
                                         }
                                     </Button>
-                                    <Button size="sm" variant="destructive" onClick={() => setDriverToDelete(d)} title="حذف" disabled={!isOnline}>
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => setDriverToDelete(d)}
+                                        title={!isFeatureEnabled ? 'الخاصية غير مفعلة' : 'حذف'}
+                                        disabled={!isOnline || !isFeatureEnabled}
+                                    >
                                         <Icons.Trash2 className="h-4 w-4" />
                                     </Button>
                                 </div>

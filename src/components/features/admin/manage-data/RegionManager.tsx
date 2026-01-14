@@ -3,6 +3,7 @@ import { Region } from '../../../../types';
 import Button from '../../../common/ui/Button';
 import Input from '../../../common/ui/Input';
 import Modal from '../../../common/ui/Modal';
+import ConfirmationModal from '../../../common/ui/ConfirmationModal';
 import { Icons } from '../../../Icons';
 import { useAppContext } from '../../../../providers/AppContext';
 import BatchImportModal from './BatchImportModal';
@@ -26,8 +27,17 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isMasterCatalogOpen, setIsMasterCatalogOpen] = useState(false);
 
+    // Confirmation for Renaming
+    const [isRenameConfirmOpen, setIsRenameConfirmOpen] = useState(false);
+    const [pendingSave, setPendingSave] = useState<(() => Promise<void>) | null>(null);
+
     // Feature Flags & Limits
-    const canAddRegion = checkLimit('maxRegions', 1);
+    // Can add if: 1. Feature is enabled AND 2. Limit is not reached
+    const isFeatureEnabled = hasFeature('canManageRegions');
+    const isLimitReached = !checkLimit('maxRegions', 1);
+    const canAdd = isFeatureEnabled && !isLimitReached;
+
+    // Import: Feature enabled
     const canImport = hasFeature('import_export');
 
     const filteredRegions = useMemo(() => {
@@ -57,18 +67,8 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
         setEditingRegion(null);
     };
 
-    const handleSaveRegion = async () => {
+    const executeSave = async () => {
         setError('');
-        if (!regionName.trim()) {
-            setError('يرجى إدخال اسم المنطقة.');
-            return;
-        }
-
-        if (!editingRegion && !canAddRegion) {
-            setError('لقد تجاوزت الحد المسموح به للمناطق في باقتك الحالية.');
-            return;
-        }
-
         setIsSubmitting(true);
 
         try {
@@ -94,7 +94,29 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
             }
         } finally {
             setIsSubmitting(false);
+            setPendingSave(null);
         }
+    };
+
+    const handleSaveRegion = async () => {
+        if (!regionName.trim()) {
+            setError('يرجى إدخال اسم المنطقة.');
+            return;
+        }
+
+        if (!editingRegion && !canAdd) {
+            setError('لا يمكن إضافة منطقة: تجاوزت الحد أو الخاصية غير مفعلة.');
+            return;
+        }
+
+        // Check for Renaming
+        if (editingRegion && editingRegion.name !== regionName.trim()) {
+            setPendingSave(() => executeSave);
+            setIsRenameConfirmOpen(true);
+            return;
+        }
+
+        await executeSave();
     };
 
     const confirmDeleteRegion = async () => {
@@ -123,22 +145,25 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Button
-                        variant="secondary"
-                        onClick={() => handleOpenRegionModal(null)}
-                        disabled={!isOnline || !canAddRegion}
-                        title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddRegion ? 'عفواً، لقد تجاوزت الحد المسموح به في باقتك' : '')}
-                    >
-                        <Icons.Plus className="ml-2 h-4 w-4" />
-                        إضافة منطقة جديدة
-                    </Button>
+                    {/* ADD BUTTON: HIDDEN */}
+                    {canAdd && (
+                        <Button
+                            variant="secondary"
+                            onClick={() => handleOpenRegionModal(null)}
+                            disabled={!isOnline}
+                            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}
+                        >
+                            <Icons.Plus className="ml-2 h-4 w-4" />
+                            إضافة منطقة جديدة
+                        </Button>
+                    )}
 
                     {canImport && (
                         <Button
                             variant="ghost"
                             onClick={() => setIsImportModalOpen(true)}
-                            disabled={!isOnline || !canAddRegion}
-                            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddRegion ? 'لا يمكنك الاستيراد لأنك وصلت للحد الأقصى للمناطق' : '')}
+                            disabled={!isOnline}
+                            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}
                         >
                             <Icons.FileDown className="ml-2 h-4 w-4" />
                             استيراد CSV
@@ -152,15 +177,18 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                         </Button>
                     )}
 
-                    <Button
-                        variant="primary"
-                        onClick={() => setIsMasterCatalogOpen(true)}
-                        disabled={!isOnline || !canAddRegion}
-                        title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddRegion ? 'لا يمكنك الإضافة لأنك وصلت للحد الأقصى للمناطق' : '')}
-                    >
-                        <Icons.Database className="ml-2 h-4 w-4" />
-                        اختيار من الدليل الشامل
-                    </Button>
+                    {/* MASTER CATALOG: HIDDEN */}
+                    {canAdd && (
+                        <Button
+                            variant="primary"
+                            onClick={() => setIsMasterCatalogOpen(true)}
+                            disabled={!isOnline}
+                            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}
+                        >
+                            <Icons.Database className="ml-2 h-4 w-4" />
+                            اختيار من الدليل الشامل
+                        </Button>
+                    )}
                 </div>
             </div>
             <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
@@ -185,10 +213,22 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                                     <p className="text-xs text-secondary-500">لتعيين الرسوم، استخدم تبويب "رسوم المناطق"</p>
                                 </div>
                                 <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                                    <Button size="sm" variant="ghost" onClick={() => handleOpenRegionModal(r)} title="تعديل الاسم" disabled={!isOnline}>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleOpenRegionModal(r)}
+                                        title={!isFeatureEnabled ? 'الخاصية غير مفعلة' : 'تعديل الاسم'}
+                                        disabled={!isOnline || !isFeatureEnabled}
+                                    >
                                         <Icons.Edit className="h-5 w-5 text-blue-500" />
                                     </Button>
-                                    <Button size="sm" variant="destructive" onClick={() => setRegionToDelete(r)} title="حذف" disabled={!isOnline}>
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => setRegionToDelete(r)}
+                                        title={!isFeatureEnabled ? 'الخاصية غير مفعلة' : 'حذف'}
+                                        disabled={!isOnline || !isFeatureEnabled}
+                                    >
                                         <Icons.Trash2 className="h-4 w-4" />
                                     </Button>
                                 </div>
@@ -226,6 +266,19 @@ const RegionManager: React.FC<RegionManagerProps> = ({ onExport }) => {
                     </div>
                 </div>
             </Modal>
+
+            {/* Confirmation Modal for Renaming */}
+            <ConfirmationModal
+                isOpen={isRenameConfirmOpen}
+                onClose={() => setIsRenameConfirmOpen(false)}
+                onConfirm={async () => {
+                    if (pendingSave) await pendingSave();
+                }}
+                title="تنبيه هام: تغيير اسم المنطقة"
+                message="هل أنت متأكد من رغبتك في تغيير اسم هذه المنطقة؟ سيتم تحديث الاسم في جميع الشحنات السابقة والتاريخية. هذا الإجراء سيؤدي إلى فقدان الاسم القديم نهائياً."
+                confirmButtonVariant="warning"
+                confirmText="نعم، تغيير الاسم"
+            />
 
             <Modal isOpen={!!regionToDelete} onClose={() => setRegionToDelete(null)} title="تأكيد الحذف">
                 <div className="text-center">

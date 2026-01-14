@@ -3,6 +3,7 @@ import { Product } from '../../../../types';
 import Button from '../../../common/ui/Button';
 import Input from '../../../common/ui/Input';
 import Modal from '../../../common/ui/Modal';
+import ConfirmationModal from '../../../common/ui/ConfirmationModal';
 import { Icons } from '../../../Icons';
 import { useAppContext } from '../../../../providers/AppContext';
 import BatchImportModal from './BatchImportModal';
@@ -27,8 +28,17 @@ const ProductManager: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isMasterCatalogOpen, setIsMasterCatalogOpen] = useState(false);
 
+  // Confirmation for Renaming
+  const [isRenameConfirmOpen, setIsRenameConfirmOpen] = useState(false);
+  const [pendingSave, setPendingSave] = useState<(() => Promise<void>) | null>(null);
+
   // Feature Flags & Limits
-  const canAddProduct = checkLimit('maxProducts', 1);
+  // Can add if: 1. Feature is enabled AND 2. Limit is not reached
+  const isFeatureEnabled = hasFeature('canManageProducts');
+  const isLimitReached = !checkLimit('maxProducts', 1);
+  const canAdd = isFeatureEnabled && !isLimitReached;
+
+  // Import: Feature enabled
   const canImport = hasFeature('import_export');
 
   const filteredProducts = useMemo(() => {
@@ -49,7 +59,6 @@ const ProductManager: React.FC = () => {
 
   const handleOpenAddModal = () => {
     setEditingProduct(null);
-
     setProductName('');
     setProductWeight('');
     setError('');
@@ -58,7 +67,6 @@ const ProductManager: React.FC = () => {
 
   const handleOpenEditModal = (product: Product) => {
     setEditingProduct(product);
-
     setProductName(product.name);
     setProductWeight(product.weightKg || '');
     setError('');
@@ -67,27 +75,15 @@ const ProductManager: React.FC = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    // A small delay to allow the modal to animate out before clearing the form
     setTimeout(() => {
       setEditingProduct(null);
-
       setProductName('');
       setProductWeight('');
       setError('');
     }, 300);
   };
 
-  const handleSaveProduct = async () => {
-    if (!productName.trim()) {
-      setError('يرجى ملء اسم المنتج.');
-      return;
-    }
-
-    if (!editingProduct && !canAddProduct) {
-      setError('لقد تجاوزت الحد المسموح به للمنتجات في باقتك الحالية.');
-      return;
-    }
-
+  const executeSave = async () => {
     setIsSubmitting(true);
     try {
       if (editingProduct) {
@@ -112,7 +108,30 @@ const ProductManager: React.FC = () => {
       toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
+      setPendingSave(null);
     }
+  };
+
+  const handleSaveProduct = async () => {
+    if (!productName.trim()) {
+      setError('يرجى ملء اسم المنتج.');
+      return;
+    }
+
+    if (!editingProduct && !canAdd) {
+      // Should theoretically be unreachable due to hidden button, but safe to keep
+      setError('لا يمكن إضافة منتج: تجاوزت الحد أو الخاصية غير مفعلة.');
+      return;
+    }
+
+    // Check for Renaming
+    if (editingProduct && editingProduct.name !== productName.trim()) {
+      setPendingSave(() => executeSave);
+      setIsRenameConfirmOpen(true);
+      return;
+    }
+
+    await executeSave();
   };
 
   const confirmToggleProductStatus = async () => {
@@ -155,38 +174,43 @@ const ProductManager: React.FC = () => {
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="secondary"
-            onClick={handleOpenAddModal}
-            disabled={!isOnline || !canAddProduct}
-            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddProduct ? 'عفواً، لقد تجاوزت الحد المسموح به في باقتك' : '')}
-          >
-            <Icons.Plus className="ml-2 h-4 w-4" />
-            إضافة منتج جديد
-          </Button>
+          {/* ADD BUTTON: HIDDEN IF FLAG OFF OR LIMIT REACHED */}
+          {canAdd && (
+            <Button
+              variant="secondary"
+              onClick={handleOpenAddModal}
+              disabled={!isOnline}
+              title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}
+            >
+              <Icons.Plus className="ml-2 h-4 w-4" />
+              إضافة منتج جديد
+            </Button>
+          )}
 
           {canImport && (
             <Button
               variant="ghost"
               onClick={() => setIsImportModalOpen(true)}
-              disabled={!isOnline || !canAddProduct}
-              title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddProduct ? 'لا يمكنك الاستيراد لأنك وصلت للحد الأقصى للمنتجات' : '')}
+              disabled={!isOnline}
+              title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}
             >
               <Icons.FileDown className="ml-2 h-4 w-4" />
               استيراد CSV
             </Button>
           )}
 
-          <Button
-            variant="primary"
-            onClick={() => setIsMasterCatalogOpen(true)}
-            disabled={!isOnline || !canAddProduct}
-            title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : (!canAddProduct ? 'لا يمكنك الإضافة لأنك وصلت للحد الأقصى للمنتجات' : '')}
-          >
-            <Icons.Database className="ml-2 h-4 w-4" />
-            اختيار من الدليل الشامل
-          </Button>
-
+          {/* MASTER CATALOG: HIDDEN IF FLAG OFF OR LIMIT REACHED */}
+          {canAdd && (
+            <Button
+              variant="primary"
+              onClick={() => setIsMasterCatalogOpen(true)}
+              disabled={!isOnline}
+              title={!isOnline ? 'غير متاح في وضع عدم الاتصال' : ''}
+            >
+              <Icons.Database className="ml-2 h-4 w-4" />
+              اختيار من الدليل الشامل
+            </Button>
+          )}
         </div>
       </div>
       <div className="border dark:border-secondary-700 rounded-md min-h-[300px] p-2 space-y-2">
@@ -216,16 +240,35 @@ const ProductManager: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                  <Button size="sm" variant="ghost" onClick={() => handleOpenEditModal(p)} title="تعديل" disabled={!isOnline}>
+                  {/* EDIT/DELETE: DISABLED IF FLAG OFF */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleOpenEditModal(p)}
+                    title={!isFeatureEnabled ? 'الخاصية غير مفعلة' : 'تعديل'}
+                    disabled={!isOnline || !isFeatureEnabled}
+                  >
                     <Icons.Edit className="h-5 w-5 text-blue-500" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setProductToToggleStatus(p)} title={p.isActive ?? true ? 'تعطيل' : 'تفعيل'} disabled={!isOnline}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setProductToToggleStatus(p)}
+                    title={!isFeatureEnabled ? 'الخاصية غير مفعلة' : (p.isActive ?? true ? 'تعطيل' : 'تفعيل')}
+                    disabled={!isOnline || !isFeatureEnabled}
+                  >
                     {p.isActive ?? true
                       ? <Icons.CircleX className="h-5 w-5 text-red-500" />
                       : <Icons.CircleCheck className="h-5 w-5 text-green-500" />
                     }
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={() => setProductToDelete(p)} title="حذف" disabled={!isOnline}>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => setProductToDelete(p)}
+                    title={!isFeatureEnabled ? 'الخاصية غير مفعلة' : 'حذف'}
+                    disabled={!isOnline || !isFeatureEnabled}
+                  >
                     <Icons.Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -263,6 +306,19 @@ const ProductManager: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Confirmation Modal for Renaming */}
+      <ConfirmationModal
+        isOpen={isRenameConfirmOpen}
+        onClose={() => setIsRenameConfirmOpen(false)}
+        onConfirm={async () => {
+          if (pendingSave) await pendingSave();
+        }}
+        title="تنبيه هام: تغيير اسم المنتج"
+        message="هل أنت متأكد من رغبتك في تغيير اسم هذا المنتج؟ سيتم تحديث الاسم في جميع الشحنات السابقة والتاريخية. هذا الإجراء سيؤدي إلى فقدان الاسم القديم نهائياً."
+        confirmButtonVariant="warning"
+        confirmText="نعم، تغيير الاسم"
+      />
 
       <Modal isOpen={!!productToToggleStatus} onClose={() => setProductToToggleStatus(null)} title="تأكيد تغيير الحالة">
         <div className="text-center">
