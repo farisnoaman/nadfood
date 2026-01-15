@@ -14,8 +14,8 @@ class SupabaseService {
 
   static getClient(): SupabaseClientType<Database> {
     if (!this.instance) {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
+      const supabaseKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
       if (!supabaseUrl || !supabaseKey) {
         throw new Error('Missing Supabase environment variables');
@@ -158,6 +158,61 @@ class SupabaseService {
   static async delete(table: string, matchConditions: any) {
     const client = this.getClient();
     return await client.from(table as any).delete().match(matchConditions);
+  }
+
+  /**
+   * Fetch all rows from a table, handling pagination automatically to bypass the 1000 row limit.
+   * @param table The table name
+   * @param queryModifier Optional callback to modify the query (e.g. add filters, sorts)
+   * @param batchSize Number of rows to fetch per request (default 1000)
+   */
+  static async fetchAll<T = any>(
+    table: string,
+    queryModifier?: (query: any) => any,
+    batchSize: number = 1000
+  ): Promise<{ data: T[] | null; error: any }> {
+    const client = this.getClient();
+    let allData: T[] = [];
+    let from = 0;
+    let hasMore = true;
+    let error: any = null;
+
+    try {
+      while (hasMore) {
+        let query = client.from(table as any).select('*');
+
+        if (queryModifier) {
+          query = queryModifier(query);
+        }
+
+        // Apply range for pagination
+        const output = await query.range(from, from + batchSize - 1);
+
+        if (output.error) {
+          throw output.error;
+        }
+
+        const data = output.data as T[];
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+
+          if (data.length < batchSize) {
+            hasMore = false;
+          } else {
+            from += batchSize;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+    } catch (err) {
+      logger.error(`SupabaseService: Error in fetchAll for ${table}:`, err);
+      error = err;
+      return { data: null, error };
+    }
+
+    return { data: allData, error: null };
   }
 }
 

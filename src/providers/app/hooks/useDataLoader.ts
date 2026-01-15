@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { supabase } from '../../../utils/supabaseClient';
+import SupabaseService from '../../../utils/supabaseService';
 import * as IndexedDB from '../../../utils/indexedDB';
 import { STORES } from '../../../utils/constants';
 import logger from '../../../utils/logger';
@@ -108,10 +109,8 @@ export const useDataLoader = ({
 
         try {
             // Prepare queries
-            let shipmentsQuery: any = supabase.from('shipments').select('*');
-            if (companyId) {
-                shipmentsQuery = shipmentsQuery.eq('company_id', companyId);
-            }
+            // Prepare queries
+            // Shipments logic moved to SupabaseService.fetchAll invocation inside Promise.all
 
             const [
                 newUsers, newProducts, newDrivers, newRegions, newNotifications,
@@ -126,8 +125,15 @@ export const useDataLoader = ({
                 driverService.fetchAll(controller.signal, companyId),
                 regionService.fetchAll(controller.signal, companyId),
                 notificationService.fetchAll(controller.signal, companyId),
-                shipmentsQuery.abortSignal(controller.signal),
-                supabase.from('shipment_products').select('*').abortSignal(controller.signal),
+
+                SupabaseService.fetchAll('shipments', (q) => {
+                    let query = q;
+                    if (companyId) {
+                        query = query.eq('company_id', companyId);
+                    }
+                    return query.abortSignal(controller.signal);
+                }),
+                SupabaseService.fetchAll('shipment_products', (q) => q.abortSignal(controller.signal)),
                 priceService.fetchAllProductPrices(controller.signal, companyId),
                 (supabase as any).from('company_settings').select('*').maybeSingle().abortSignal(controller.signal),
                 installmentService.fetchAllInstallments(controller.signal),

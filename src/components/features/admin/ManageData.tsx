@@ -8,7 +8,7 @@ import PriceManager from './manage-data/PriceManager';
 import DeductionPriceManager from './manage-data/DeductionPriceManager';
 import RegionConfigManager from './manage-data/RegionConfigManager';
 import SearchableSelect from '../../common/forms/SearchableSelect';
-import { supabase } from '../../../utils/supabaseClient';
+import SupabaseService from '../../../utils/supabaseService';
 import logger from '../../../utils/logger';
 import { usePersistedState } from '../../../hooks/usePersistedState';
 
@@ -68,36 +68,36 @@ const ManageData: React.FC = () => {
     };
 
     const exportProducts = async () => {
-        const { data, error } = await supabase.from('products').select('*');
+        const { data, error } = await SupabaseService.fetchAll('products');
         if (error) throw error;
-        if (data.length === 0) return { headers: [], rows: [] };
+        if (!data || data.length === 0) return { headers: [], rows: [] };
         const headers = Object.keys(data[0]);
         const rows = data.map(item => headers.map(key => item[key]?.toString() || ''));
         return { headers, rows };
     };
 
     const exportDrivers = async () => {
-        const { data, error } = await supabase.from('drivers').select('*');
+        const { data, error } = await SupabaseService.fetchAll('drivers');
         if (error) throw error;
-        if (data.length === 0) return { headers: [], rows: [] };
+        if (!data || data.length === 0) return { headers: [], rows: [] };
         const headers = Object.keys(data[0]);
         const rows = data.map(item => headers.map(key => item[key]?.toString() || ''));
         return { headers, rows };
     };
 
     const exportRegions = async () => {
-        const { data, error } = await supabase.from('regions').select('*');
+        const { data, error } = await SupabaseService.fetchAll('regions');
         if (error) throw error;
-        if (data.length === 0) return { headers: [], rows: [] };
+        if (!data || data.length === 0) return { headers: [], rows: [] };
         const headers = Object.keys(data[0]);
         const rows = data.map(item => headers.map(key => item[key]?.toString() || ''));
         return { headers, rows };
     };
 
     const exportPrices = async () => {
-        const { data, error } = await supabase.from('product_prices').select('*');
+        const { data, error } = await SupabaseService.fetchAll('product_prices');
         if (error) throw error;
-        if (data.length === 0) return { headers: [], rows: [] };
+        if (!data || data.length === 0) return { headers: [], rows: [] };
         const headers = Object.keys(data[0]);
         const rows = data.map(item => headers.map(key => item[key]?.toString() || ''));
         return { headers, rows };

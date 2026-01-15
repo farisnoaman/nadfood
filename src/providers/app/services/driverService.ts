@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '../../../utils/supabaseClient';
+import SupabaseService from '../../../utils/supabaseService';
 import { Driver } from '../../../types';
 import { driverFromRow } from '../mappers';
 import logger from '../../../utils/logger';
@@ -11,20 +12,16 @@ import { STORES } from '../../../utils/constants';
 
 export const driverService = {
     async fetchAll(signal?: AbortSignal, companyId?: string): Promise<Driver[]> {
-        let query: any = supabase
-            .from('drivers')
-            .select('*')
-            .order('name');
-
-        if (companyId) {
-            query = query.eq('company_id', companyId);
-        }
-
-        if (signal) {
-            query = query.abortSignal(signal);
-        }
-
-        const { data, error } = await query;
+        const { data, error } = await SupabaseService.fetchAll('drivers', (query) => {
+            let q = query.order('name');
+            if (companyId) {
+                q = q.eq('company_id', companyId);
+            }
+            if (signal) {
+                q = q.abortSignal(signal);
+            }
+            return q;
+        });
 
         if (error) {
             logger.error('Error fetching drivers:', error);

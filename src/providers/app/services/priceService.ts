@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '../../../utils/supabaseClient';
+import SupabaseService from '../../../utils/supabaseService';
 import { ProductPrice, DeductionPrice } from '../../../types';
 import { priceFromRow, deductionPriceFromRow } from '../mappers';
 import logger from '../../../utils/logger';
@@ -13,20 +14,16 @@ export const priceService = {
     // --- Product Prices ---
 
     async fetchAllProductPrices(signal?: AbortSignal, companyId?: string): Promise<ProductPrice[]> {
-        let query: any = supabase
-            .from('product_prices')
-            .select('*');
-
-        // Filter by company_id if provided
-        if (companyId) {
-            query = query.eq('company_id', companyId);
-        }
-
-        if (signal) {
-            query = query.abortSignal(signal);
-        }
-
-        const { data, error } = await query;
+        const { data, error } = await SupabaseService.fetchAll('product_prices', (query) => {
+            let q = query;
+            if (companyId) {
+                q = q.eq('company_id', companyId);
+            }
+            if (signal) {
+                q = q.abortSignal(signal);
+            }
+            return q;
+        });
 
         if (error) {
             logger.error('Error fetching product prices:', error);
@@ -167,17 +164,16 @@ export const priceService = {
 
     async fetchAllDeductionPrices(signal?: AbortSignal, companyId?: string): Promise<DeductionPrice[]> {
         try {
-            let query: any = (supabase as any).from('deduction_prices').select('*');
-
-            if (companyId) {
-                query = query.eq('company_id', companyId);
-            }
-
-            if (signal) {
-                query = query.abortSignal(signal);
-            }
-
-            const { data, error } = await query;
+            const { data, error } = await SupabaseService.fetchAll('deduction_prices', (query) => {
+                let q = query;
+                if (companyId) {
+                    q = q.eq('company_id', companyId);
+                }
+                if (signal) {
+                    q = q.abortSignal(signal);
+                }
+                return q;
+            });
 
             if (error) {
                 // Table might not exist yet

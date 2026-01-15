@@ -3,26 +3,23 @@
  */
 
 import { supabase } from '../../../utils/supabaseClient';
+import SupabaseService from '../../../utils/supabaseService';
 import { User } from '../../../types';
 import { userFromRow } from '../mappers';
 import logger from '../../../utils/logger';
 
 export const userService = {
     async fetchAll(signal?: AbortSignal, companyId?: string): Promise<User[]> {
-        let query: any = supabase
-            .from('users')
-            .select('*')
-            .order('username');
-
-        if (companyId) {
-            query = query.eq('company_id', companyId);
-        }
-
-        if (signal) {
-            query = query.abortSignal(signal);
-        }
-
-        const { data, error } = await query;
+        const { data, error } = await SupabaseService.fetchAll('users', (query) => {
+            let q = query.order('username');
+            if (companyId) {
+                q = q.eq('company_id', companyId);
+            }
+            if (signal) {
+                q = q.abortSignal(signal);
+            }
+            return q;
+        });
 
         if (error) {
             logger.error('Error fetching users:', error);

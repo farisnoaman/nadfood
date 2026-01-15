@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '../../../utils/supabaseClient';
+import SupabaseService from '../../../utils/supabaseService';
 import { Region } from '../../../types';
 import { regionFromRow } from '../mappers';
 import logger from '../../../utils/logger';
@@ -11,20 +12,16 @@ import { STORES } from '../../../utils/constants';
 
 export const regionService = {
     async fetchAll(signal?: AbortSignal, companyId?: string): Promise<Region[]> {
-        let query: any = (supabase as any)
-            .from('regions')
-            .select('*')
-            .order('name');
-
-        if (companyId) {
-            query = query.eq('company_id', companyId);
-        }
-
-        if (signal) {
-            query = query.abortSignal(signal);
-        }
-
-        const { data, error } = await query;
+        const { data, error } = await SupabaseService.fetchAll('regions', (query) => {
+            let q = query.order('name');
+            if (companyId) {
+                q = q.eq('company_id', companyId);
+            }
+            if (signal) {
+                q = q.abortSignal(signal);
+            }
+            return q;
+        });
 
         if (error) {
             logger.error('Error fetching regions:', error);
@@ -136,20 +133,21 @@ export const regionService = {
     // --- Region Configs ---
 
     async fetchAllConfigs(signal?: AbortSignal, companyId?: string): Promise<any[]> {
-        let query: any = (supabase as any)
-            .from('region_configs')
-            .select('*')
-            .order('effective_from', { ascending: false });
+        const { data, error } = await SupabaseService.fetchAll('region_configs', (query) => {
+            let q = query.order('effective_from', { ascending: false });
+            if (companyId) {
+                q = q.eq('company_id', companyId);
+            }
+            if (signal) {
+                q = q.abortSignal(signal);
+            }
+            return q;
+        });
 
-        if (companyId) {
-            query = query.eq('company_id', companyId);
+        if (error) {
+            logger.warn('Error fetching region configs:', error);
+            return [];
         }
-
-        if (signal) {
-            query = query.abortSignal(signal);
-        }
-
-        const { data, error } = await query;
 
         if (error) {
             logger.warn('Error fetching region configs:', error);
