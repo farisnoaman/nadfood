@@ -148,7 +148,7 @@ const AppRoutes: React.FC = () => {
     }
 
     // Default title for platform/root
-    const pageTitle = companyName || 'نظام تتبع الشحنات';
+    const pageTitle = companyName || 'إدارة الشحنات';
 
     return (
         <div className={`min-h-screen bg-secondary-100 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-200 transition-colors duration-300`}>

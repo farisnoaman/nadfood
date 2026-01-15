@@ -18,8 +18,8 @@ const SEO: React.FC<SEOProps> = ({
     url,
     companyName
 }) => {
-    const siteTitle = companyName || 'نظام تتبع الشحنات';
-    const finalTitle = title ? `${title} | ${siteTitle}` : `نظام تتبع الشحنات - ${siteTitle}`;
+    const siteTitle = companyName || 'إدارة الشحنات';
+    const finalTitle = title ? `${title} | ${siteTitle}` : `إدارة الشحنات - ${siteTitle}`;
     const siteDescription = description || 'منصة متكاملة لإدارة عمليات النقل، تتبع الشحنات، إدارة السائقين، واللوجستيات.';
     const siteKeywords = keywords || 'نقل, شحنات, تتبع, لوجستيات, سائقين, إدارة أسطول';
     const siteImage = image || '/icon-512.png';

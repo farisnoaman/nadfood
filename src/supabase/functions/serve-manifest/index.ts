@@ -36,8 +36,10 @@ serve(async (req) => {
 
         // Build manifest with company branding or defaults
         const manifest = {
-            name: company?.name || 'نظام تتبع الشحنات',
-            short_name: company?.name || 'الشحنات',
+            name: company?.name || 'إدارة الشحنات',
+            short_name: company?.name ?
+                (company.name.length > 12 ? company.name.substring(0, 10) + '..' : company.name) :
+                'إدارة الشحنات',
             description: 'نظام إدارة وتتبع الشحنات',
             start_url: '/',
             display: 'standalone',
