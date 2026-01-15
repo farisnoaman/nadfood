@@ -102,35 +102,49 @@ const ShipmentSummary: React.FC<{
   };
 
   return (
-    <div className="bg-secondary-100 dark:bg-secondary-900 p-3 rounded-md relative">
-      <h4 className="font-bold mb-2">معلومات الشحنة</h4>
-      <div className="font-bold mb-2 text-primary-700 dark:text-primary-300">
+    <div className="bg-secondary-100 dark:bg-secondary-900 p-3 rounded-md relative text-sm">
+      <h4 className="font-bold mb-3 text-base">معلومات الشحنة</h4>
+
+      <div className="font-bold mb-2 pb-2 border-b border-gray-400 dark:border-gray-600 text-primary-700 dark:text-primary-300">
         <FieldValue label="إجمالي الوزن" value={`${totalWeight.toLocaleString('en-US', { minimumFractionDigits: 3 })} طن`} currency="" />
       </div>
-      <FieldValue label="إجمالي الأجر" value={shipment.totalWage} />
 
-      <EditableFieldValue
-        label="إجمالي الديزل"
-        value={shipment.totalDiesel}
-        onEdit={() => handleEdit('إجمالي الديزل', shipment.totalDiesel || 0, onUpdateDiesel || (() => { }))}
-        isEditable={isEditable}
-      />
+      <div className="mb-2 pb-2 border-b border-gray-400 dark:border-gray-600">
+        <FieldValue label="إجمالي الأجر" value={shipment.totalWage} />
+      </div>
 
-      <EditableFieldValue
-        label="خرج الطريق"
-        value={roadExpenses}
-        onEdit={() => handleEdit('خرج الطريق', roadExpenses || 0, onUpdateRoadExpenses || (() => { }))}
-        isEditable={isEditable}
-      />
+      <div className="mb-2 pb-2 border-b border-gray-400 dark:border-gray-600">
+        <EditableFieldValue
+          label="إجمالي الديزل"
+          value={shipment.totalDiesel}
+          onEdit={() => handleEdit('إجمالي الديزل', shipment.totalDiesel || 0, onUpdateDiesel || (() => { }))}
+          isEditable={isEditable}
+        />
+      </div>
 
-      <FieldValue label="رسوم زعيتري" value={shipment.zaitriFee} />
-      <EditableFieldValue
-        label="مصروفات إدارية"
-        value={adminExpenses}
-        onEdit={() => handleEdit('مصروفات إدارية', adminExpenses || 0, onUpdateAdminExpenses || (() => { }))}
-        isEditable={isEditable}
-      />
-      <div className="font-bold mt-2"><FieldValue label="المبلغ المستحق" value={shipment.dueAmount} /></div>
+      <div className="mb-2 pb-2 border-b border-gray-400 dark:border-gray-600">
+        <EditableFieldValue
+          label="خرج الطريق"
+          value={roadExpenses}
+          onEdit={() => handleEdit('خرج الطريق', roadExpenses || 0, onUpdateRoadExpenses || (() => { }))}
+          isEditable={isEditable}
+        />
+      </div>
+
+      <div className="mb-2 pb-2 border-b border-gray-400 dark:border-gray-600">
+        <FieldValue label="رسوم زعيتري" value={shipment.zaitriFee} />
+      </div>
+
+      <div className="mb-2 pb-2 border-b border-gray-400 dark:border-gray-600">
+        <EditableFieldValue
+          label="مصروفات إدارية"
+          value={adminExpenses}
+          onEdit={() => handleEdit('مصروفات إدارية', adminExpenses || 0, onUpdateAdminExpenses || (() => { }))}
+          isEditable={isEditable}
+        />
+      </div>
+
+      <div className="font-bold mt-2 pt-1"><FieldValue label="المبلغ المستحق" value={shipment.dueAmount} /></div>
 
       {/* Edit Dialog - Rendered here to be part of the tree, but Modal typically portals out */}
       {editingField && (
@@ -145,6 +159,32 @@ const ShipmentSummary: React.FC<{
     </div>
   );
 };
+
+/** A helper component for collapsible sections */
+const CollapsibleSection: React.FC<{
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  className?: string; // Optional
+}> = ({ title, isOpen, onToggle, children, className = "" }) => (
+  <div className={`bg-secondary-50 dark:bg-secondary-900 rounded-md ${className}`}>
+    <button
+      type="button"
+      className="w-full flex justify-between items-center p-3 text-right font-bold"
+      onClick={onToggle}
+      aria-expanded={isOpen}
+    >
+      <span>{title}</span>
+      <Icons.ChevronDown className={`h-5 w-5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+    </button>
+    {isOpen && (
+      <div className="p-3 border-t border-secondary-200 dark:border-secondary-700 space-y-2">
+        {children}
+      </div>
+    )}
+  </div>
+);
 
 /** A confirmation dialog for sending with zero values. */
 const ConfirmationDialog: React.FC<{
@@ -191,6 +231,10 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [zeroFields, setZeroFields] = useState<string[]>([]);
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
+  const [isDeductionsExpanded, setIsDeductionsExpanded] = useState(false);
+  const [isAdditionsExpanded, setIsAdditionsExpanded] = useState(false);
+  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
+  const [isTransferExpanded, setIsTransferExpanded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMissingPrice, setHasMissingPrice] = useState(false);
 
@@ -479,83 +523,95 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
 
           {/* Deductions Section - Only if enabled for accountant */}
           {accountantDeductionsAccess && isEditable && (
-            <div className="bg-secondary-50 dark:bg-secondary-900 rounded-md p-3 space-y-4">
-              <h4 className="font-bold text-lg">قسم الاستقطاعات (مفصل بالمنتج)</h4>
-              {currentShipment.products.map(product => {
-                const relevantPrices = deductionPrices.filter(dp =>
-                  dp.productId === product.productId && dp.effectiveFrom <= shipment.orderDate
-                );
-                const latestPrice = relevantPrices.sort((a, b) =>
-                  new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
-                )[0];
-                const prices = { shortage: latestPrice?.shortagePrice || 0, damaged: latestPrice?.damagedPrice || 0 };
-                return (
-                  <div key={product.productId} className="p-3 bg-white dark:bg-secondary-800 rounded-lg border dark:border-secondary-700 shadow-sm">
-                    <div className="mb-3">
-                      <p className="font-bold text-gray-800 dark:text-gray-100">{product.productName}</p>
-                      <p className="text-xs text-secondary-500 mt-1">سعر النقص: {prices.shortage} ر.ي | سعر التالف: {prices.damaged} ر.ي</p>
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <div className="bg-red-50 dark:bg-red-900/10 p-2 rounded-md border border-red-100 dark:border-red-900/20">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-xs font-semibold text-red-700 dark:text-red-400">النقص</span>
-                          <span className="text-xs font-bold text-red-600">{product.shortageValue || 0} ر.ي</span>
+            <CollapsibleSection
+              title="قسم الاستقطاعات (مفصل بالمنتج)"
+              isOpen={isDeductionsExpanded}
+              onToggle={() => setIsDeductionsExpanded(!isDeductionsExpanded)}
+            >
+              <div className="space-y-4">
+                {currentShipment.products.map(product => {
+                  const relevantPrices = deductionPrices.filter(dp =>
+                    dp.productId === product.productId && dp.effectiveFrom <= shipment.orderDate
+                  );
+                  const latestPrice = relevantPrices.sort((a, b) =>
+                    new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+                  )[0];
+                  const prices = { shortage: latestPrice?.shortagePrice || 0, damaged: latestPrice?.damagedPrice || 0 };
+                  return (
+                    <div key={product.productId} className="p-3 bg-white dark:bg-secondary-800 rounded-lg border dark:border-secondary-700 shadow-sm">
+                      <div className="mb-3">
+                        <p className="font-bold text-gray-800 dark:text-gray-100">{product.productName}</p>
+                        <p className="text-xs text-secondary-500 mt-1">سعر النقص: {prices.shortage} ر.ي | سعر التالف: {prices.damaged} ر.ي</p>
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <div className="bg-red-50 dark:bg-red-900/10 p-2 rounded-md border border-red-100 dark:border-red-900/20">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-semibold text-red-700 dark:text-red-400">النقص</span>
+                            <span className="text-xs font-bold text-red-600">{product.shortageValue || 0} ر.ي</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input label="عدد الكراتين" type="number" min={0} value={product.shortageCartons || ''} onChange={e => handleProductDeductionChange(product.productId, 'shortageCartons', Number(e.target.value) || 0)} />
+                            <Input label="نسبة الإعفاء %" type="number" min={0} max={100} value={product.shortageExemptionRate || ''} onChange={e => handleProductDeductionChange(product.productId, 'shortageExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))} />
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Input label="عدد الكراتين" type="number" min={0} value={product.shortageCartons || ''} onChange={e => handleProductDeductionChange(product.productId, 'shortageCartons', Number(e.target.value) || 0)} />
-                          <Input label="نسبة الإعفاء %" type="number" min={0} max={100} value={product.shortageExemptionRate || ''} onChange={e => handleProductDeductionChange(product.productId, 'shortageExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))} />
+                        <div className="bg-orange-50 dark:bg-orange-900/10 p-2 rounded-md border border-orange-100 dark:border-orange-900/20">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-semibold text-orange-700 dark:text-orange-400">التالف</span>
+                            <span className="text-xs font-bold text-orange-600">{product.damagedValue || 0} ر.ي</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input label="عدد الكراتين" type="number" min={0} value={product.damagedCartons || ''} onChange={e => handleProductDeductionChange(product.productId, 'damagedCartons', Number(e.target.value) || 0)} />
+                            <Input label="نسبة الإعفاء %" type="number" min={0} max={100} value={product.damagedExemptionRate || ''} onChange={e => handleProductDeductionChange(product.productId, 'damagedExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))} />
+                          </div>
                         </div>
                       </div>
-                      <div className="bg-orange-50 dark:bg-orange-900/10 p-2 rounded-md border border-orange-100 dark:border-orange-900/20">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-xs font-semibold text-orange-700 dark:text-orange-400">التالف</span>
-                          <span className="text-xs font-bold text-orange-600">{product.damagedValue || 0} ر.ي</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Input label="عدد الكراتين" type="number" min={0} value={product.damagedCartons || ''} onChange={e => handleProductDeductionChange(product.productId, 'damagedCartons', Number(e.target.value) || 0)} />
-                          <Input label="نسبة الإعفاء %" type="number" min={0} max={100} value={product.damagedExemptionRate || ''} onChange={e => handleProductDeductionChange(product.productId, 'damagedExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))} />
-                        </div>
-                      </div>
                     </div>
-                  </div>
-                );
-              })}
-              <Input label="مبالغ أخرى" type="number" min={0} value={currentShipment.otherAmounts || ''} onChange={e => handleValueChange('otherAmounts', Number(e.target.value) || 0)} />
-            </div>
+                  );
+                })}
+                <Input label="مبالغ أخرى" type="number" min={0} value={currentShipment.otherAmounts || ''} onChange={e => handleValueChange('otherAmounts', Number(e.target.value) || 0)} />
+              </div>
+            </CollapsibleSection>
           )}
 
           {/* Additions Section - Only if enabled for accountant */}
           {accountantAdditionsAccess && isEditable && (
-            <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
-              <h4 className="font-bold text-lg">قسم الاستحقاقات (الإضافات)</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <CollapsibleSection
+              title="قسم الاستحقاقات (الإضافات)"
+              isOpen={isAdditionsExpanded}
+              onToggle={() => setIsAdditionsExpanded(!isAdditionsExpanded)}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Input label="سندات تحسين" type="number" min={0} value={currentShipment.improvementBonds || ''} onChange={e => handleValueChange('improvementBonds', Number(e.target.value) || 0)} />
                 <Input label="ممسى" type="number" min={0} value={currentShipment.eveningAllowance || ''} onChange={e => handleValueChange('eveningAllowance', Number(e.target.value) || 0)} />
                 <Input label="رسوم التحويل" type="number" min={0} value={currentShipment.transferFee || ''} onChange={e => handleValueChange('transferFee', Number(e.target.value) || 0)} />
               </div>
-            </div>
+            </CollapsibleSection>
           )}
 
           {/* Notes Section - Always visible if any section is assigned */}
           {hasAdminAssignedSections && isEditable && (
-            <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
-              <h4 className="font-bold text-lg">الملاحظات</h4>
-              <div className="pt-2">
-                <textarea
-                  className="w-full px-3 py-2 border rounded-md dark:bg-secondary-800 dark:border-secondary-600 focus:ring-primary-500 focus:border-primary-500 min-h-[100px]"
-                  value={currentShipment.notes || ''}
-                  onChange={e => handleValueChange('notes', e.target.value)}
-                  placeholder="أضف ملاحظات هنا..."
-                />
-              </div>
-            </div>
+            <CollapsibleSection
+              title="الملاحظات"
+              isOpen={isNotesExpanded}
+              onToggle={() => setIsNotesExpanded(!isNotesExpanded)}
+            >
+              <textarea
+                className="w-full px-3 py-2 border rounded-md dark:bg-secondary-800 dark:border-secondary-600 focus:ring-primary-500 focus:border-primary-500 min-h-[100px]"
+                value={currentShipment.notes || ''}
+                onChange={e => handleValueChange('notes', e.target.value)}
+                placeholder="أضف ملاحظات هنا..."
+              />
+            </CollapsibleSection>
           )}
 
           {/* Transfer Section - Only if enabled for accountant */}
           {accountantTransferAccess && isEditable && (
-            <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
-              <h4 className="font-bold text-lg">قسم الحوالة</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <CollapsibleSection
+              title="قسم الحوالة"
+              isOpen={isTransferExpanded}
+              onToggle={() => setIsTransferExpanded(!isTransferExpanded)}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="رقم الحوالة (8 أرقام على الأقل)"
                   type="text"
@@ -570,7 +626,7 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
                   onChange={(value) => handleValueChange('transferDate', value)}
                 />
               </div>
-            </div>
+            </CollapsibleSection>
           )}
 
           <div className="flex flex-wrap justify-between items-center gap-3 pt-4 border-t dark:border-secondary-600">
