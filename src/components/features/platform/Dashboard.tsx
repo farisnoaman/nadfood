@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icons } from '../../Icons';
 import { supabase } from '../../../utils/supabaseClient';
+import logger from '../../../utils/logger';
+import SubscriptionRequestsManager from './SubscriptionRequestsManager';
 
 const PlatformDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -152,6 +154,9 @@ const PlatformDashboard: React.FC = () => {
                     />
                 </div>
             </div>
+
+            {/* Subscription Requests */}
+            <SubscriptionRequestsManager />
 
             {/* Recent Activity Placeholder */}
             <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-8 text-center space-y-4">

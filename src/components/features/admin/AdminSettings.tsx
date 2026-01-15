@@ -9,6 +9,7 @@ import SupabaseService from '../../../utils/supabaseService';
 import { supabase } from '../../../utils/supabaseClient';
 import { runSettingsMigrationIfNeeded } from '../../../utils/settingsMigration';
 import logger from '../../../utils/logger';
+import SubscriptionSettings from './settings/SubscriptionSettings';
 
 const AdminSettings: React.FC = () => {
   const {
@@ -156,7 +157,7 @@ const AdminSettings: React.FC = () => {
   // Subscribe to real-time changes in app_settings (admin users only)
   useEffect(() => {
     // Check if realtime is enabled via environment variable
-    const enableRealtime = import.meta.env.VITE_ENABLE_REALTIME !== 'false';
+    const enableRealtime = (import.meta as any).env.VITE_ENABLE_REALTIME !== 'false';
 
     // Only establish realtime connection for admin users to prevent unnecessary API key exposure
     if (!enableRealtime || !currentUser || currentUser.role !== 'ادمن') {
@@ -605,6 +606,11 @@ const AdminSettings: React.FC = () => {
             )}
           </div>
         </div>
+      </Card>
+
+      {/* Subscription Management Section */}
+      <Card title="إدارة الاشتراك">
+        <SubscriptionSettings />
       </Card>
     </div>
   );

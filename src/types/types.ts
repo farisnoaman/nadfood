@@ -317,3 +317,38 @@ export interface InstallmentPayment {
   createdAt: string;
   createdBy?: string;
 }
+
+/**
+ * Represents a subscription plan available in the platform.
+ */
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description?: string;
+  maxUsers?: number | null;
+  maxProducts?: number | null;
+  maxDrivers?: number | null;
+  maxStorageMb?: number | null;
+  monthlyPrice: number;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+/**
+ * Represents a subscription request submitted by a Company Admin.
+ */
+export interface SubscriptionRequest {
+  id: string;
+  companyId: string;
+  companyName?: string; // Populated via join for Platform Admin view
+  requestedPlanId: string;
+  requestedPlanName?: string; // Populated via join
+  paymentReference: string;
+  requestType: 'renewal' | 'upgrade';
+  status: 'pending' | 'approved' | 'rejected';
+  adminNotes?: string;
+  effectiveStartDate?: string;
+  effectiveEndDate?: string;
+  createdAt: string;
+  updatedAt?: string;
+}

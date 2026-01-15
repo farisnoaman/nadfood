@@ -23,12 +23,39 @@ export const useSubscription = (currentUser: User | null) => {
             logger.error('Error fetching company:', error);
         }
     }, []);
+
     // Auto-fetch company when user logs in
     useEffect(() => {
         if (currentUser?.companyId) {
             fetchCompanyCallback(currentUser.companyId);
         }
     }, [currentUser?.companyId, fetchCompanyCallback]);
+
+    // Calculate days until expiry
+    const daysUntilExpiry = useMemo(() => {
+        if (!company?.subscriptionEndDate) return null;
+        return Math.ceil((new Date(company.subscriptionEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    }, [company?.subscriptionEndDate]);
+
+    // Show global notification when subscription is expiring within 5 days
+    useEffect(() => {
+        if (daysUntilExpiry === null || daysUntilExpiry > 5 || daysUntilExpiry <= 0) return;
+
+        // Check if we've already shown the notification this session
+        const notificationKey = `subscription_expiry_notification_${company?.id}`;
+        if (sessionStorage.getItem(notificationKey)) return;
+
+        // Show notification (using alert for simplicity, could be toast in future)
+        const message = daysUntilExpiry === 1
+            ? 'تنبيه: اشتراكك سينتهي غداً! يرجى التجديد من إعدادات الاشتراك.'
+            : `تنبيه: اشتراكك سينتهي خلال ${daysUntilExpiry} أيام. يرجى التجديد من إعدادات الاشتراك.`;
+
+        // Delay to not block initial render
+        setTimeout(() => {
+            alert(message);
+            sessionStorage.setItem(notificationKey, 'true');
+        }, 2000);
+    }, [daysUntilExpiry, company?.id]);
 
     // Derived Logic
     const isSubscriptionActive = useMemo(() => {
