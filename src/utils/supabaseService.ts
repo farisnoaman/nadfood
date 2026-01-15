@@ -129,9 +129,18 @@ class SupabaseService {
         isPrintHeaderEnabled: 'is_print_header_enabled',
         accountantPrintAccess: 'accountant_print_access',
         isTimeWidgetVisible: 'is_time_widget_visible',
+        accountantDeductionsAccess: 'accountant_deductions_access',
+        accountantAdditionsAccess: 'accountant_additions_access',
+        accountantTransferAccess: 'accountant_transfer_access',
       };
       const columnName = columnMap[settingKey] || settingKey;
-      await this.saveCompanySettings(companyId, { [columnName]: settingValue });
+      // Convert string 'true'/'false' to boolean for boolean columns
+      let valueToSave: any = settingValue;
+      const booleanColumns = ['is_print_header_enabled', 'accountant_print_access', 'is_time_widget_visible', 'accountant_deductions_access', 'accountant_additions_access', 'accountant_transfer_access'];
+      if (booleanColumns.includes(columnName)) {
+        valueToSave = settingValue === 'true';
+      }
+      await this.saveCompanySettings(companyId, { [columnName]: valueToSave });
     } else {
       // Fallback to old key-value approach
       const client = this.getClient();

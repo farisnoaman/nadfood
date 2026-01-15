@@ -10,6 +10,7 @@ const getStepIndex = (status: ShipmentStatus): number => {
     switch (status) {
         case ShipmentStatus.FROM_SALES:
         case ShipmentStatus.RETURNED_FOR_EDIT:
+        case ShipmentStatus.ACCOUNTANT_DRAFT:
             return 2; // Accounting is current step
         case ShipmentStatus.SENT_TO_ADMIN:
         case ShipmentStatus.DRAFT:

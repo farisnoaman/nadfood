@@ -37,6 +37,9 @@ interface SettingSetters {
     setCompanyPhone: (value: string) => void;
     setCompanyLogo: (value: string) => void;
     setIsTimeWidgetVisible: (value: boolean) => void;
+    setAccountantDeductionsAccess: (value: boolean) => void;
+    setAccountantAdditionsAccess: (value: boolean) => void;
+    setAccountantTransferAccess: (value: boolean) => void;
 }
 
 interface UseDataLoaderProps {
@@ -182,6 +185,9 @@ export const useDataLoader = ({
                 settingSetters.setCompanyPhone(companySettings.company_phone || 'رقم الهاتف');
                 settingSetters.setCompanyLogo(companySettings.company_logo || '');
                 settingSetters.setIsTimeWidgetVisible(companySettings.is_time_widget_visible ?? true);
+                settingSetters.setAccountantDeductionsAccess(companySettings.accountant_deductions_access ?? false);
+                settingSetters.setAccountantAdditionsAccess(companySettings.accountant_additions_access ?? false);
+                settingSetters.setAccountantTransferAccess(companySettings.accountant_transfer_access ?? false);
             }
 
             // Save Settings to IDB

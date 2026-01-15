@@ -145,6 +145,7 @@ export const shipmentFromRow = (row: ShipmentRow, products: ShipmentProduct[]): 
     isPendingSync: false,
     notes: (row as any).notes,
     attachmentUrl: (row as any).attachment_url ?? undefined,
+    lastUpdatedRole: (row as any).last_updated_role ?? undefined,
 });
 
 export const shipmentProductFromRow = (row: ShipmentProductRow): ShipmentProduct => ({
@@ -249,6 +250,7 @@ export const shipmentToRow = (shipment: Partial<Shipment>): Partial<Database['pu
         hasMissingPrices: 'has_missing_prices',
         notes: 'notes',
         attachmentUrl: 'attachment_url',
+        lastUpdatedRole: 'last_updated_role',
     };
 
     const rowData: Partial<Database['public']['Tables']['shipments']['Update']> = {};

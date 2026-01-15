@@ -14,7 +14,8 @@ export enum Role {
  */
 export enum ShipmentStatus {
   FROM_SALES = 'من مسؤول الحركة', // Newly created by Sales, ready for Accountant
-  DRAFT = 'مسودة', // Saved by Accountant, not yet sent to Admin
+  ACCOUNTANT_DRAFT = 'مسودة المحاسب', // Saved by Accountant as draft, not yet sent to Admin
+  DRAFT = 'مسودة', // Saved by Admin as draft
   SENT_TO_ADMIN = 'مرسلة للادمن', // Sent by Accountant, awaiting Admin review
   RETURNED_FOR_EDIT = 'طلب تعديل', // Returned by Admin to Accountant for changes
   RETURNED_TO_FLEET = 'مرتجعة لمسؤول الحركة', // Returned by Accountant to Fleet for corrections
@@ -260,6 +261,7 @@ export interface Shipment {
   isPendingSync?: boolean; // True if created offline and waiting to be sent to the server.
   notes?: string; // Admin notes
   attachmentUrl?: string; // URL to attachment (PDF or image)
+  lastUpdatedRole?: string; // Role of the user who last updated this shipment
 }
 
 /**

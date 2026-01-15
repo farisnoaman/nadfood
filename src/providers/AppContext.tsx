@@ -40,7 +40,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const {
         accountantPrintAccess, setAccountantPrintAccess, isPrintHeaderEnabled, setIsPrintHeaderEnabled,
         appName, setAppName, companyName, setCompanyName, companyAddress, setCompanyAddress,
-        companyPhone, setCompanyPhone, companyLogo, setCompanyLogo, isTimeWidgetVisible, setIsTimeWidgetVisible
+        companyPhone, setCompanyPhone, companyLogo, setCompanyLogo, isTimeWidgetVisible, setIsTimeWidgetVisible,
+        accountantDeductionsAccess, setAccountantDeductionsAccess,
+        accountantAdditionsAccess, setAccountantAdditionsAccess,
+        accountantTransferAccess, setAccountantTransferAccess
     } = useSettings();
 
     // 3. Auth Hook (Depends on wrappers)
@@ -170,7 +173,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setCompanyAddress,
             setCompanyPhone,
             setCompanyLogo,
-            setIsTimeWidgetVisible
+            setIsTimeWidgetVisible,
+            setAccountantDeductionsAccess,
+            setAccountantAdditionsAccess,
+            setAccountantTransferAccess
         },
         setAuthError
     });
@@ -206,6 +212,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         accountantPrintAccess, setAccountantPrintAccess, isPrintHeaderEnabled, setIsPrintHeaderEnabled,
         appName, setAppName, companyName, setCompanyName, companyAddress, setCompanyAddress, companyPhone, setCompanyPhone,
         companyLogo, setCompanyLogo, isTimeWidgetVisible, setIsTimeWidgetVisible,
+        accountantDeductionsAccess, setAccountantDeductionsAccess,
+        accountantAdditionsAccess, setAccountantAdditionsAccess,
+        accountantTransferAccess, setAccountantTransferAccess,
         loading, error: authError || syncError, isOnline, isSyncing, isProfileLoaded,
         refreshAllData: refreshWrapper,
         syncOfflineMutations,
@@ -221,7 +230,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notifications, addNotification, markNotificationAsRead, markAllNotificationsAsRead,
         installments, createInstallment, updateInstallment, installmentPayments, addInstallmentPayment, updateInstallmentPayment,
         accountantPrintAccess, isPrintHeaderEnabled, appName, companyName, companyAddress, companyPhone, companyLogo, isTimeWidgetVisible,
+        accountantDeductionsAccess, accountantAdditionsAccess, accountantTransferAccess,
         loading, authError, syncError, isOnline, isSyncing, isProfileLoaded, setAccountantPrintAccess, setIsPrintHeaderEnabled, setAppName, setCompanyName, setCompanyAddress, setCompanyPhone, setCompanyLogo, setIsTimeWidgetVisible,
+        setAccountantDeductionsAccess, setAccountantAdditionsAccess, setAccountantTransferAccess,
         refreshWrapper, syncOfflineMutations, isSubscriptionActive, checkLimit, hasFeature, fetchCompany
     ]);
 

@@ -9,6 +9,10 @@ export const useSettings = () => {
     const [companyPhone, setCompanyPhone] = useState<string>('رقم الهاتف');
     const [companyLogo, setCompanyLogo] = useState<string>('');
     const [isTimeWidgetVisible, setIsTimeWidgetVisible] = useState<boolean>(true);
+    // Accountant workflow settings
+    const [accountantDeductionsAccess, setAccountantDeductionsAccess] = useState<boolean>(false);
+    const [accountantAdditionsAccess, setAccountantAdditionsAccess] = useState<boolean>(false);
+    const [accountantTransferAccess, setAccountantTransferAccess] = useState<boolean>(false);
 
     return {
         accountantPrintAccess, setAccountantPrintAccess,
@@ -18,6 +22,9 @@ export const useSettings = () => {
         companyAddress, setCompanyAddress,
         companyPhone, setCompanyPhone,
         companyLogo, setCompanyLogo,
-        isTimeWidgetVisible, setIsTimeWidgetVisible
+        isTimeWidgetVisible, setIsTimeWidgetVisible,
+        accountantDeductionsAccess, setAccountantDeductionsAccess,
+        accountantAdditionsAccess, setAccountantAdditionsAccess,
+        accountantTransferAccess, setAccountantTransferAccess,
     };
 };

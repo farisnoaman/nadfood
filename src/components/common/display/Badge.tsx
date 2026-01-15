@@ -8,14 +8,15 @@ interface BadgeProps {
 }
 
 const statusColors: Record<ShipmentStatus, string> = {
-    [ShipmentStatus.FROM_SALES]: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    [ShipmentStatus.DRAFT]: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    [ShipmentStatus.SENT_TO_ADMIN]: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-    [ShipmentStatus.RETURNED_FOR_EDIT]: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-    [ShipmentStatus.RETURNED_TO_FLEET]: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    [ShipmentStatus.FINAL]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    [ShipmentStatus.FINAL_MODIFIED]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    [ShipmentStatus.INSTALLMENTS]: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  [ShipmentStatus.FROM_SALES]: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  [ShipmentStatus.ACCOUNTANT_DRAFT]: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+  [ShipmentStatus.DRAFT]: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  [ShipmentStatus.SENT_TO_ADMIN]: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  [ShipmentStatus.RETURNED_FOR_EDIT]: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  [ShipmentStatus.RETURNED_TO_FLEET]: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  [ShipmentStatus.FINAL]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  [ShipmentStatus.FINAL_MODIFIED]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  [ShipmentStatus.INSTALLMENTS]: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
 };
 
 const getStatusDisplayText = (status: ShipmentStatus): string => {
@@ -24,6 +25,8 @@ const getStatusDisplayText = (status: ShipmentStatus): string => {
       return 'مرسلة للمدير';
     case ShipmentStatus.INSTALLMENTS:
       return 'تسديد دين';
+    case ShipmentStatus.ACCOUNTANT_DRAFT:
+      return 'مسودة'; // Display as "Draft" for simplicity
     default:
       return status;
   }

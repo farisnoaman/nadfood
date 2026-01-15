@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Shipment, ShipmentStatus, Region } from '../../../types/types';
+import { Shipment, ShipmentStatus, Region, Role } from '../../../types/types';
 import ShipmentList from './ShipmentList';
 import { Icons } from '../../Icons';
 import Card from '../../common/display/Card';
@@ -27,15 +27,16 @@ const AccountantDashboard: React.FC = () => {
 
     switch (activeTab) {
       case 'received':
-        // Only show shipments from fleet/sales (FROM_SALES status)
-        // Exclude DRAFT shipments which are work-in-progress by accountant
-        filtered = shipments.filter((s: Shipment) => s.status === ShipmentStatus.FROM_SALES);
+        // Show shipments from fleet (FROM_SALES status) AND accountant drafts
+        filtered = shipments.filter((s: Shipment) =>
+          s.status === ShipmentStatus.FROM_SALES ||
+          s.status === ShipmentStatus.ACCOUNTANT_DRAFT
+        );
         logger.info('AccountantDashboard - Received tab filtering:', {
           totalShipments: shipments.length,
           fromSalesShipments: shipments.filter(s => s.status === ShipmentStatus.FROM_SALES).length,
-          draftShipments: shipments.filter(s => s.status === ShipmentStatus.DRAFT).length,
+          accountantDraftShipments: shipments.filter(s => s.status === ShipmentStatus.ACCOUNTANT_DRAFT).length,
           filteredCount: filtered.length,
-          shipmentStatuses: shipments.map(s => ({ id: s.id, status: s.status, salesOrder: s.salesOrder }))
         });
         return filtered;
       case 'sent':

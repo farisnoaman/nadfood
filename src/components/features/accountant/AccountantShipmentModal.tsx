@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Shipment, ShipmentStatus, Role, NotificationCategory, Driver } from '../../../types/types';
+import { Shipment, ShipmentStatus, Role, NotificationCategory, Driver, ShipmentProduct } from '../../../types/types';
 import { printShipmentDetails } from '../../../utils/print';
 import { formatDateForDisplay } from '../../../utils/dateFormatter';
 import { useAppContext } from '../../../providers/AppContext';
 import logger from '../../../utils/logger';
 import Modal from '../../common/ui/Modal';
 import Button from '../../common/ui/Button';
+import Input from '../../common/ui/Input';
+import ArabicDatePicker from '../../common/ui/ArabicDatePicker';
 import { Icons } from '../../Icons';
 import FieldValue from '../../common/components/FieldValue';
 import ProductDetails from '../../common/components/ProductDetails';
@@ -85,11 +87,13 @@ const EditableFieldValue: React.FC<{
 const ShipmentSummary: React.FC<{
   shipment: Shipment;
   roadExpenses: number;
+  adminExpenses: number;
   totalWeight: number;
   onUpdateDiesel?: (val: number) => void;
   onUpdateRoadExpenses?: (val: number) => void;
+  onUpdateAdminExpenses?: (val: number) => void;
   isEditable?: boolean;
-}> = ({ shipment, roadExpenses, totalWeight, onUpdateDiesel, onUpdateRoadExpenses, isEditable }) => {
+}> = ({ shipment, roadExpenses, adminExpenses, totalWeight, onUpdateDiesel, onUpdateRoadExpenses, onUpdateAdminExpenses, isEditable }) => {
   const [editingField, setEditingField] = useState<{ label: string; value: number; onSave: (val: number) => void } | null>(null);
 
   // Helper to open the edit modal
@@ -120,7 +124,12 @@ const ShipmentSummary: React.FC<{
       />
 
       <FieldValue label="رسوم زعيتري" value={shipment.zaitriFee} />
-      <FieldValue label="مصروفات إدارية" value={shipment.adminExpenses} />
+      <EditableFieldValue
+        label="مصروفات إدارية"
+        value={adminExpenses}
+        onEdit={() => handleEdit('مصروفات إدارية', adminExpenses || 0, onUpdateAdminExpenses || (() => { }))}
+        isEditable={isEditable}
+      />
       <div className="font-bold mt-2"><FieldValue label="المبلغ المستحق" value={shipment.dueAmount} /></div>
 
       {/* Edit Dialog - Rendered here to be part of the tree, but Modal typically portals out */}
@@ -174,8 +183,9 @@ interface AccountantShipmentModalProps {
 const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipment, isOpen, onClose, isEditable }) => {
   const {
     updateShipment, addNotification, accountantPrintAccess, drivers, productPrices, regions,
-    regionConfigs,
-    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, currentUser, products
+    regionConfigs, deductionPrices,
+    isPrintHeaderEnabled, companyName, companyAddress, companyPhone, companyLogo, currentUser, products,
+    accountantDeductionsAccess, accountantAdditionsAccess, accountantTransferAccess
   } = useAppContext();
   const [currentShipment, setCurrentShipment] = useState<Shipment>({ ...shipment });
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -276,6 +286,10 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
     updateFinancials({ roadExpenses: val });
   };
 
+  const handleUpdateAdminExpenses = (val: number) => {
+    updateFinancials({ adminExpenses: val });
+  };
+
   const handleReturnToFleet = async () => {
     setIsSubmitting(true);
     try {
@@ -326,7 +340,8 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
     try {
       const finalShipmentToSend = {
         ...currentShipment,
-        status: ShipmentStatus.SENT_TO_ADMIN
+        status: ShipmentStatus.SENT_TO_ADMIN,
+        lastUpdatedRole: currentUser?.role
       };
 
       await updateShipment(finalShipmentToSend.id, finalShipmentToSend);
@@ -343,6 +358,66 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
       setIsSubmitting(false);
     }
   };
+
+  const handleSaveAsDraft = async () => {
+    setIsSubmitting(true);
+    try {
+      const draftShipment = {
+        ...currentShipment,
+        status: ShipmentStatus.ACCOUNTANT_DRAFT,
+        lastUpdatedRole: currentUser?.role
+      };
+      await updateShipment(draftShipment.id, draftShipment);
+      await addNotification({
+        message: `تم حفظ الشحنة (${draftShipment.salesOrder}) كمسودة.`,
+        category: NotificationCategory.USER_ACTION,
+        targetRoles: [Role.ACCOUNTANT]
+      });
+      onClose();
+    } catch (err) {
+      logger.error('Save as draft failed:', err);
+      alert("فشل حفظ المسودة: " + ((err as any).message || "خطأ غير معروف"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handlers for deduction changes (if allowed)
+  const handleProductDeductionChange = (
+    productId: string,
+    field: keyof Pick<ShipmentProduct, 'shortageCartons' | 'shortageExemptionRate' | 'damagedCartons' | 'damagedExemptionRate'>,
+    value: number
+  ) => {
+    setCurrentShipment(prev => {
+      const updatedProducts = prev.products.map(p => {
+        if (p.productId !== productId) return p;
+        const updatedProduct = { ...p, [field]: value };
+        const relevantPrices = deductionPrices.filter(dp =>
+          dp.productId === productId && dp.effectiveFrom <= shipment.orderDate
+        );
+        const latestPrice = relevantPrices.sort((a, b) =>
+          new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+        )[0];
+        const shortagePrice = latestPrice?.shortagePrice || 0;
+        const damagedPrice = latestPrice?.damagedPrice || 0;
+        const shortageCartons = updatedProduct.shortageCartons || 0;
+        const shortageExemptionRate = updatedProduct.shortageExemptionRate || 0;
+        const damagedCartons = updatedProduct.damagedCartons || 0;
+        const damagedExemptionRate = updatedProduct.damagedExemptionRate || 0;
+        updatedProduct.shortageValue = Math.round((shortageCartons * shortagePrice) * (1 - shortageExemptionRate / 100));
+        updatedProduct.damagedValue = Math.round((damagedCartons * damagedPrice) * (1 - damagedExemptionRate / 100));
+        return updatedProduct;
+      });
+      return { ...prev, products: updatedProducts };
+    });
+  };
+
+  const handleValueChange = (field: keyof Shipment, value: string | number) => {
+    setCurrentShipment(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Check if any admin-assigned section is enabled for accountant
+  const hasAdminAssignedSections = accountantDeductionsAccess || accountantAdditionsAccess || accountantTransferAccess;
 
   const handlePrint = () => {
     if (!currentUser) return;
@@ -379,8 +454,10 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
           <ShipmentSummary
             shipment={currentShipment}
             roadExpenses={roadExpenses}
+            adminExpenses={currentShipment.adminExpenses ?? (regionConfig?.adminExpenses || 0)}
             onUpdateDiesel={handleUpdateDiesel}
             onUpdateRoadExpenses={handleUpdateRoadExpenses}
+            onUpdateAdminExpenses={handleUpdateAdminExpenses}
             isEditable={isEditable}
             totalWeight={currentShipment.products.reduce((acc, sp) => {
               const product = products.find(p => p.id === sp.productId);
@@ -400,6 +477,102 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
             </div>
           )}
 
+          {/* Deductions Section - Only if enabled for accountant */}
+          {accountantDeductionsAccess && isEditable && (
+            <div className="bg-secondary-50 dark:bg-secondary-900 rounded-md p-3 space-y-4">
+              <h4 className="font-bold text-lg">قسم الاستقطاعات (مفصل بالمنتج)</h4>
+              {currentShipment.products.map(product => {
+                const relevantPrices = deductionPrices.filter(dp =>
+                  dp.productId === product.productId && dp.effectiveFrom <= shipment.orderDate
+                );
+                const latestPrice = relevantPrices.sort((a, b) =>
+                  new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+                )[0];
+                const prices = { shortage: latestPrice?.shortagePrice || 0, damaged: latestPrice?.damagedPrice || 0 };
+                return (
+                  <div key={product.productId} className="p-3 bg-white dark:bg-secondary-800 rounded-lg border dark:border-secondary-700 shadow-sm">
+                    <div className="mb-3">
+                      <p className="font-bold text-gray-800 dark:text-gray-100">{product.productName}</p>
+                      <p className="text-xs text-secondary-500 mt-1">سعر النقص: {prices.shortage} ر.ي | سعر التالف: {prices.damaged} ر.ي</p>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <div className="bg-red-50 dark:bg-red-900/10 p-2 rounded-md border border-red-100 dark:border-red-900/20">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs font-semibold text-red-700 dark:text-red-400">النقص</span>
+                          <span className="text-xs font-bold text-red-600">{product.shortageValue || 0} ر.ي</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input label="عدد الكراتين" type="number" min={0} value={product.shortageCartons || ''} onChange={e => handleProductDeductionChange(product.productId, 'shortageCartons', Number(e.target.value) || 0)} />
+                          <Input label="نسبة الإعفاء %" type="number" min={0} max={100} value={product.shortageExemptionRate || ''} onChange={e => handleProductDeductionChange(product.productId, 'shortageExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))} />
+                        </div>
+                      </div>
+                      <div className="bg-orange-50 dark:bg-orange-900/10 p-2 rounded-md border border-orange-100 dark:border-orange-900/20">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs font-semibold text-orange-700 dark:text-orange-400">التالف</span>
+                          <span className="text-xs font-bold text-orange-600">{product.damagedValue || 0} ر.ي</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input label="عدد الكراتين" type="number" min={0} value={product.damagedCartons || ''} onChange={e => handleProductDeductionChange(product.productId, 'damagedCartons', Number(e.target.value) || 0)} />
+                          <Input label="نسبة الإعفاء %" type="number" min={0} max={100} value={product.damagedExemptionRate || ''} onChange={e => handleProductDeductionChange(product.productId, 'damagedExemptionRate', Math.min(100, Math.max(0, Number(e.target.value) || 0)))} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <Input label="مبالغ أخرى" type="number" min={0} value={currentShipment.otherAmounts || ''} onChange={e => handleValueChange('otherAmounts', Number(e.target.value) || 0)} />
+            </div>
+          )}
+
+          {/* Additions Section - Only if enabled for accountant */}
+          {accountantAdditionsAccess && isEditable && (
+            <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
+              <h4 className="font-bold text-lg">قسم الاستحقاقات (الإضافات)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                <Input label="سندات تحسين" type="number" min={0} value={currentShipment.improvementBonds || ''} onChange={e => handleValueChange('improvementBonds', Number(e.target.value) || 0)} />
+                <Input label="ممسى" type="number" min={0} value={currentShipment.eveningAllowance || ''} onChange={e => handleValueChange('eveningAllowance', Number(e.target.value) || 0)} />
+                <Input label="رسوم التحويل" type="number" min={0} value={currentShipment.transferFee || ''} onChange={e => handleValueChange('transferFee', Number(e.target.value) || 0)} />
+              </div>
+            </div>
+          )}
+
+          {/* Notes Section - Always visible if any section is assigned */}
+          {hasAdminAssignedSections && isEditable && (
+            <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
+              <h4 className="font-bold text-lg">الملاحظات</h4>
+              <div className="pt-2">
+                <textarea
+                  className="w-full px-3 py-2 border rounded-md dark:bg-secondary-800 dark:border-secondary-600 focus:ring-primary-500 focus:border-primary-500 min-h-[100px]"
+                  value={currentShipment.notes || ''}
+                  onChange={e => handleValueChange('notes', e.target.value)}
+                  placeholder="أضف ملاحظات هنا..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Transfer Section - Only if enabled for accountant */}
+          {accountantTransferAccess && isEditable && (
+            <div className="space-y-3 bg-secondary-50 dark:bg-secondary-900 p-3 rounded-md">
+              <h4 className="font-bold text-lg">قسم الحوالة</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <Input
+                  label="رقم الحوالة (8 أرقام على الأقل)"
+                  type="text"
+                  minLength={8}
+                  value={currentShipment.transferNumber || ''}
+                  onChange={e => handleValueChange('transferNumber', e.target.value)}
+                  required
+                />
+                <ArabicDatePicker
+                  label="تاريخ الحوالة"
+                  value={currentShipment.transferDate || ''}
+                  onChange={(value) => handleValueChange('transferDate', value)}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap justify-between items-center gap-3 pt-4 border-t dark:border-secondary-600">
             <div>
               {isFinal && accountantPrintAccess && (
@@ -411,10 +584,15 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
             </div>
 
             {isEditable && (
-              <div className="flex justify-end space-x-3 rtl:space-x-reverse">
+              <div className="flex flex-wrap justify-end gap-3">
                 <Button variant="secondary" onClick={handleReturnToFleet} disabled={isSubmitting}>
                   {isSubmitting ? 'جاري الإرسال...' : <> <Icons.ArrowLeft className="ml-2 h-4 w-4" /> إرجاع الى مسؤول الحركة </>}
                 </Button>
+                {hasAdminAssignedSections && (
+                  <Button variant="secondary" onClick={handleSaveAsDraft} disabled={isSubmitting}>
+                    {isSubmitting ? 'جاري الحفظ...' : <> <Icons.Save className="ml-2 h-4 w-4" /> حفظ كمسودة </>}
+                  </Button>
+                )}
                 <Button
                   variant="primary"
                   onClick={handleConfirmAndSend}
@@ -424,6 +602,7 @@ const AccountantShipmentModal: React.FC<AccountantShipmentModalProps> = ({ shipm
                 </Button>
               </div>
             )}
+
           </div>
         </div>
       </Modal>

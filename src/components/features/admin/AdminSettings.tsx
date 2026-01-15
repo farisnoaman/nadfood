@@ -21,8 +21,12 @@ const AdminSettings: React.FC = () => {
     companyPhone, setCompanyPhone,
     companyLogo, setCompanyLogo,
     isTimeWidgetVisible, setIsTimeWidgetVisible,
+    accountantDeductionsAccess, setAccountantDeductionsAccess,
+    accountantAdditionsAccess, setAccountantAdditionsAccess,
+    accountantTransferAccess, setAccountantTransferAccess,
     currentUser
   } = useAppContext();
+
 
   // State for database sync and pending changes
   const [dbSettings, setDbSettings] = useState<Record<string, string>>({});
@@ -318,8 +322,8 @@ const AdminSettings: React.FC = () => {
         // Update local state first
         onToggle(checked);
 
-        // Save to database
-        await SupabaseService.saveSetting(id, checked.toString());
+        // Save to database (pass companyId to use column-based approach)
+        await SupabaseService.saveSetting(id, checked.toString(), currentUser?.companyId);
       } catch (error) {
         logger.error('Error saving toggle setting:', id, error);
         // Revert local state on error
@@ -476,6 +480,30 @@ const AdminSettings: React.FC = () => {
           onToggle={setAccountantPrintAccess}
         />
       </Card>
+
+      <Card title="إعدادات سير العمل للمحاسب">
+        <div className="space-y-2">
+          <ToggleSetting
+            id="accountantDeductionsAccess"
+            label="السماح للمحاسب بتعديل قسم الاستقطاعات (الخصميات)"
+            isChecked={accountantDeductionsAccess}
+            onToggle={setAccountantDeductionsAccess}
+          />
+          <ToggleSetting
+            id="accountantAdditionsAccess"
+            label="السماح للمحاسب بتعديل قسم الاستحقاقات (الإضافات)"
+            isChecked={accountantAdditionsAccess}
+            onToggle={setAccountantAdditionsAccess}
+          />
+          <ToggleSetting
+            id="accountantTransferAccess"
+            label="السماح للمحاسب بتعديل قسم الحوالة"
+            isChecked={accountantTransferAccess}
+            onToggle={setAccountantTransferAccess}
+          />
+        </div>
+      </Card>
+
 
       <Card title="إعدادات الواجهة">
         <ToggleSetting

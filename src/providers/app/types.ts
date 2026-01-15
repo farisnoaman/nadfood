@@ -145,6 +145,13 @@ export interface AppContextType {
     setCompanyLogo: React.Dispatch<React.SetStateAction<string>>;
     isTimeWidgetVisible: boolean;
     setIsTimeWidgetVisible: React.Dispatch<React.SetStateAction<boolean>>;
+    // Accountant Workflow Settings
+    accountantDeductionsAccess: boolean;
+    setAccountantDeductionsAccess: React.Dispatch<React.SetStateAction<boolean>>;
+    accountantAdditionsAccess: boolean;
+    setAccountantAdditionsAccess: React.Dispatch<React.SetStateAction<boolean>>;
+    accountantTransferAccess: boolean;
+    setAccountantTransferAccess: React.Dispatch<React.SetStateAction<boolean>>;
 
     // App State
     loading: boolean;
