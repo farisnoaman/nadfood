@@ -176,8 +176,8 @@ export const useDataLoader = ({
             if (companySettings) {
                 settingSetters.setAccountantPrintAccess(companySettings.accountant_print_access ?? false);
                 settingSetters.setIsPrintHeaderEnabled(companySettings.is_print_header_enabled ?? true);
-                settingSetters.setAppName(companySettings.app_name || 'بلغيث للنقل');
-                settingSetters.setCompanyName(companySettings.company_name || 'بلغيث للنقل');
+                settingSetters.setAppName(companySettings.app_name || '');
+                settingSetters.setCompanyName(companySettings.company_name || '');
                 settingSetters.setCompanyAddress(companySettings.company_address || 'عنوان الشركة');
                 settingSetters.setCompanyPhone(companySettings.company_phone || 'رقم الهاتف');
                 settingSetters.setCompanyLogo(companySettings.company_logo || '');
@@ -188,8 +188,8 @@ export const useDataLoader = ({
             await Promise.all([
                 IndexedDB.setSetting('accountantPrintAccess', companySettings?.accountant_print_access ?? false),
                 IndexedDB.setSetting('isPrintHeaderEnabled', companySettings?.is_print_header_enabled ?? true),
-                IndexedDB.setSetting('appName', companySettings?.app_name || 'بلغيث للنقل'),
-                IndexedDB.setSetting('companyName', companySettings?.company_name || 'بلغيث للنقل'),
+                IndexedDB.setSetting('appName', companySettings?.app_name || ''),
+                IndexedDB.setSetting('companyName', companySettings?.company_name || ''),
                 IndexedDB.setSetting('companyAddress', companySettings?.company_address || 'عنوان الشركة'),
                 IndexedDB.setSetting('companyPhone', companySettings?.company_phone || 'رقم الهاتف'),
                 IndexedDB.setSetting('companyLogo', companySettings?.company_logo || ''),

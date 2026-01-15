@@ -40,8 +40,8 @@ export const useInitialization = ({ settingSetters }: UseInitializationProps) =>
             ] = await Promise.all([
                 IndexedDB.getSetting('accountantPrintAccess', false),
                 IndexedDB.getSetting('isPrintHeaderEnabled', true),
-                IndexedDB.getSetting('appName', 'بلغيث للنقل'),
-                IndexedDB.getSetting('companyName', 'بلغيث للنقل'),
+                IndexedDB.getSetting('appName', ''),
+                IndexedDB.getSetting('companyName', ''),
                 IndexedDB.getSetting('companyAddress', 'عنوان الشركة'),
                 IndexedDB.getSetting('companyPhone', 'رقم الهاتف'),
                 IndexedDB.getSetting('companyLogo', ''),

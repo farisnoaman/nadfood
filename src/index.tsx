@@ -4,6 +4,8 @@ import './index.css';
 import App from './App';
 import logger from './utils/logger';
 
+import { HelmetProvider } from 'react-helmet-async';
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
@@ -12,14 +14,16 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
   </React.StrictMode>
 );
 
 // Service Worker and online/offline detection
 if ('serviceWorker' in navigator) {
   // First, unregister any existing service workers in development
-  if (import.meta.env.DEV) {
+  if ((import.meta as any).env.DEV) {
     navigator.serviceWorker.getRegistrations().then(registrations => {
       registrations.forEach(registration => {
         registration.unregister();
@@ -46,7 +50,7 @@ if ('serviceWorker' in navigator) {
   updateOnlineStatus();
 
   // Only register service worker in production
-  if (import.meta.env.PROD) {
+  if ((import.meta as any).env.PROD) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then(registration => {
@@ -86,8 +90,7 @@ if ('serviceWorker' in navigator) {
               logger.info('Received background sync trigger from service worker');
 
               // Import and trigger the sync function dynamically
-              import('./providers/AppContext').then(({ useAppContext }) => {
-                // This is a bit tricky since we need access to the context
+              import('./providers/AppContext').then(() => {
                 // We'll dispatch a custom event that components can listen to
                 window.dispatchEvent(new CustomEvent('background-sync-triggered', {
                   detail: { timestamp: data?.timestamp }

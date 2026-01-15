@@ -120,7 +120,7 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
                     // Use fallback company data for demo/development
                     const fallbackCompany = {
                         id: 'fallback',
-                        name: 'بلغيث للنقل',
+                        name: subdomain || 'الشركة',
                         slug: subdomain,
                         logo_url: null,
                         brand_color: '#3b82f6',
@@ -168,7 +168,7 @@ export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
             logger.warn('Failed to fetch company data, using fallback:', err);
             const fallbackCompany = {
                 id: 'fallback',
-                name: 'بلغيث للنقل',
+                name: subdomain || 'الشركة',
                 slug: subdomain || 'default',
                 logo_url: null,
                 brand_color: '#3b82f6',

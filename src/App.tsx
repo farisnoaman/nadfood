@@ -41,8 +41,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[]
     return <>{children}</>;
 };
 
+import SEO from './components/common/SEO';
+
 const AppRoutes: React.FC = () => {
-    const { currentUser, loading, error, isProfileLoaded, syncOfflineMutations, isSubscriptionActive } = useAppContext();
+    const { currentUser, loading, error, isProfileLoaded, syncOfflineMutations, isSubscriptionActive, companyName } = useAppContext();
+    const { subdomain } = useTenant();
     const [loadingTimeout, setLoadingTimeout] = useState(false);
     const loadingTimeoutRef = useRef<{ primary: NodeJS.Timeout; emergency: NodeJS.Timeout } | null>(null);
 
@@ -144,8 +147,15 @@ const AppRoutes: React.FC = () => {
         )
     }
 
+    // Default title for platform/root
+    const pageTitle = companyName || 'نظام تتبع الشحنات';
+
     return (
         <div className={`min-h-screen bg-secondary-100 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-200 transition-colors duration-300`}>
+            <SEO
+                companyName={pageTitle}
+                description="منصة متكاملة لإدارة عمليات النقل وتتبع الشحنات"
+            />
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <Suspense fallback={<PageLoading title="جاري تحميل التطبيق..." />}>
                     <Routes>
@@ -218,7 +228,8 @@ const AppRoutes: React.FC = () => {
                                                             {currentUser.role === Role.ADMIN && <Navigate to="/manager" />}
 
                                                             {/* On Root Domain (Platform), redirect Super Admin to /platform */}
-                                                            {currentUser.role === Role.SUPER_ADMIN && <Navigate to="/platform" />}
+                                                            {/* Only do this if we are NOT on a tenant subdomain */}
+                                                            {!subdomain && currentUser.role === Role.SUPER_ADMIN && <Navigate to="/platform" />}
                                                         </>
                                                     )
                                                 } />

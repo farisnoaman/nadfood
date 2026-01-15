@@ -3,8 +3,8 @@ import { useState } from 'react';
 export const useSettings = () => {
     const [accountantPrintAccess, setAccountantPrintAccess] = useState<boolean>(false);
     const [isPrintHeaderEnabled, setIsPrintHeaderEnabled] = useState<boolean>(true);
-    const [appName, setAppName] = useState<string>('بلغيث للنقل');
-    const [companyName, setCompanyName] = useState<string>('بلغيث للنقل');
+    const [appName, setAppName] = useState<string>('');
+    const [companyName, setCompanyName] = useState<string>('');
     const [companyAddress, setCompanyAddress] = useState<string>('عنوان الشركة');
     const [companyPhone, setCompanyPhone] = useState<string>('رقم الهاتف');
     const [companyLogo, setCompanyLogo] = useState<string>('');
