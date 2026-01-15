@@ -276,6 +276,7 @@ The application is built with a modern, scalable architecture using **React** fo
   - Live tracking of shipment statuses (New, Pending, Transferred).
 - **Advanced Customization Settings:**
   - Control print permissions for the accountant.
+  - **Accountant Workflow Control:** Toggle permission for Deductions, Additions, and Transfer sections.
   - Customize the report header (company name, logo).
   - Customize the application's name for branding.
   - Control the visibility of the time and date widget.
@@ -310,8 +311,10 @@ Responsible for creating initial shipments.
 Reviews shipments received from Sales and adds initial deductions.
 - **Responsibilities:**
   - Review shipments with advanced filtering and sorting options.
-  - Add deduction values (damaged goods, shortages, road expenses).
-  - Forward the shipment to the Admin for final approval (with auto-recalculation to ensure price accuracy).
+  - **Draft Workflow:** Save work-in-progress shipments as "Draft" without submitting to Admin.
+  - **Flexible Editing:** Edit Deductions, Additions, and Transfer sections based on permissions granted by Admin.
+  - **Expenses Management:** Modify "Admin Expenses" and "Road Expenses" as needed.
+  - **Review & Submit:** Forward the shipment to the Admin for final approval (with auto-recalculation).
   - **Print Reports:** Can print final shipment reports as a PDF **if granted permission by the Admin**.
 
 ### 3. Admin
@@ -330,6 +333,7 @@ Has full permissions over the system, responsible for final review and master da
     - Live tracking of shipment statuses (New, Pending, Transferred).
   - **Settings:**
     - **Print Permissions:** Grant or revoke the accountant's ability to print reports.
+    - **Workflow Control:** Configure which sections (Deductions, Additions, Transfer) the accountant is allowed to edit.
     - **Customize UI & App:** Modify the app name, company details, and control UI elements.
 
 ---
