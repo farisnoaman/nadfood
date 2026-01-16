@@ -57,7 +57,7 @@ const CompanySignup: React.FC = () => {
 
   const fetchPlans = async () => {
     try {
-      const { data, error } = await supabase.from('subscription_plans' as any).select('*').neq('name', 'Free Trial').order('monthly_price', { ascending: true });
+      const { data, error } = await supabase.from('subscription_plans' as any).select('*').order('monthly_price', { ascending: true });
       if (error) throw error;
       const plansData = (data || []) as SubscriptionPlan[];
       setPlans(plansData);
