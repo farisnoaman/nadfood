@@ -495,20 +495,21 @@ describe('Data Mappers', () => {
 
   describe('mapUsers', () => {
     it('should map array of user rows', () => {
-      const rows = {
-        id: 'user-1',
-        username: 'user1',
-        role: 'ADMIN',
-        is_active: true,
-        created_at: '2024-01-01',
-      },
-      {
-        id: 'user-2',
-        username: 'user2',
-        role: 'SALES',
-        is_active: false,
-        created_at: '2024-01-01',
-      },
+      const rows = [
+        {
+          id: 'user-1',
+          username: 'user1',
+          role: 'ADMIN',
+          is_active: true,
+          created_at: '2024-01-01',
+        },
+        {
+          id: 'user-2',
+          username: 'user2',
+          role: 'SALES',
+          is_active: false,
+          created_at: '2024-01-01',
+        },
       ]
 
       const result = mapUsers(rows as any)
@@ -530,16 +531,17 @@ describe('Data Mappers', () => {
 
   describe('mapProducts', () => {
     it('should map array of product rows', () => {
-      const rows = {
-        id: 'product-1',
-        name: 'Product 1',
-        is_active: true,
-      },
-      {
-        id: 'product-2',
-        name: 'Product 2',
-        is_active: false,
-      },
+      const rows = [
+        {
+          id: 'product-1',
+          name: 'Product 1',
+          is_active: true,
+        },
+        {
+          id: 'product-2',
+          name: 'Product 2',
+          is_active: false,
+        },
       ]
 
       const result = mapProducts(rows as any)
@@ -552,18 +554,19 @@ describe('Data Mappers', () => {
 
   describe('mapDrivers', () => {
     it('should map array of driver rows', () => {
-      const rows = {
-        id: 1,
-        name: 'Driver 1',
-        plate_number: 'ABC-123',
-        is_active: true,
-      },
-      {
-        id: 2,
-        name: 'Driver 2',
-        plate_number: 'DEF-456',
-        is_active: false,
-      },
+      const rows = [
+        {
+          id: 1,
+          name: 'Driver 1',
+          plate_number: 'ABC-123',
+          is_active: true,
+        },
+        {
+          id: 2,
+          name: 'Driver 2',
+          plate_number: 'DEF-456',
+          is_active: false,
+        },
       ]
 
       const result = mapDrivers(rows as any)
@@ -576,22 +579,25 @@ describe('Data Mappers', () => {
 
   describe('mapRegions', () => {
     it('should map array of region rows', () => {
-      const rows = {
-        id: 'region-1',
-        name: 'Region 1',
-        diesel_liter_price: '1.5',
-        diesel_liters: '50',
-        zaitri_fee: '10',
-        road_expenses: '5',
-      },
-      {
-        id: 'region-2',
-        name: 'Region 2',
-        diesel_liter_price: null,
-        diesel_liters: null,
-        zaitri_fee: null,
-        road_expenses: null,
-      }
+      const rows = [
+        {
+          id: 'region-1',
+          name: 'Region 1',
+          diesel_liter_price: '1.5',
+          diesel_liters: '50',
+          zaitri_fee: '10',
+          road_expenses: '5',
+        },
+        {
+          id: 'region-2',
+          name: 'Region 2',
+          diesel_liter_price: null,
+          diesel_liters: null,
+          zaitri_fee: null,
+          road_expenses: null,
+        }
+
+      ]
 
       const result = mapRegions(rows as any)
 
@@ -604,18 +610,21 @@ describe('Data Mappers', () => {
 
   describe('mapProductPrices', () => {
     it('should map array of product price rows', () => {
-      const rows = {
-        id: 'price-1',
-        region_id: 'region-1',
-        product_id: 'product-1',
-        price: '100.50',
-      },
-      {
-        id: 'price-2',
-        region_id: 'region-2',
-        product_id: 'product-2',
-        price: '200.00',
-      },
+      const rows = [
+        {
+          id: 'price-1',
+          region_id: 'region-1',
+          product_id: 'product-1',
+          price: '100.50',
+        },
+        {
+          id: 'price-2',
+          region_id: 'region-2',
+          product_id: 'product-2',
+          price: '200.00',
+        },
+
+      ]
 
       const result = mapProductPrices(rows as any)
 
@@ -660,20 +669,23 @@ describe('Data Mappers', () => {
 
   describe('mapCompanySettings', () => {
     it('should map array of company setting rows', () => {
-      const rows = {
-        id: 'setting-1',
-        setting_key: 'theme',
-        setting_value: 'dark',
-        created_at: '2024-01-01',
-        updated_at: '2024-01-02',
-      },
-      {
-        id: 'setting-2',
-        setting_key: 'language',
-        setting_value: 'ar',
-        created_at: '2024-01-01',
-        updated_at: '2024-01-01',
-      },
+      const rows = [
+        {
+          id: 'setting-1',
+          setting_key: 'theme',
+          setting_value: 'dark',
+          created_at: '2024-01-01',
+          updated_at: '2024-01-02',
+        },
+        {
+          id: 'setting-2',
+          setting_key: 'language',
+          setting_value: 'ar',
+          created_at: '2024-01-01',
+          updated_at: '2024-01-01',
+        },
+
+      ]
 
       const result = mapCompanySettings(rows as any)
 
