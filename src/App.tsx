@@ -28,6 +28,7 @@ const PlatformCompanies = lazy(() => import('./components/features/platform/Comp
 const PlatformPlans = lazy(() => import('./components/features/platform/Plans'));
 const PlatformBackups = lazy(() => import('./components/features/platform/Backups'));
 const PlatformLayout = lazy(() => import('./components/layout/PlatformLayout'));
+const LandingPage = lazy(() => import('./components/landing/LandingPage'));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[] }> = ({ children, allowedRoles }) => {
     const { currentUser } = useAppContext();
@@ -243,7 +244,7 @@ const AppRoutes: React.FC = () => {
                                         <SyncStatusIndicator onSync={syncOfflineMutations} />
                                     </Layout>
                                 )) : (
-                                <Login />
+                                <LandingPage />
                             )
                         } />
                     </Routes>

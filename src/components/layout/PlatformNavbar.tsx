@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Icons } from '../Icons';
 import { useAppContext } from '../../providers/AppContext';
-import { useTenant } from '../../providers/TenantContext';
+import logger from '../../utils/logger';
 
 const PlatformNavbar: React.FC = () => {
     const { handleLogout, currentUser } = useAppContext();
@@ -27,54 +27,56 @@ const PlatformNavbar: React.FC = () => {
     ];
 
     return (
-        <nav className="bg-slate-900 text-white shadow-md sticky top-0 z-40 print:hidden border-b border-slate-800">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg sticky top-0 z-40 print:hidden">
+            <div className="px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                     {/* Brand & Logo */}
                     <div className="flex items-center">
-                        <div className="flex-shrink-0 flex items-center ml-4 cursor-pointer" onClick={() => navigate('/platform')}>
-                            <Icons.ShieldCheck className="h-8 w-8 text-emerald-500 ml-2" />
-                            <div>
-                                <h1 className="text-lg font-bold">مدير المنصة</h1>
-                                <p className="text-xs text-slate-400">إدارة النظام المركزي</p>
+                        <div className="flex-shrink-0 flex items-center ml-4 cursor-pointer group" onClick={() => navigate('/platform')}>
+                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                                <Icons.Truck className="h-5 w-5 text-white" />
+                            </div>
+                            <div className="mr-3">
+                                <h1 className="text-lg font-black">ناد<span className="text-emerald-200">فود</span></h1>
+                                <p className="text-[10px] text-emerald-100 -mt-1">إدارة المنصة</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Desktop Menu */}
-                    <div className="hidden md:flex md:items-center md:space-x-8 md:space-x-reverse">
+                    <div className="hidden md:flex md:items-center md:space-x-1 md:space-x-reverse">
                         {navItems.map((item) => (
                             <NavLink
                                 key={item.to}
                                 to={item.to}
                                 end={item.end}
                                 className={({ isActive }) =>
-                                    `flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                                        ? 'bg-emerald-600 text-white shadow-sm'
-                                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                                    `flex items-center px-4 py-2 rounded-xl text-sm font-bold transition-all ${isActive
+                                        ? 'bg-white text-emerald-600 shadow-md'
+                                        : 'text-white/90 hover:bg-white/20'
                                     }`
                                 }
                             >
-                                <item.icon className="h-5 w-5 ml-2" />
+                                <item.icon className="h-4 w-4 ml-2" />
                                 {item.text}
                             </NavLink>
                         ))}
                     </div>
 
                     {/* User Menu */}
-                    <div className="hidden md:flex items-center">
-                        <div className="flex items-center ml-4 pl-4 border-l border-slate-700">
-                            <div className="text-left ml-3">
-                                <p className="text-sm font-medium text-white">{currentUser?.username}</p>
-                                <p className="text-xs text-emerald-400">Super Admin</p>
+                    <div className="hidden md:flex items-center gap-4">
+                        <div className="flex items-center gap-3 px-4 py-2 bg-white/10 rounded-xl">
+                            <div className="text-left">
+                                <p className="text-sm font-bold text-white">{currentUser?.username}</p>
+                                <p className="text-[10px] text-emerald-200">Super Admin</p>
                             </div>
-                            <div className="bg-slate-800 p-2 rounded-full">
-                                <Icons.User className="h-5 w-5 text-slate-300" />
+                            <div className="bg-white/20 p-2 rounded-lg">
+                                <Icons.User className="h-4 w-4 text-white" />
                             </div>
                         </div>
                         <button
                             onClick={handleLogoutClick}
-                            className="p-2 rounded-md text-slate-400 hover:text-white hover:bg-red-900/50 transition-colors"
+                            className="p-2.5 rounded-xl bg-white/10 hover:bg-red-500 text-white transition-colors"
                             title="تسجيل الخروج"
                         >
                             <Icons.LogOut className="h-5 w-5" />
@@ -85,7 +87,7 @@ const PlatformNavbar: React.FC = () => {
                     <div className="flex items-center md:hidden">
                         <button
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none"
+                            className="inline-flex items-center justify-center p-2 rounded-xl text-white hover:bg-white/20 focus:outline-none"
                         >
                             {isMenuOpen ? (
                                 <Icons.X className="block h-6 w-6" />
@@ -99,8 +101,8 @@ const PlatformNavbar: React.FC = () => {
 
             {/* Mobile Menu */}
             {isMenuOpen && (
-                <div className="md:hidden bg-slate-800 border-t border-slate-700">
-                    <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <div className="md:hidden bg-emerald-700 border-t border-emerald-400/30">
+                    <div className="px-3 pt-3 pb-4 space-y-1">
                         {navItems.map((item) => (
                             <NavLink
                                 key={item.to}
@@ -108,21 +110,21 @@ const PlatformNavbar: React.FC = () => {
                                 end={item.end}
                                 onClick={() => setIsMenuOpen(false)}
                                 className={({ isActive }) =>
-                                    `flex items-center px-3 py-2 rounded-md text-base font-medium ${isActive
-                                        ? 'bg-emerald-600 text-white'
-                                        : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                                    `flex items-center px-4 py-3 rounded-xl text-base font-bold ${isActive
+                                        ? 'bg-white text-emerald-600'
+                                        : 'text-white hover:bg-white/10'
                                     }`
                                 }
                             >
-                                <item.icon className="h-5 w-5 ml-2" />
+                                <item.icon className="h-5 w-5 ml-3" />
                                 {item.text}
                             </NavLink>
                         ))}
                         <button
                             onClick={handleLogoutClick}
-                            className="w-full flex items-center px-3 py-2 rounded-md text-base font-medium text-red-400 hover:bg-slate-700 hover:text-red-300"
+                            className="w-full flex items-center px-4 py-3 rounded-xl text-base font-bold text-white hover:bg-red-500/80"
                         >
-                            <Icons.LogOut className="h-5 w-5 ml-2" />
+                            <Icons.LogOut className="h-5 w-5 ml-3" />
                             تسجيل الخروج
                         </button>
                     </div>
