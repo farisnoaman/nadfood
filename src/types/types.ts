@@ -41,6 +41,7 @@ export interface UsageLimits {
   maxRegions: number;
   maxProducts: number;
   maxStorageMb: number;
+  maxShipments?: number | null;
 }
 
 export interface CurrentUsage {
@@ -49,6 +50,7 @@ export interface CurrentUsage {
   regions: number;
   products: number;
   storageMb: number;
+  shipments?: number;
 }
 
 /**
@@ -330,8 +332,12 @@ export interface SubscriptionPlan {
   maxUsers?: number | null;
   maxProducts?: number | null;
   maxDrivers?: number | null;
+  maxRegions?: number | null;
   maxStorageMb?: number | null;
+  maxShipments?: number | null;
   monthlyPrice: number;
+  biAnnualPrice?: number;
+  annualPrice?: number;
   isActive: boolean;
   createdAt?: string;
 }

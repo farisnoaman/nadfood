@@ -11,11 +11,15 @@ import { usePersistedState } from '../../../hooks/usePersistedState';
 interface SubscriptionPlan {
     id: string;
     name: string;
-    max_users: number;
-    max_products: number;
-    max_drivers: number;
+    max_users: number | null;
+    max_products: number | null;
+    max_drivers: number | null;
+    max_regions: number | null;
     max_storage_mb: number | null;
+    max_shipments: number | null;
     monthly_price: number;
+    bi_annual_price: number;
+    annual_price: number;
 }
 
 interface CompanyEditModalProps {
@@ -26,9 +30,9 @@ interface CompanyEditModalProps {
 }
 
 const BILLING_CYCLES = [
-    { value: 'monthly', label: 'شهري', months: 1 },
-    { value: 'quarterly', label: 'ربع سنوي', months: 3 },
-    { value: 'annually', label: 'سنوي', months: 12 },
+    { value: 'monthly', label: 'شهري', months: 1, priceMultiplier: 1, shipmentsMultiplier: 1 },
+    { value: 'bi_annual', label: 'نصف سنوي', months: 6, priceMultiplier: 5, shipmentsMultiplier: 5 },
+    { value: 'annually', label: 'سنوي', months: 12, priceMultiplier: 10, shipmentsMultiplier: 15 },
 ];
 
 const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, companyId, onSave }) => {
@@ -147,13 +151,14 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
         setSelectedPlanId(planId);
         const selectedPlan = plans.find(p => p.id === planId);
         if (selectedPlan) {
-            // Auto-populate limits from plan
+            // Auto-populate limits from plan (use base values, multipliers apply on save)
             setLimits({
-                maxUsers: selectedPlan.max_users || limits.maxUsers,
-                maxDrivers: selectedPlan.max_drivers || limits.maxDrivers,
-                maxRegions: limits.maxRegions, // Keep existing, plan may not define this
-                maxProducts: selectedPlan.max_products || limits.maxProducts,
-                maxStorageMb: selectedPlan.max_storage_mb || limits.maxStorageMb
+                maxUsers: selectedPlan.max_users ?? limits.maxUsers,
+                maxDrivers: selectedPlan.max_drivers ?? limits.maxDrivers,
+                maxRegions: selectedPlan.max_regions ?? limits.maxRegions,
+                maxProducts: selectedPlan.max_products ?? limits.maxProducts,
+                maxStorageMb: selectedPlan.max_storage_mb ?? limits.maxStorageMb,
+                maxShipments: selectedPlan.max_shipments ?? 0,
             });
         }
     };
@@ -163,6 +168,14 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
         try {
             const selectedPlan = plans.find(p => p.id === selectedPlanId);
             const planSlug = selectedPlan?.name?.toLowerCase().replace(/\s+/g, '_') || 'free_trial';
+            const cycleConfig = BILLING_CYCLES.find(c => c.value === billingCycle) || BILLING_CYCLES[0];
+
+            // Calculate effective limits based on billing cycle
+            const effectiveLimits = {
+                ...limits,
+                // Shipments scale with billing cycle, others remain base
+                maxShipments: limits.maxShipments != null ? limits.maxShipments * cycleConfig.shipmentsMultiplier : null,
+            };
 
             const { error } = await supabase
                 .from('companies' as any)
@@ -173,7 +186,7 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
                     billing_cycle: billingCycle,
                     subscription_start_date: startDate,
                     subscription_end_date: endDate,
-                    usage_limits: limits,
+                    usage_limits: effectiveLimits,
                     features: features
                 })
                 .eq('id', companyId);
@@ -308,11 +321,16 @@ const CompanyEditModal: React.FC<CompanyEditModalProps> = ({ isOpen, onClose, co
                                     {selectedPlan && (
                                         <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-sm">
                                             <p className="font-medium text-emerald-700 dark:text-emerald-300 mb-2">تفاصيل الباقة: {selectedPlan.name}</p>
-                                            <div className="grid grid-cols-2 gap-2 text-emerald-600 dark:text-emerald-400">
+                                            <div className="grid grid-cols-2 gap-y-2 text-emerald-600 dark:text-emerald-400">
                                                 <span>المستخدمين: {selectedPlan.max_users}</span>
                                                 <span>السائقين: {selectedPlan.max_drivers}</span>
                                                 <span>المنتجات: {selectedPlan.max_products}</span>
                                                 <span>التخزين: {selectedPlan.max_storage_mb || 'غير محدود'} MB</span>
+                                                <div className="col-span-2 pt-2 border-t border-emerald-200/50 dark:border-emerald-800/50 mt-1 flex flex-wrap gap-x-4">
+                                                    <span>شهري: <b>{selectedPlan.monthly_price}</b></span>
+                                                    <span>نصف سنوي: <b>{selectedPlan.bi_annual_price}</b></span>
+                                                    <span>سنوي: <b>{selectedPlan.annual_price}</b></span>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
