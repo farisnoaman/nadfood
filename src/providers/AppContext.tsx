@@ -218,7 +218,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loading, error: authError || syncError, isOnline, isSyncing, isProfileLoaded,
         refreshAllData: refreshWrapper,
         syncOfflineMutations,
-        isSubscriptionActive, checkLimit, hasFeature, fetchCompany
+        isSubscriptionActive, paymentStatus: company?.payment_status || null, checkLimit, hasFeature, fetchCompany
     }), [
         currentUser, company, handleLogout, loadOfflineUser, users, addUser, updateUser,
         products, addProduct, updateProduct, deleteProduct, batchUpsertProducts,

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Icons } from '../../Icons';
 import { supabase } from '../../../utils/supabaseClient';
 import toast from 'react-hot-toast';
+import logger from '../../../utils/logger';
 
 const CreateTenant: React.FC = () => {
     const navigate = useNavigate();

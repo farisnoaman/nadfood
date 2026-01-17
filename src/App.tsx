@@ -29,6 +29,8 @@ const PlatformPlans = lazy(() => import('./components/features/platform/Plans'))
 const PlatformBackups = lazy(() => import('./components/features/platform/Backups'));
 const PlatformLayout = lazy(() => import('./components/layout/PlatformLayout'));
 const LandingPage = lazy(() => import('./components/landing/LandingPage'));
+const PaymentInstructions = lazy(() => import('./components/PaymentInstructions'));
+const PaymentCodes = lazy(() => import('./components/features/platform/PaymentCodes'));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[] }> = ({ children, allowedRoles }) => {
     const { currentUser } = useAppContext();
@@ -45,7 +47,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, allowedRoles: Role[]
 import SEO from './components/common/SEO';
 
 const AppRoutes: React.FC = () => {
-    const { currentUser, loading, error, isProfileLoaded, syncOfflineMutations, isSubscriptionActive, companyName } = useAppContext();
+    const { currentUser, loading, error, isProfileLoaded, syncOfflineMutations, isSubscriptionActive, companyName, paymentStatus } = useAppContext();
     const { subdomain } = useTenant();
     const [loadingTimeout, setLoadingTimeout] = useState(false);
     const loadingTimeoutRef = useRef<{ primary: NodeJS.Timeout; emergency: NodeJS.Timeout } | null>(null);
@@ -166,6 +168,9 @@ const AppRoutes: React.FC = () => {
                         <Route path="/invite" element={!currentUser ? <UserInvite /> : <Navigate to="/" />} />
                         <Route path="/reset-password" element={!currentUser ? <PasswordResetRequest /> : <Navigate to="/" />} />
                         <Route path="/reset-password/confirm" element={!currentUser ? <PasswordResetConfirm /> : <Navigate to="/" />} />
+                        <Route path="/payment-instructions" element={
+                            currentUser ? <PaymentInstructions /> : <Navigate to="/login" />
+                        } />
 
                         {/* Platform Admin Routes - Accessible on Root Domain (Platform Mode) */}
                         <Route path="/platform/*" element={
@@ -179,6 +184,7 @@ const AppRoutes: React.FC = () => {
                                             <Route path="companies" element={<PlatformCompanies />} />
                                             <Route path="plans" element={<PlatformPlans />} />
                                             <Route path="backups" element={<PlatformBackups />} />
+                                            <Route path="payment-codes" element={<PaymentCodes />} />
                                         </Routes>
                                     </PlatformLayout>
                                 </Suspense>
@@ -208,6 +214,8 @@ const AppRoutes: React.FC = () => {
                                             </button>
                                         </div>
                                     </div>
+                                ) : paymentStatus === 'pending_payment' && currentUser.role !== Role.SUPER_ADMIN ? (
+                                    <Navigate to="/payment-instructions" />
                                 ) : (
                                     <Layout>
                                         <Suspense fallback={<PageLoading title="جاري تحميل الصفحة..." />}>

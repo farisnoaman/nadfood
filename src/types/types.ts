@@ -77,6 +77,13 @@ export interface Company {
   usageLimits: UsageLimits;
   currentUsage: CurrentUsage;
   features: CompanyFeatures;
+
+  // Payment Status (for new paid subscriptions)
+  payment_status?: 'pending_payment' | 'active' | 'suspended';
+
+  // Communication Channels (for activation code delivery)
+  adminPhone?: string;
+  preferredContactMethod?: 'sms' | 'call' | 'whatsapp';
 }
 
 /**

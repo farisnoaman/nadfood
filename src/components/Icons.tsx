@@ -8,7 +8,7 @@ import {
     FileDown, CircleCheck, CircleX, Grid, List, Settings, ArrowRight, ArrowLeft, Printer,
     ArrowUp, ArrowDown, Share, BarChart3, WifiOff, RefreshCw, Wifi, CheckCircle, Info,
     Eye, EyeOff, DollarSign, LayoutDashboard, Building, CreditCard, Database, ShieldCheck, Menu, Loader, ExternalLink, AlertCircle,
-    Zap, TrendingUp, Shield, Gift, Mail, Phone
+    Zap, TrendingUp, Shield, Gift, Mail, Phone, Clock, Key, Copy, QrCode, MessageCircle
 } from 'lucide-react';
 import logger from '../utils/logger';
 
@@ -91,7 +91,12 @@ export const Icons = {
     Shield: validateIcon(Shield, 'Shield'),
     Gift: validateIcon(Gift, 'Gift'),
     Mail: validateIcon(Mail, 'Mail'),
-    Phone: validateIcon(Phone, 'Phone')
+    Phone: validateIcon(Phone, 'Phone'),
+    Clock: validateIcon(Clock, 'Clock'),
+    Key: validateIcon(Key, 'Key'),
+    Copy: validateIcon(Copy, 'Copy'),
+    QrCode: validateIcon(QrCode, 'QrCode'),
+    MessageCircle: validateIcon(MessageCircle, 'MessageCircle')
 };
 
 // Fallback icons in case any are undefined

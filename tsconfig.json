@@ -25,13 +25,11 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true,
-
     /* Fix L-01: Gradual strict mode improvements */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true
-
     /* Full strict mode (enable gradually):
     "strict": true,
     "strictNullChecks": true,
@@ -43,6 +41,7 @@
     */
   },
   "exclude": [
+    "src/supabase/functions/**/*",
     "supabase/functions/**/*"
   ]
 }

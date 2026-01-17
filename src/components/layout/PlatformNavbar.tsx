@@ -23,6 +23,7 @@ const PlatformNavbar: React.FC = () => {
         { to: '/platform/companies', icon: Icons.Building, text: 'الشركات' },
         { to: '/platform/catalog', icon: Icons.Package, text: 'الدليل الشامل' },
         { to: '/platform/plans', icon: Icons.CreditCard, text: 'الخطط' },
+        { to: '/platform/payment-codes', icon: Icons.Key, text: 'أكواد الدفع' },
         { to: '/platform/backups', icon: Icons.Database, text: 'النسخ الاحتياطي' },
     ];
 

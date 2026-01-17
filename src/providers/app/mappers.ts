@@ -35,6 +35,11 @@ export interface CompanyRow {
     usage_limits: any;
     current_usage: any;
     features: any;
+    // Payment activation field
+    payment_status?: string | null;
+    // Communication channels
+    admin_phone?: string | null;
+    preferred_contact_method?: string | null;
 }
 
 // --- Row to Model Mapping ---
@@ -67,6 +72,11 @@ export const companyFromRow = (row: CompanyRow): Company => ({
         canManagePrices: row.features?.canManagePrices ?? true,
         canManageRegionFees: row.features?.canManageRegionFees ?? true,
     },
+    // Payment activation
+    payment_status: row.payment_status as Company['payment_status'] ?? undefined,
+    // Communication channels
+    adminPhone: row.admin_phone ?? undefined,
+    preferredContactMethod: row.preferred_contact_method as Company['preferredContactMethod'] ?? undefined,
 });
 
 export const userFromRow = (row: UserRow): User => ({

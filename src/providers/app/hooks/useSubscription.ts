@@ -95,8 +95,12 @@ export const useSubscription = (currentUser: User | null) => {
     }, [isSubscriptionActive, company]);
 
     const hasFeature = useCallback((feature: keyof import('../../../types').CompanyFeatures): boolean => {
+        // If no company or no features defined, enable all features by default (for paid plans)
         if (!company?.features) return true;
-        return company.features[feature] ?? false;
+
+        // If feature is explicitly set, use that value; otherwise default to true (all features enabled)
+        const featureValue = company.features[feature];
+        return featureValue !== false; // Only block if explicitly set to false
     }, [company]);
 
     return {

@@ -166,6 +166,7 @@ export interface AppContextType {
 
     // Subscription & Access Control
     isSubscriptionActive: boolean;
+    paymentStatus: string | null;
     checkLimit: (entity: keyof import('../../types').UsageLimits, countToAdd?: number) => boolean;
     hasFeature: (feature: keyof import('../../types').CompanyFeatures) => boolean;
     fetchCompany: (companyId: string) => Promise<void>;
