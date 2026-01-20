@@ -31,6 +31,7 @@ const ManageUsers: React.FC = () => {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [addUserPassword, setAddUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState<Role>(Role.SALES);
+  const [newUserAssignedFactory, setNewUserAssignedFactory] = useState('');
   const [addUserError, setAddUserError] = useState('');
 
   // State for activation/deactivation modal
@@ -40,6 +41,7 @@ const ManageUsers: React.FC = () => {
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [editUsername, setEditUsername] = useState('');
   const [editUserRole, setEditUserRole] = useState<Role>(Role.SALES);
+  const [editUserAssignedFactory, setEditUserAssignedFactory] = useState('');
   const [editUserMessage, setEditUserMessage] = useState('');
 
   // State for delete user modal
@@ -131,6 +133,7 @@ const ManageUsers: React.FC = () => {
     setNewUserEmail('');
     setAddUserPassword('');
     setNewUserRole(Role.SALES);
+    setNewUserAssignedFactory('');
     setAddUserError('');
   };
 
@@ -167,6 +170,7 @@ const ManageUsers: React.FC = () => {
         email: sanitizedEmail,
         role: newUserRole,
         isActive: true,
+        assignedFactory: newUserAssignedFactory.trim() || undefined,
         // companyId is handled by userService via currentUser
       }, addUserPassword);
 
@@ -246,6 +250,7 @@ const ManageUsers: React.FC = () => {
     if (userToEdit) {
       setEditUsername(userToEdit.username);
       setEditUserRole(userToEdit.role);
+      setEditUserAssignedFactory(userToEdit.assignedFactory || '');
     }
   }, [userToEdit]);
 
@@ -430,6 +435,12 @@ const ManageUsers: React.FC = () => {
               value={newUserRole}
               onChange={(val) => setNewUserRole(val as Role)}
             />
+            <Input
+              label="المصنع المخصص (اختياري - لمسؤول الحركة)"
+              value={newUserAssignedFactory}
+              onChange={(e) => setNewUserAssignedFactory(e.target.value)}
+              placeholder="مثال: مصنع أ"
+            />
             <div className="flex justify-end gap-3 pt-4">
               <Button variant="ghost-red" onClick={handleCloseAddModal}>إلغاء</Button>
               <Button onClick={handleAddNewUser} disabled={isSubmitting}>{isSubmitting ? 'جاري الإضافة...' : 'إضافة المستخدم'}</Button>
@@ -480,6 +491,13 @@ const ManageUsers: React.FC = () => {
               options={Object.values(Role).map(role => ({ value: role, label: role }))}
               value={editUserRole}
               onChange={(val) => setEditUserRole(val as Role)}
+            />
+            <Input
+              label="المصنع المخصص (اختياري - لمسؤول الحركة)"
+              value={editUserAssignedFactory}
+              onChange={(e) => setEditUserAssignedFactory(e.target.value)}
+              placeholder="مثال: مصنع أ"
+              disabled={isSubmitting}
             />
             <div className="flex justify-end gap-3">
               <Button variant="ghost-red" onClick={() => setUserToEdit(null)} disabled={isSubmitting}>إلغاء</Button>

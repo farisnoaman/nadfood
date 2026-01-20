@@ -87,6 +87,7 @@ export const userFromRow = (row: UserRow): User => ({
     companyId: (row as any).company_id ?? undefined,
     isActive: row.is_active ?? true,
     createdAt: row.created_at ?? undefined,
+    assignedFactory: (row as any).assigned_factory ?? undefined,
 });
 
 export const productFromRow = (row: ProductRow): Product => ({
@@ -96,6 +97,7 @@ export const productFromRow = (row: ProductRow): Product => ({
     weightKg: row.weight_kg ?? 0,
     masterProductId: row.master_product_id ?? null,
     isCustom: row.is_custom ?? true,
+    factoryName: (row as any).factory_name ?? undefined,
 });
 
 export const driverFromRow = (row: DriverRow): Driver => ({

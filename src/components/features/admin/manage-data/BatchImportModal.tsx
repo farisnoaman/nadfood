@@ -52,8 +52,8 @@ const BatchImportModal: React.FC<BatchImportModalProps> = ({ isOpen, onClose, ty
         },
         products: {
             title: 'استيراد المنتجات',
-            headers: ['اسم المنتج', 'فعال', 'الوزن (كجم)'],
-            required: ['اسم المنتج', 'فعال', 'الوزن (كجم)'],
+            headers: ['اسم المنتج', 'فعال', 'الوزن (كجم)', 'اسم المصنع'],
+            required: ['اسم المنتج'],
         },
         drivers: {
             title: 'استيراد السائقين',
@@ -195,12 +195,12 @@ const BatchImportModal: React.FC<BatchImportModalProps> = ({ isOpen, onClose, ty
                     } else if (type === 'products') {
                         const name = row['اسم المنتج'];
                         const isActive = row['فعال'] === 'نعم';
-                        const weightKg = parseFloat(row['الوزن (كجم)']);
+                        const weightKg = parseFloat(row['الوزن (كجم)']) || 0;
+                        const factoryName = row['اسم المصنع'] || '';
 
                         if (!name) errors.push('اسم المنتج مطلوب');
-                        if (isNaN(weightKg)) errors.push('الوزن يجب أن يكون رقماً');
 
-                        mappedData = { name, isActive, weightKg };
+                        mappedData = { name, isActive, weightKg, factoryName: factoryName || undefined };
                         const existing = products.find(p => p.name === name);
                         if (existing) {
                             isConflict = true;

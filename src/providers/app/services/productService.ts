@@ -38,6 +38,7 @@ export const productService = {
             is_active: product.isActive,
             weight_kg: product.weightKg,
             company_id: currentUser?.companyId,
+            factory_name: product.factoryName,
         };
 
         if (isOnline) {
@@ -71,6 +72,7 @@ export const productService = {
         if (updates.name !== undefined) updateData.name = updates.name;
         if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
         if (updates.weightKg !== undefined) updateData.weight_kg = updates.weightKg;
+        if (updates.factoryName !== undefined) updateData.factory_name = updates.factoryName;
 
         if (isOnline) {
             const { error } = await supabase
@@ -125,6 +127,7 @@ export const productService = {
                 is_active: p.isActive,
                 weight_kg: p.weightKg,
                 company_id: currentUser?.companyId,
+                factory_name: (p as any).factoryName,
             }));
 
             const { error } = await supabase
@@ -145,6 +148,7 @@ export const productService = {
                     name: product.name,
                     is_active: product.isActive,
                     weight_kg: product.weightKg,
+                    factory_name: (product as any).factoryName,
                 })
                 .eq('id', product.id);
 

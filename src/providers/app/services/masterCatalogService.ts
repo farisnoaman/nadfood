@@ -37,6 +37,7 @@ export const masterCatalogService = {
             isActive: row.is_active,
             category: row.category,
             description: row.description,
+            factoryName: row.factory_name,
             createdAt: row.created_at,
             updatedAt: row.updated_at
         }));
@@ -97,6 +98,7 @@ export const masterCatalogService = {
             isActive: data.is_active,
             category: data.category,
             description: data.description,
+            factoryName: data.factory_name,
             createdAt: data.created_at,
             updatedAt: data.updated_at
         };

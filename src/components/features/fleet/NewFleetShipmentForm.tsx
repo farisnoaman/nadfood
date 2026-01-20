@@ -223,7 +223,20 @@ const NewFleetShipmentForm: React.FC = () => {
   const [showMissingPriceModal, setShowMissingPriceModal] = useState(false);
   const [missingPriceProducts, setMissingPriceProducts] = useState<string[]>([]);
 
-  const activeProducts = allProducts.filter((p: Product) => p.isActive ?? true);
+  // Filter active products, then apply factory restriction for Fleet users
+  const activeProducts = allProducts.filter((p: Product) => {
+    // First check if product is active
+    if (!(p.isActive ?? true)) return false;
+
+    // If current user is SALES (Fleet) and has an assigned factory, filter by factory
+    if (currentUser?.role === Role.SALES && currentUser.assignedFactory) {
+      // Only show products matching the user's assigned factory
+      return p.factoryName === currentUser.assignedFactory;
+    }
+
+    // Otherwise, show all active products
+    return true;
+  });
   const activeDrivers = drivers.filter((d: Driver) => d.isActive ?? true);
 
   const handleAddProduct = () => {

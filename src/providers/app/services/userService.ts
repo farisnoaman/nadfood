@@ -55,6 +55,7 @@ export const userService = {
                         username: userData.username,
                         role: userData.role,
                         company_id: currentUser?.companyId,
+                        assigned_factory: userData.assignedFactory,
                     },
                 },
             });
@@ -93,6 +94,7 @@ export const userService = {
         if (updates.role !== undefined) updateData.role = updates.role;
         if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
         if (updates.email !== undefined) updateData.email = updates.email;
+        if (updates.assignedFactory !== undefined) updateData.assigned_factory = updates.assignedFactory;
 
         const { error } = await supabase
             .from('users')

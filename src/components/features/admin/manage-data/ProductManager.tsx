@@ -20,6 +20,7 @@ const ProductManager: React.FC = () => {
 
   const [productName, setProductName] = useState('');
   const [productWeight, setProductWeight] = useState<number | string>('');
+  const [factoryName, setFactoryName] = useState('');
 
   const [productToToggleStatus, setProductToToggleStatus] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -61,6 +62,7 @@ const ProductManager: React.FC = () => {
     setEditingProduct(null);
     setProductName('');
     setProductWeight('');
+    setFactoryName('');
     setError('');
     setIsModalOpen(true);
   };
@@ -69,6 +71,7 @@ const ProductManager: React.FC = () => {
     setEditingProduct(product);
     setProductName(product.name);
     setProductWeight(product.weightKg || '');
+    setFactoryName(product.factoryName || '');
     setError('');
     setIsModalOpen(true);
   };
@@ -89,14 +92,16 @@ const ProductManager: React.FC = () => {
       if (editingProduct) {
         await updateProduct(editingProduct.id, {
           name: productName.trim(),
-          weightKg: productWeight ? Number(productWeight) : undefined
+          weightKg: productWeight ? Number(productWeight) : undefined,
+          factoryName: factoryName.trim() || undefined
         });
         toast.success('تم تحديث المنتج بنجاح');
       } else {
         const newProduct: Omit<Product, 'id'> = {
           name: productName.trim(),
           isActive: true,
-          weightKg: productWeight ? Number(productWeight) : undefined
+          weightKg: productWeight ? Number(productWeight) : undefined,
+          factoryName: factoryName.trim() || undefined
         };
         await addProduct(newProduct);
         toast.success('تم إضافة المنتج بنجاح');
@@ -297,6 +302,12 @@ const ProductManager: React.FC = () => {
             value={productWeight}
             onChange={e => setProductWeight(e.target.value)}
             placeholder="مثال: 50"
+          />
+          <Input
+            label="اسم المصنع"
+            value={factoryName}
+            onChange={e => setFactoryName(e.target.value)}
+            placeholder="مثال: مصنع أ"
           />
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="secondary" onClick={handleCloseModal} disabled={isSubmitting}>إلغاء</Button>

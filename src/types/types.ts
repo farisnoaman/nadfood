@@ -97,6 +97,7 @@ export interface User {
   companyId?: string; // Foreign key to companies table
   isActive?: boolean;
   createdAt?: string;
+  assignedFactory?: string; // Factory assigned for product visibility
 }
 
 /**
@@ -112,6 +113,7 @@ export interface MasterProduct {
   isActive: boolean;
   category?: string;
   description?: string;
+  factoryName?: string; // Factory this master product belongs to
   createdAt?: string;
   updatedAt?: string;
 }
@@ -140,6 +142,7 @@ export interface Product {
   weightKg?: number;
   masterProductId?: string | null; // Reference to master catalog
   isCustom?: boolean; // true = company-specific, false = linked to master
+  factoryName?: string; // Factory this product belongs to
 }
 
 /**
